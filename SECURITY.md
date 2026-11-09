@@ -2,14 +2,15 @@
 
 ## Reporting a vulnerability
 
-Please don't open a public issue for security problems. Report them privately through
-[GitHub security advisories](https://github.com/tryliner/desktop/security/advisories/new)
-or by email to dev@tryliner.fun.
+Do not open a public issue for security problems. Report vulnerabilities privately to the repository owner.
 
-Include what you found, how to reproduce it, and which version you tested. We'll reply
-within a few days and keep you posted until it's fixed. Credit is given in the release
-notes unless you'd rather stay anonymous.
+Include:
+
+- What you found
+- Steps to reproduce
+- Affected version/commit
+- Any relevant logs or proof of concept
 
 ## Supported versions
 
-Only the latest release gets security fixes.
+Only the latest local build/release in this repository should be considered current.
