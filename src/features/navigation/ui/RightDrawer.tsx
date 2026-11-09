@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, memo, useCallback, useMemo } from "react";
 import { useReducedMotion } from "framer-motion";
-import { Back2Line } from "@mingcute/react";
+import { Back2Line, CloseLine } from "@mingcute/react";
 import {
   usePlayerState,
   usePlayerStore,
@@ -251,6 +251,25 @@ const QueueList = memo(function QueueList({
                   ? undefined
                   : () => handleRemove(index, item.id)
               }
+              trailingAction={
+                index === 0 || removingIndex !== null ? undefined : (
+                  <button
+                    type="button"
+                    aria-label={t("common.remove_from_queue")}
+                    title={t("common.remove_from_queue")}
+                    data-prevent-drag
+                    className="inline-flex h-[28px] w-[28px] shrink-0 items-center justify-center rounded-control border-0 bg-transparent text-text-tertiary opacity-0 transition-[opacity,color,background-color] duration-150 hover:bg-fill-hover hover:text-text-primary group-hover:opacity-100 focus-visible:opacity-100"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleRemove(index, item.id);
+                    }}
+                  >
+                    <CloseLine size={16} />
+                  </button>
+                )
+              }
               onGrabStart={
                 !isDragging && removingIndex === null
                   ? (e) => handleCardGrab(index, item, e)
@@ -342,7 +361,27 @@ function RightDrawer({ onClose }: RightDrawerProps) {
   useEffect(() => {
     const currentId = player.currentTrack?.id ?? null;
     if (currentId !== null && currentId !== prevQueueTrackIdRef.current) {
-      scrollQueueToCurrent();
+      const container = queueScrollRef.current;
+      const target = queueScrollRef.current
+        ?.firstElementChild as HTMLElement | null;
+      if (container && target) {
+        target.style.transition =
+          "opacity 180ms ease, transform 220ms cubic-bezier(0.16,1,0.3,1)";
+        target.style.opacity = "0.72";
+        target.style.transform = "translateY(4px)";
+        container.scrollTo({ top: 0, behavior: "smooth" });
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => {
+            target.style.opacity = "";
+            target.style.transform = "";
+            window.setTimeout(() => {
+              target.style.transition = "";
+            }, 240);
+          }),
+        );
+      } else {
+        scrollQueueToCurrent();
+      }
     }
     prevQueueTrackIdRef.current = currentId;
   }, [player.currentTrack?.id, scrollQueueToCurrent]);

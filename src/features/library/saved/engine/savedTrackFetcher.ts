@@ -46,7 +46,9 @@ async function fromNetwork(
   track: Track,
   signal: AbortSignal,
 ): Promise<FetchedAudio> {
-  const stream = await resolvePlaybackStream(track, signal);
+  const stream = await resolvePlaybackStream(track, signal, {
+    progressive: false,
+  });
   try {
     let audio: Uint8Array | null;
     if (stream.blob) audio = new Uint8Array(await stream.blob.arrayBuffer());

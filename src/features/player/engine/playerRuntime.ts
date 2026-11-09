@@ -308,6 +308,7 @@ export class PlayerRuntime {
   }
 
   private setupAudioListeners(audioEl: HTMLAudioElement) {
+    let lastPositionCommit = 0;
     audioEl.addEventListener("timeupdate", () => {
       if (this.isResetting || audioEl !== this.audio) return;
       if (!this.currentTrackId) return;
@@ -315,7 +316,14 @@ export class PlayerRuntime {
       if (Number.isNaN(audioEl.currentTime)) return;
 
       const posMs = Math.round(audioEl.currentTime * 1000);
-      usePlayerStore.getState().setPosition(posMs);
+      const now = Date.now();
+      if (
+        now - lastPositionCommit >= 500 ||
+        Math.abs(posMs - usePlayerStore.getState().positionMs) >= 900
+      ) {
+        lastPositionCommit = now;
+        usePlayerStore.getState().setPosition(posMs);
+      }
       if (
         this.recoveryHoldUntilMs !== null &&
         posMs >= this.recoveryHoldUntilMs
@@ -536,9 +544,12 @@ export class PlayerRuntime {
       (store.isPitchLinked !== undefined ? !store.isPitchLinked : true);
 
     try {
-      this.audio.playbackRate = targetRate;
-      this.audio.defaultPlaybackRate = targetRate;
-      this.audio.preservesPitch = targetPreserves;
+      if (Math.abs(this.audio.playbackRate - targetRate) > 0.001)
+        this.audio.playbackRate = targetRate;
+      if (Math.abs(this.audio.defaultPlaybackRate - targetRate) > 0.001)
+        this.audio.defaultPlaybackRate = targetRate;
+      if (this.audio.preservesPitch !== targetPreserves)
+        this.audio.preservesPitch = targetPreserves;
       (this.audio as any).mozPreservesPitch = targetPreserves;
       (this.audio as any).webkitPreservesPitch = targetPreserves;
     } catch {
@@ -885,20 +896,6 @@ export class PlayerRuntime {
           `audio cache hit for "${track.title}" (${Math.round(cachedAudio.byteSize / 1024)} KB)`,
         );
 
-        if (this.audio.readyState < 3) {
-          await new Promise<void>((resolve) => {
-            const timeout = setTimeout(resolve, 3000);
-            const onCanPlay = () => {
-              clearTimeout(timeout);
-              this.audio.removeEventListener("canplay", onCanPlay);
-              this.audio.removeEventListener("error", onCanPlay);
-              resolve();
-            };
-            this.audio.addEventListener("canplay", onCanPlay, { once: true });
-            this.audio.addEventListener("error", onCanPlay, { once: true });
-          });
-        }
-
         if (epoch !== this.loadEpoch || controller.signal.aborted) return;
 
         const playPromise = this.audio.play();
@@ -943,6 +940,7 @@ export class PlayerRuntime {
       this.releaseActiveStream = stream.release ?? null;
       this.watchFullSource(track.id, stream);
       this.audio.volume = 0;
+      this.audio.preload = "auto";
       this.audio.load();
       this.applyPlaybackRateAndPitch();
 
@@ -957,17 +955,19 @@ export class PlayerRuntime {
         `stream attached: ${streamCodec} ${streamBitrate} bps (${track.title})`,
       );
 
-      if (this.audio.readyState < 3) {
+      if (this.audio.readyState < 2) {
         await new Promise<void>((resolve) => {
-          const timeout = setTimeout(resolve, 3000);
-          const onCanPlay = () => {
+          const timeout = setTimeout(resolve, 1000);
+          const done = () => {
             clearTimeout(timeout);
-            this.audio.removeEventListener("canplay", onCanPlay);
-            this.audio.removeEventListener("error", onCanPlay);
+            this.audio.removeEventListener("canplay", done);
+            this.audio.removeEventListener("loadeddata", done);
+            this.audio.removeEventListener("error", done);
             resolve();
           };
-          this.audio.addEventListener("canplay", onCanPlay, { once: true });
-          this.audio.addEventListener("error", onCanPlay, { once: true });
+          this.audio.addEventListener("canplay", done, { once: true });
+          this.audio.addEventListener("loadeddata", done, { once: true });
+          this.audio.addEventListener("error", done, { once: true });
         });
       }
 
@@ -1177,6 +1177,13 @@ export class PlayerRuntime {
   ): Promise<Blob | null> {
     if (stream.blob) return stream.blob;
     if (stream.completed) return stream.completed;
+    if (signal.aborted) return null;
+    if (this.activeBlobUrl && this.attachedTrackId === this.currentTrackId) {
+      try {
+        const res = await fetch(this.activeBlobUrl, { signal });
+        if (res.ok) return await res.blob();
+      } catch {}
+    }
     const startedAt = performance.now();
     let bytes: Uint8Array<ArrayBuffer> | null;
     try {
@@ -1219,6 +1226,8 @@ export class PlayerRuntime {
     const generation = audioCache.currentGeneration();
     void (async () => {
       try {
+        const existing = await linerDb.getAudio(track.id).catch(() => null);
+        if (existing?.blob?.size) return;
         const blob = await this.downloadAudioBlob(stream, signal);
         if (!blob || signal.aborted) return;
         if (

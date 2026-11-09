@@ -9,7 +9,7 @@ export interface SettingsNavIconProps {
 }
 
 const itemClass =
-  "group relative flex h-[32px] w-full cursor-pointer items-center gap-[10px] rounded-control border-0 bg-transparent px-[9px] text-left text-body font-[500] leading-none transition-colors";
+  "group relative flex h-[30px] w-full cursor-pointer items-center gap-[10px] rounded-control border-0 bg-transparent px-[9px] text-left text-body font-[500] leading-none transition-colors";
 
 export function NavItem({
   icon: Icon,
@@ -61,7 +61,7 @@ export function NavItem({
 
 export function GroupLabel({ children }: { children: ReactNode }) {
   return (
-    <p className="m-0 px-[9px] pb-[6px] text-caption font-[500] leading-[16px] text-text-tertiary">
+    <p className="m-0 px-[9px] pb-[4px] text-caption font-[500] leading-[16px] text-text-tertiary">
       {children}
     </p>
   );

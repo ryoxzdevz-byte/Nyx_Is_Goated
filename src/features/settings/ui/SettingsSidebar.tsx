@@ -70,7 +70,7 @@ export function SettingsSidebar<T extends string>({
         style={style}
         role="tablist"
         aria-label={t("settings.title")}
-        className="flex min-h-0 flex-1 flex-col gap-[18px] overflow-y-auto px-[10px] pt-[4px] pb-[12px]"
+        className="flex min-h-0 flex-1 flex-col gap-[14px] overflow-y-auto px-[10px] pt-[2px] pb-[10px]"
       >
         {groups.length === 0 ? (
           <p className="m-0 px-[8px] text-caption text-text-tertiary">
@@ -78,7 +78,7 @@ export function SettingsSidebar<T extends string>({
           </p>
         ) : (
           groups.map((group) => (
-            <div key={group.labelKey} className="flex flex-col gap-[1px]">
+            <div key={group.labelKey} className="flex flex-col gap-0">
               <GroupLabel>{t(`settings.groups.${group.labelKey}`)}</GroupLabel>
               {group.ids.map((id) => (
                 <NavItem
@@ -94,7 +94,7 @@ export function SettingsSidebar<T extends string>({
           ))
         )}
 
-        <div className="flex flex-col gap-[1px]">
+        <div className="flex flex-col gap-0">
           <GroupLabel>{t("settings.groups.help")}</GroupLabel>
           <NavItem
             icon={Book2}
