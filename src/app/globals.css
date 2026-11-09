@@ -187,6 +187,12 @@
   --glass-panel-blur: 72px;
   --glass-blur: 34px;
 }
+:root[data-glass-intensity="off"] {
+  --bg-glass: rgba(255, 255, 255, 0.92);
+  --glass-shell-blur: 0px;
+  --glass-panel-blur: 0px;
+  --glass-blur: 0px;
+}
 :root[data-theme="dark"],
 :root.dark,
 [data-theme="dark"],
@@ -203,6 +209,15 @@
   --glass-shell-blur: 34px;
   --glass-panel-blur: 72px;
   --glass-blur: 34px;
+}
+:root[data-theme="dark"][data-glass-intensity="off"],
+:root.dark[data-glass-intensity="off"],
+[data-theme="dark"][data-glass-intensity="off"],
+.dark[data-glass-intensity="off"] {
+  --bg-glass: rgba(22, 22, 24, 0.96);
+  --glass-shell-blur: 0px;
+  --glass-panel-blur: 0px;
+  --glass-blur: 0px;
 }
 :root[data-glass-intensity="strong"] .bg-bg-glass {
   background-color: var(--bg-glass) !important;
@@ -229,6 +244,10 @@
 :root[data-glass-intensity="strong"] .backdrop-blur-xl {
   backdrop-filter: blur(40px) saturate(165%) !important;
   -webkit-backdrop-filter: blur(40px) saturate(165%) !important;
+}
+:root[data-glass-intensity="off"] [class*="backdrop-blur"] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 .nyx-smooth * {

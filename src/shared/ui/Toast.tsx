@@ -589,8 +589,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [activeCardHeight, setActiveCardHeight] = useState<number | null>(null);
 
   const handleMeasureActive = useCallback((w: number, h: number) => {
-    if (w > 0) setActiveCardWidth((prev) => (prev === w ? prev : w));
-    if (h > 0) setActiveCardHeight((prev) => (prev === h ? prev : h));
+    if (w < 120) return;
+    if (w > 0) setActiveCardWidth((prev) => (prev && Math.abs(prev - w) < 2 ? prev : w));
+    if (h > 0) setActiveCardHeight((prev) => (prev && Math.abs(prev - h) < 2 ? prev : h));
   }, []);
 
   const [deckHovered, setDeckHovered] = useState(false);
@@ -598,6 +599,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const topToast = toasts.length > 0 ? toasts[0] : null;
   const topId = topToast?.id;
   const topDuration = topToast?.duration ?? 0;
+
+  useEffect(() => {
+    setActiveCardWidth(null);
+    setActiveCardHeight(null);
+  }, [topId, topToast?.message]);
 
   const bottomToast = toasts.length > 0 ? toasts[toasts.length - 1] : null;
   const bottomId = bottomToast?.id;
@@ -829,11 +835,12 @@ function NotificationCard({
         zIndex,
         transformOrigin: "bottom center",
         maxWidth: "min(920px, calc(100vw - 24px))",
+        minWidth: index === 0 ? "min(360px, calc(100vw - 24px))" : undefined,
         minHeight: "38px",
         width:
-          index > 0 && activeCardWidth ? `${activeCardWidth}px` : undefined,
+          index > 1 && activeCardWidth ? `${activeCardWidth}px` : undefined,
         height:
-          index > 0 && activeCardHeight ? `${activeCardHeight}px` : undefined,
+          index > 1 && activeCardHeight ? `${activeCardHeight}px` : undefined,
       }}
     >
       <span

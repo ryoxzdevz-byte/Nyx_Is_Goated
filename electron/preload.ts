@@ -74,6 +74,9 @@ export interface LinerElectronApi {
   isFullScreen: () => Promise<boolean>;
   getRememberWindowBounds: () => Promise<boolean>;
   setRememberWindowBounds: (enabled: boolean) => Promise<boolean>;
+  setBackgroundMaterial: (
+    material: "auto" | "acrylic" | "mica" | "none",
+  ) => Promise<boolean>;
   onWindowStateChange: (cb: (state: WindowState) => void) => () => void;
   onWindowRestored?: (cb: () => void) => () => void;
   onAppFlush?: (cb: () => void) => () => void;
@@ -259,6 +262,8 @@ const api: LinerElectronApi = {
     ipcRenderer.invoke("window:get-remember-bounds"),
   setRememberWindowBounds: (enabled) =>
     ipcRenderer.invoke("window:set-remember-bounds", enabled),
+  setBackgroundMaterial: (material) =>
+    ipcRenderer.invoke("window:set-background-material", material),
   onWindowStateChange: (cb) => {
     const listener = (_event: unknown, state: WindowState) => cb(state);
     ipcRenderer.on("window:state-changed", listener);

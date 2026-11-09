@@ -3,7 +3,10 @@ import ReactDOM from "react-dom/client";
 import { initGlobalErrorHandlers } from "@/shared/utils/globalErrorHandlers";
 import { hydrateScreenCache } from "@/shared/cache/screenCache";
 import { applyStoredTheme } from "@/shared/utils/storedTheme";
-import { applyGlassIntensity } from "@/features/settings/store/customizationStore";
+import {
+  applyGlassIntensity,
+  applyWindowMaterialPreference,
+} from "@/features/settings/store/customizationStore";
 
 initGlobalErrorHandlers();
 
@@ -12,6 +15,7 @@ const isOverlay = window.location.hash.startsWith("#/overlay");
 if (!isOverlay) {
   applyStoredTheme();
   applyGlassIntensity();
+  applyWindowMaterialPreference();
 }
 
 async function loadRoot(): Promise<React.ReactElement> {

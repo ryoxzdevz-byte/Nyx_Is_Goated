@@ -5,9 +5,13 @@ import { MenuSelect, ToggleSwitch } from "@/shared/ui";
 import { revealThemeChange } from "@/shared/lib";
 import {
   applyGlassIntensity,
+  applyWindowMaterialPreference,
   readStoredGlassIntensity,
+  readStoredWindowMaterial,
   storeGlassIntensity,
+  storeWindowMaterial,
   type GlassIntensity,
+  type WindowMaterial,
 } from "../../store/customizationStore";
 import { useVisualModeStore } from "@/features/player/store/visualModeStore";
 import { SettingBlock, SettingRow, SettingSection, SegmentedControl } from "../controls";
@@ -23,6 +27,9 @@ export function AppearanceTab({ searchQuery }: { searchQuery?: string }) {
     readStoredGlassIntensity(),
   );
   const [savedGlass, setSavedGlass] = useState<GlassIntensity>(appliedGlass);
+  const [windowMaterial, setWindowMaterial] = useState<WindowMaterial>(() =>
+    readStoredWindowMaterial(),
+  );
   const [restarting, setRestarting] = useState(false);
   const visualMode = useVisualModeStore((s) => s.mode);
   const setVisualMode = useVisualModeStore((s) => s.setMode);
@@ -58,9 +65,16 @@ export function AppearanceTab({ searchQuery }: { searchQuery?: string }) {
     applyGlassIntensity(value);
   };
 
+  const changeWindowMaterial = (value: WindowMaterial) => {
+    setWindowMaterial(value);
+    storeWindowMaterial(value);
+    applyWindowMaterialPreference(value);
+  };
+
   const restartToApplyGlass = async () => {
     setRestarting(true);
     applyGlassIntensity(savedGlass);
+    applyWindowMaterialPreference(windowMaterial);
     try {
       if (electron?.relaunchApp) await electron.relaunchApp();
       else window.location.reload();
@@ -130,24 +144,48 @@ export function AppearanceTab({ searchQuery }: { searchQuery?: string }) {
       </SettingBlock>
 
       <SettingRow
-        title={
-          t("settings.appearance.strong_glass.title") ||
-          "Transparent glass theme"
-        }
-        description={
-          t("settings.appearance.strong_glass.description") ||
-          "Use a stronger transparent/glass blur across Nyx. Restart required."
-        }
-        titleKey="settings.appearance.strong_glass.title"
-        descKey="settings.appearance.strong_glass.description"
+        title="Blur style"
+        description="Adjust Nyx blur/glass intensity. Off disables the glass look; Strong uses heavier blur."
         searchQuery={searchQuery}
         control={
-          <ToggleSwitch
-            checked={mounted ? savedGlass === "strong" : false}
-            onChange={(checked) =>
-              changeGlassIntensity(checked ? "strong" : "default")
-            }
-          />
+          mounted ? (
+            <SegmentedControl
+              ariaLabel="Blur style"
+              value={savedGlass}
+              onChange={(v) => changeGlassIntensity(v as GlassIntensity)}
+              options={[
+                { value: "off", label: "Off" },
+                { value: "default", label: "Soft" },
+                { value: "strong", label: "Strong" },
+              ]}
+            />
+          ) : (
+            <span />
+          )
+        }
+      />
+
+      <SettingRow
+        title="Window blur material (Windows)"
+        description="Controls the Electron window material behind Nyx. Auto/Acrylic usually give the most visible blur on Windows."
+        searchQuery={searchQuery}
+        control={
+          mounted ? (
+            <MenuSelect
+              value={windowMaterial}
+              onChange={(v) => changeWindowMaterial(v as WindowMaterial)}
+              options={[
+                { value: "auto", label: "Auto" },
+                { value: "acrylic", label: "Acrylic" },
+                { value: "mica", label: "Mica" },
+                { value: "none", label: "None" },
+              ]}
+              className="min-w-[130px]"
+              aria-label="Window blur material"
+            />
+          ) : (
+            <span />
+          )
         }
       />
 

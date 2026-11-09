@@ -167,7 +167,7 @@ export const useUpdaterStore = create<UpdaterState>((set, get) => ({
     });
   },
 
-  initUpdaterListeners: () => {
+    initUpdaterListeners: () => {
     const electron = window.linerElectron;
     if (!electron) return () => {};
 
@@ -182,10 +182,12 @@ export const useUpdaterStore = create<UpdaterState>((set, get) => ({
     });
 
     const unsubProgress = electron.onUpdateDownloadProgress?.((progress) => {
-      set({
+      set((state) => ({
         status: "downloading",
+        updateInfo: state.updateInfo,
         downloadProgress: progress,
-      });
+        error: null,
+      }));
     });
 
     const unsubDownloaded = electron.onUpdateDownloaded?.((info) => {

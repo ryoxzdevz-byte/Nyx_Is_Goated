@@ -706,6 +706,20 @@ if (!gotTheLock) {
       return true;
     });
 
+    handleTrusted("window:set-background-material", (_event, material: unknown) => {
+      if (!mainWindow || mainWindow.isDestroyed() || process.platform !== "win32")
+        return false;
+      const allowed = new Set(["auto", "acrylic", "mica", "none"]);
+      const value = typeof material === "string" && allowed.has(material) ? material : "auto";
+      try {
+        (mainWindow as any).setBackgroundMaterial?.(value);
+        return true;
+      } catch (error) {
+        console.warn("[window] setBackgroundMaterial failed", error);
+        return false;
+      }
+    });
+
     handleTrusted("window:is-maximized", () => {
       return mainWindow?.isMaximized() ?? false;
     });
@@ -2184,15 +2198,38 @@ if (!gotTheLock) {
       if (!nyxDownloadedInstaller || !fs.existsSync(nyxDownloadedInstaller))
         return false;
       try {
-        await flushRendererPlayerSession(1200);
-        const child = nodeExecFile(nyxDownloadedInstaller, [], (error) => {
-          if (error)
-            console.error("[updater] failed to launch installer", error);
-        });
+        await flushRendererPlayerSession(1200).catch(() => {});
+        shutdown.begin();
+        const exe = nyxDownloadedInstaller;
+        const installDir = path.dirname(process.execPath);
+        const args =
+          process.platform === "win32" && installDir && !installDir.includes("\n")
+            ? [`/D=${installDir}`]
+            : [];
+        const child = nodeExecFile(
+          exe,
+          args,
+          { windowsHide: false, cwd: path.dirname(exe) },
+          (error) => {
+            if (error)
+              console.error("[updater] failed to launch installer", error);
+          },
+        );
         child.unref?.();
-        setTimeout(() => app.quit(), 250);
+        nyxDownloadedInstaller = null;
+        setTimeout(() => {
+          try {
+            app.quit();
+          } catch {}
+          setTimeout(() => {
+            try {
+              app.exit(0);
+            } catch {}
+          }, 1500);
+        }, 600);
         return true;
-      } catch {
+      } catch (error) {
+        console.error("[updater] quit-and-install failed", error);
         return false;
       }
     });
