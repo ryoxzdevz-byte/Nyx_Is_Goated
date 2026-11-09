@@ -234,10 +234,10 @@ export function ShortcutsTab({
           "Toggle audio mute state.",
       },
       showMainWindow: {
-        title: t("settings.shortcuts.show_main_window") || "Show Liner",
+        title: t("settings.shortcuts.show_main_window") || "Show Nyx",
         desc:
           t("settings.shortcuts.show_main_window_desc") ||
-          "Bring the main Liner window to the front.",
+          "Bring the main Nyx window to the front.",
       },
     }),
     [t],

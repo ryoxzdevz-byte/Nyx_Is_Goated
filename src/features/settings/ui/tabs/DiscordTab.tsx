@@ -119,7 +119,7 @@ export function DiscordTab({ searchQuery }: { searchQuery?: string }) {
                   },
                   {
                     value: "app",
-                    label: t("settings.discord.status_display.app") || "Liner",
+                    label: t("settings.discord.status_display.app") || "Nyx",
                   },
                 ]}
               />

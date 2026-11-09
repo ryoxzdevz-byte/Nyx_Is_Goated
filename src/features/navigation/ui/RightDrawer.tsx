@@ -31,18 +31,6 @@ interface QueueRestore {
   phase: "start" | "run";
 }
 
-function getQueueScrollTarget(container: HTMLDivElement, currentIndex: number) {
-  return Math.max(
-    0,
-    Math.round(
-      6 +
-        currentIndex * QUEUE_ITEM_HEIGHT +
-        QUEUE_ITEM_HEIGHT / 2 -
-        (container.clientHeight || 500) / 2,
-    ),
-  );
-}
-
 const QueueList = memo(function QueueList({
   queue,
   queueLimit,
@@ -58,13 +46,14 @@ const QueueList = memo(function QueueList({
   playbackContextCover: any;
   scrollContainerRef: React.RefObject<HTMLDivElement | null>;
 }) {
-  const effectiveLimit = Math.max(
-    queueLimit,
-    currentIndex >= 0 ? currentIndex + 25 : 0,
+  const startIndex = Math.max(0, currentIndex);
+  const upcomingQueue = useMemo(
+    () => queue.slice(startIndex),
+    [queue, startIndex],
   );
   const visibleQueue = useMemo(
-    () => queue.slice(0, effectiveLimit),
-    [queue, effectiveLimit],
+    () => upcomingQueue.slice(0, queueLimit),
+    [upcomingQueue, queueLimit],
   );
   const rowKeys = useMemo(() => {
     const seen = new Map<string, number>();
@@ -77,9 +66,12 @@ const QueueList = memo(function QueueList({
 
   const queueContainerRef = useRef<HTMLDivElement>(null);
 
-  const handleReorder = useCallback((fromIndex: number, toIndex: number) => {
-    playerEngine.reorderQueue(fromIndex, toIndex);
-  }, []);
+  const handleReorder = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      playerEngine.reorderQueue(startIndex + fromIndex, startIndex + toIndex);
+    },
+    [startIndex],
+  );
 
   const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
@@ -99,13 +91,14 @@ const QueueList = memo(function QueueList({
   // slide the row out to the left, then drop it once the animation is done
   const handleRemove = useCallback(
     (index: number, id: string) => {
+      const realIndex = startIndex + index;
       setRemovingIndex(index);
       window.setTimeout(
         () => {
-          const track = usePlayerStore.getState().queue[index];
+          const track = usePlayerStore.getState().queue[realIndex];
           // the queue may have changed during the animation: only remove that same track
           const undo =
-            track?.id === id ? playerEngine.removeFromQueue(index) : null;
+            track?.id === id ? playerEngine.removeFromQueue(realIndex) : null;
           if (track && undo) {
             showToast(t("common.removed_from_queue"), "checkmark", {
               description: track.artists
@@ -116,7 +109,7 @@ const QueueList = memo(function QueueList({
                 icon: <Back2Line size={14} />,
                 onClick: () => {
                   undo();
-                  const restored = usePlayerStore.getState().queue[index];
+                  const restored = usePlayerStore.getState().queue[realIndex];
                   if (restored?.id === id) playRestore(index);
                 },
               },
@@ -127,7 +120,7 @@ const QueueList = memo(function QueueList({
         reduceMotion ? 0 : REMOVE_MS,
       );
     },
-    [reduceMotion, t, playRestore],
+    [reduceMotion, t, playRestore, startIndex],
   );
 
   const {
@@ -173,7 +166,7 @@ const QueueList = memo(function QueueList({
       )}
 
       {visibleQueue.map((item, index) => {
-        const isCurrent = index === currentIndex;
+        const isCurrent = index === 0;
         const isThisDragged = isDragging && index === dragIndex;
         const isRemoving = removingIndex === index;
         const restoringHere = restoring?.index === index;
@@ -253,7 +246,7 @@ const QueueList = memo(function QueueList({
               }
               showReorderHandle
               onRemoveFromQueue={
-                index <= currentIndex || removingIndex !== null
+                index === 0 || removingIndex !== null
                   ? undefined
                   : () => handleRemove(index, item.id)
               }
@@ -274,7 +267,7 @@ const QueueList = memo(function QueueList({
                   queue,
                   playbackContext,
                   playbackContextCover,
-                  index,
+                  startIndex + index,
                   true,
                 );
               }}
@@ -321,46 +314,25 @@ function RightDrawer({ onClose }: RightDrawerProps) {
   const player = usePlayerState();
   const { t } = useTranslation();
   const queueScrollRef = useRef<HTMLDivElement>(null);
-  const [queueLimit, setQueueLimit] = useState(() =>
-    Math.max(
-      50,
-      Math.ceil(
-        ((player.currentIndex >= 0 ? player.currentIndex : 0) + 30) / 50,
-      ) * 50,
-    ),
-  );
+  const [queueLimit, setQueueLimit] = useState(50);
   const [isQueueScrolled, setIsQueueScrolled] = useState(false);
 
   useEffect(() => {
-    if (player.currentIndex >= 0) {
-      setQueueLimit((prev) =>
-        Math.max(
-          prev,
-          Math.min(
-            player.queue.length,
-            Math.ceil((player.currentIndex + 30) / 50) * 50,
-          ),
-        ),
-      );
-    }
-  }, [player.currentIndex, player.queue.length]);
+    setQueueLimit(50);
+  }, [player.currentIndex]);
 
   const scrollQueueToCurrent = useCallback(() => {
     const container = queueScrollRef.current;
-    if (!container || player.currentIndex < 0 || player.queue.length === 0)
-      return;
-    const targetY = getQueueScrollTarget(container, player.currentIndex);
-    setIsQueueScrolled(targetY > 2);
-    container.scrollTo({ top: targetY, behavior: "smooth" });
-  }, [player.currentIndex, player.queue.length]);
+    if (!container) return;
+    container.scrollTo({ top: 0, behavior: "smooth" });
+    setIsQueueScrolled(false);
+  }, []);
 
   const queueScrollCallbackRef = useCallback((node: HTMLDivElement | null) => {
     queueScrollRef.current = node;
-    const { currentIndex, queue } = playerEngine.getSnapshot();
-    if (node && currentIndex >= 0 && queue.length > 0) {
-      const targetY = getQueueScrollTarget(node, currentIndex);
-      node.scrollTop = targetY;
-      setIsQueueScrolled(targetY > 2);
+    if (node) {
+      node.scrollTop = 0;
+      setIsQueueScrolled(false);
     }
   }, []);
 
@@ -379,10 +351,16 @@ function RightDrawer({ onClose }: RightDrawerProps) {
   return (
     <div className="relative flex flex-col h-full w-full overflow-hidden rounded-[14px] select-none bg-bg-glass backdrop-blur-[48px]">
       <RightDrawerHeader
-        trackCount={player.queue.length}
+        trackCount={Math.max(
+          0,
+          player.queue.length - Math.max(0, player.currentIndex),
+        )}
         shuffle={player.shuffle}
         repeat={player.repeat}
-        canClear={player.queue.length > 1}
+        canClear={
+          player.currentIndex >= 0 &&
+          player.currentIndex < player.queue.length - 1
+        }
         onShuffleToggle={() => playerEngine.setShuffle(!player.shuffle)}
         onRepeatCycle={() =>
           playerEngine.setRepeat(

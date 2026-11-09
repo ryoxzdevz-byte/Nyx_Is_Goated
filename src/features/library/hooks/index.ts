@@ -8,6 +8,7 @@ export { useExternalItems, type EntityType } from "./useExternalItems";
 export {
   useLikedTracks,
   useLikedTrackCount,
+  hydrateLikedTracks,
   applyOptimisticLike,
   applyOptimisticUnlike,
   reloadLikedTracks,

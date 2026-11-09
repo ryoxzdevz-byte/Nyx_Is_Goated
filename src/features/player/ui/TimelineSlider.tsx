@@ -1,5 +1,4 @@
 import { useState, useRef, useCallback, memo } from "react";
-import { motion } from "framer-motion";
 
 export interface TimelineSliderProps {
   positionMs: number;
@@ -14,6 +13,7 @@ export interface TimelineSliderProps {
   fillColor?: string;
   showTime?: boolean;
   onScrub?: (positionMs: number) => void;
+  showThumb?: boolean;
 }
 
 export function formatPlaybackTime(ms: number): string {
@@ -37,6 +37,7 @@ export const TimelineSlider = memo(function TimelineSlider({
   fillColor,
   showTime = false,
   onScrub,
+  showThumb = true,
 }: TimelineSliderProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -132,23 +133,23 @@ export const TimelineSlider = memo(function TimelineSlider({
   }[size];
 
   const baseTrackHeights = {
-    xs: "h-[4px]",
-    sm: "h-[5px]",
-    md: "h-[6px]",
-    lg: "h-[7px]",
+    xs: "h-[3px]",
+    sm: "h-[4px]",
+    md: "h-[4px]",
+    lg: "h-[5px]",
   }[size];
 
-  const scaleYFactor = {
-    xs: 1.5,
-    sm: 1.4,
-    md: 1.35,
-    lg: 1.3,
+  const thumbSize = {
+    xs: "h-[10px] w-[10px]",
+    sm: "h-[12px] w-[12px]",
+    md: "h-[12px] w-[12px]",
+    lg: "h-[14px] w-[14px]",
   }[size];
 
   const isActive = isHovered || isDragging;
 
-  const defaultTrackBg = trackBg ?? "rgba(255, 255, 255, 0.16)";
-  const defaultTrackActiveBg = trackActiveBg ?? "rgba(255, 255, 255, 0.30)";
+  const defaultTrackBg = trackBg ?? "rgba(255, 255, 255, 0.2)";
+  const defaultTrackActiveBg = trackActiveBg ?? defaultTrackBg;
 
   return (
     <div
@@ -173,31 +174,36 @@ export const TimelineSlider = memo(function TimelineSlider({
         onPointerDown={handlePointerDown}
         className="relative flex h-full flex-1 items-center cursor-pointer outline-none"
       >
-        <motion.div
+        <div
           ref={trackRef}
-          initial={false}
-          animate={{
-            scaleY: isActive ? scaleYFactor : 1,
+          className={`relative w-full rounded-full origin-center ${baseTrackHeights} ${trackClassName}`}
+          style={{
             backgroundColor: isActive ? defaultTrackActiveBg : defaultTrackBg,
           }}
-          transition={{
-            type: "spring",
-            stiffness: 400,
-            damping: 30,
-            mass: 0.8,
-          }}
-          className={`relative w-full rounded-full overflow-hidden origin-center ${baseTrackHeights} ${trackClassName}`}
         >
-          <div
-            className={`absolute inset-0 rounded-full transition-transform ease-out ${
-              isDragging ? "duration-0" : "duration-100"
-            } ${fillClassName || "bg-text-primary"}`}
-            style={{
-              transform: `translateX(${percentage - 100}%)`,
-              ...(fillColor ? { backgroundColor: fillColor } : {}),
-            }}
-          />
-        </motion.div>
+          <div className="absolute inset-0 overflow-hidden rounded-full">
+            <div
+              className={`absolute inset-0 rounded-full transition-transform ease-out ${
+                isDragging ? "duration-0" : "duration-75"
+              } ${fillClassName || "bg-text-primary"}`}
+              style={{
+                transform: `translateX(${percentage - 100}%)`,
+                ...(fillColor ? { backgroundColor: fillColor } : {}),
+              }}
+            />
+          </div>
+          {showThumb && (
+            <div
+              className={`pointer-events-none absolute top-1/2 rounded-full bg-white shadow-[0_1px_4px_rgba(0,0,0,0.35)] transition-[opacity,transform] duration-100 ${
+                isActive ? "opacity-100 scale-100" : "opacity-0 scale-75"
+              } ${thumbSize}`}
+              style={{
+                left: `${percentage}%`,
+                transform: "translate(-50%, -50%)",
+              }}
+            />
+          )}
+        </div>
       </div>
 
       {showTime && (

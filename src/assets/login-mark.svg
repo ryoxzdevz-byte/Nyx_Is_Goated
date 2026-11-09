@@ -1,3 +1,10 @@
 <svg width="435" height="598" viewBox="0 0 435 598" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M-72.3133 578.495L-97 266.762L134.584 585V-83L432 432.886L408.489 -83" stroke-width="141" stroke="white" stroke-opacity="0.08"/>
+  <mask id="nyx-login-moon">
+    <rect width="435" height="598" fill="black"/>
+    <circle cx="220" cy="286" r="205" fill="white"/>
+    <circle cx="322" cy="214" r="178" fill="black"/>
+  </mask>
+  <circle cx="220" cy="286" r="205" fill="white" fill-opacity="0.08" mask="url(#nyx-login-moon)"/>
+  <path d="M356 154l8 23 23 8-23 8-8 23-8-23-23-8 23-8 8-23Z" fill="white" fill-opacity="0.08"/>
+  <circle cx="382" cy="388" r="10" fill="white" fill-opacity="0.08"/>
 </svg>

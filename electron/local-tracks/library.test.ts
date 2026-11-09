@@ -77,11 +77,19 @@ describe("LocalTrackLibrary", () => {
     ).rejects.toThrow();
   });
 
-  it("refuses an audio-named link that points at a non-audio file", async () => {
+  it("refuses an audio-named link that points at a non-audio file", async (ctx) => {
     const library = new LocalTrackLibrary(root);
     const secret = await source("id_rsa", "private key");
     const disguised = path.join(sources, "song.mp3");
-    await fs.symlink(secret, disguised);
+    try {
+      await fs.symlink(secret, disguised);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "EPERM") {
+        ctx.skip();
+        return;
+      }
+      throw error;
+    }
 
     const result = await library.importFiles([disguised]);
 

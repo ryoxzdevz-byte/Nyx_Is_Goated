@@ -1035,8 +1035,16 @@ class PlayerEngine {
   }
 
   public clearQueue(): void {
-    usePlayerStore.getState().clearQueue();
-    this.masterPlaylist = [];
+    const store = usePlayerStore.getState();
+    const { currentTrack, currentIndex, queue } = store;
+    const played = currentIndex > 0 ? queue.slice(0, currentIndex) : [];
+    if (currentTrack) {
+      store.setQueue([...played, currentTrack]);
+      store.setCurrentTrack(currentTrack, played.length);
+    } else {
+      store.setQueue([]);
+      store.setCurrentTrack(null, -1);
+    }
     this.originalUpcomingQueue = [];
   }
 

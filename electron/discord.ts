@@ -48,7 +48,7 @@ function builtInApplicationId(): string {
 }
 
 const DEFAULT_SETTINGS: DiscordRpcSettings = {
-  enabled: true,
+  enabled: false,
   statusDisplayType: "artist",
   showArtwork: true,
   showArtistSmallImage: true,
@@ -332,7 +332,7 @@ export class DiscordRpcManager {
 
       const dur = Math.max(0, payload.durationMs || track.durationMs || 0);
 
-      let activityName = "Liner";
+      let activityName = "Nyx";
       let detailsText = title;
       let stateText = isPaused ? `${artist} (Paused)` : artist;
       let rpcStatusDisplayType = StatusDisplayType.STATE; // 1 -> "Listening to [Artist]"
@@ -345,8 +345,8 @@ export class DiscordRpcManager {
           stateText = artist;
           break;
         case "app":
-          activityName = "Liner";
-          rpcStatusDisplayType = StatusDisplayType.NAME; // 0 -> "Listening to Liner"
+          activityName = "Nyx";
+          rpcStatusDisplayType = StatusDisplayType.NAME; // 0 -> "Listening to Nyx"
           detailsText = title;
           stateText = isPaused ? `${artist} (Paused)` : artist;
           break;
@@ -376,7 +376,7 @@ export class DiscordRpcManager {
       }
 
       const activity: SetActivity & { status_display_type?: number } = {
-        name: sanitizeText(activityName) || "Liner",
+        name: sanitizeText(activityName) || "Nyx",
         type: 2, // 2 = ActivityType.Listening -> renders "Listening to" + live progress bar
         details: sanitizeText(detailsText),
         state: sanitizeText(stateText),
@@ -404,7 +404,7 @@ export class DiscordRpcManager {
       if (this.settings.showArtwork && coverImage) {
         activity.largeImageKey = coverImage;
         activity.largeImageText =
-          sanitizeText(track.album || track.title) || "Liner";
+          sanitizeText(track.album || track.title) || "Nyx";
       }
 
       // Small artwork (Artist photo badge)
@@ -426,7 +426,7 @@ export class DiscordRpcManager {
 
       if (this.settings.showDownloadButton) {
         buttons.push({
-          label: "Download Liner",
+          label: "Liner website",
           url: "https://tryliner.fun",
         });
       }

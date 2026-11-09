@@ -19,7 +19,6 @@ import { HeartFill, HeartLine } from "@mingcute/react";
 
 import { PlayerMorphIcon, ICON_PLAY, ICON_PAUSE } from "./morphPlayerIcons";
 
-import { usePlayerState } from "../hooks/usePlayerState";
 import { playerEngine } from "../engine/playerEngine";
 import { isRadioContext, nextRepeatMode } from "../engine/radioMode";
 import { useTranslation } from "@/languages";
@@ -38,10 +37,6 @@ import { ArtistAvatar, ArtistLink } from "@/features/artist";
 import { isLocalTrackId } from "@/shared/media/local";
 import DropdownMenu from "@/shared/ui/DropdownMenu";
 import { useSongMenuItems } from "../hooks/useSongMenuItems";
-
-const PROGRESS_STEP_MS = 1000;
-const PROGRESS_JUMP_TRANSITION =
-  "transform 380ms cubic-bezier(0.22, 1, 0.36, 1)";
 
 function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
   r /= 255;
@@ -202,13 +197,54 @@ export interface MiniPlayerProps {
   embedded?: boolean;
 }
 
+function MiniPlayerTimeline({
+  fallbackDurationMs,
+  fillColor,
+  fillClassName,
+  trackBg,
+  trackActiveBg,
+}: {
+  fallbackDurationMs: number;
+  fillColor?: string;
+  fillClassName?: string;
+  trackBg?: string;
+  trackActiveBg?: string;
+}) {
+  const positionMs = usePlayerStore((s) => s.positionMs);
+  const durationMs = usePlayerStore((s) =>
+    s.durationMs > 0 ? s.durationMs : fallbackDurationMs,
+  );
+  return (
+    <TimelineSlider
+      positionMs={positionMs}
+      durationMs={durationMs}
+      onSeek={(pos) => playerEngine.seek(pos)}
+      size="xs"
+      fillColor={fillColor}
+      fillClassName={fillClassName}
+      trackBg={trackBg}
+      trackActiveBg={trackActiveBg}
+      className="!h-[14px]"
+    />
+  );
+}
+
 function MiniPlayer({
   onQueueOpenChange,
   onQueueToggle,
   onFullscreenOpen,
   embedded = false,
 }: MiniPlayerProps) {
-  const player = usePlayerState();
+  const currentTrack = usePlayerStore((s) => s.currentTrack);
+  const status = usePlayerStore((s) => s.status);
+  const repeat = usePlayerStore((s) => s.repeat);
+  const shuffle = usePlayerStore((s) => s.shuffle);
+  const playbackContext = usePlayerStore((s) => s.playbackContext);
+  const volume = usePlayerStore((s) => s.volume);
+  const playbackRate = usePlayerStore((s) => s.playbackRate);
+  const pitchSemitones = usePlayerStore((s) => s.pitchSemitones);
+  const isEqEnabled = usePlayerStore((s) => s.isEqEnabled);
+  const eqGains = usePlayerStore((s) => s.eqGains);
   const { t } = useTranslation();
   const { resolvedTheme } = useTheme();
   const isLight = resolvedTheme
@@ -217,9 +253,8 @@ function MiniPlayer({
       document.documentElement.getAttribute("data-theme") === "light";
   const miniPlayerStyle = usePlayerStore((state) => state.miniPlayerStyle);
   const usesRoundedStyle = !embedded && miniPlayerStyle === "rounded";
-  const usesBackgroundProgress = true;
   const hasPageBackdrop = useHasPageBackdrop();
-  const [accentColor, setAccentColor] = useState(
+  const [_accentColor, setAccentColor] = useState(
     isLight ? "rgba(0, 0, 0, 0.06)" : "rgba(255, 255, 255, 0.12)",
   );
 
@@ -227,7 +262,7 @@ function MiniPlayer({
     isLight ? "rgb(23, 23, 23)" : "rgb(255, 255, 255)",
   );
 
-  const coverUrl = player.currentTrack?.coverUrl || "";
+  const coverUrl = currentTrack?.coverUrl || "";
 
   useEffect(() => {
     if (!coverUrl) {
@@ -309,11 +344,10 @@ function MiniPlayer({
   );
   const [isVolumeDragging, setIsVolumeDragging] = useState(false);
 
-  const currentTrack = player.currentTrack;
-  const volumeLevel = toVolumeLevel(player.volume);
+  const volumeLevel = toVolumeLevel(volume);
   const isLocal = isLocalTrackId(currentTrack?.id);
   const isLiked = useIsTrackLiked(currentTrack?.id);
-  const eqActive = isEqActive(player.isEqEnabled, player.eqGains);
+  const eqActive = isEqActive(isEqEnabled, eqGains);
   const toggleLike = useToggleTrackLike();
 
   const handleLikeToggle = useCallback(() => {
@@ -321,27 +355,10 @@ function MiniPlayer({
     toggleLike(currentTrack.id);
   }, [currentTrack, toggleLike]);
 
-  const durationMs =
-    player.durationMs > 0
-      ? player.durationMs
-      : (player.currentTrack?.durationMs ?? 0);
-  const progress =
-    durationMs > 0
-      ? Math.min(1, Math.max(0, player.positionMs / durationMs))
-      : 0;
-
-  const isPlaying = player.status === "playing";
-  const secondProgress =
-    isPlaying && durationMs > 0
-      ? Math.min(
-          1,
-          (Math.floor(player.positionMs / PROGRESS_STEP_MS) + 1) *
-            (PROGRESS_STEP_MS / durationMs),
-        )
-      : progress;
-  const isLoading = player.status === "loading";
-  const trackTitle = player.currentTrack?.title ?? t("player.nothing_playing");
-  const trackArtists = player.currentTrack?.artists ?? t("player.choose_track");
+  const isPlaying = status === "playing";
+  const isLoading = status === "loading";
+  const trackTitle = currentTrack?.title ?? t("player.nothing_playing");
+  const trackArtists = currentTrack?.artists ?? t("player.choose_track");
 
   const isCoverLoaded = useCoverReady(coverUrl);
 
@@ -375,11 +392,10 @@ function MiniPlayer({
 
   // off -> all (loop the whole queue/playlist) -> one (loop the track) -> off
   const repeatIcon = useMemo(() => {
-    if (player.repeat === "one")
-      return <RepeatOne size={18} weight="Outline" />;
+    if (repeat === "one") return <RepeatOne size={18} weight="Outline" />;
     return <Repeat size={18} weight="Outline" />;
-  }, [player.repeat]);
-  const repeatLabel = t(`player.repeat_${player.repeat}`);
+  }, [repeat]);
+  const repeatLabel = t(`player.repeat_${repeat}`);
 
   // "on" state for the shuffle / repeat toggles: the hover tint, but opaque, so the
   // progress fill sliding underneath never changes it. Values are the hover tint
@@ -548,20 +564,6 @@ function MiniPlayer({
     };
   }, [clearVolumeHoverTimer, eqOpen, speedOpen, volumeOpen]);
 
-  const [scrubRatio, setScrubRatio] = useState<number | null>(null);
-  const activeProgress = scrubRatio !== null ? scrubRatio : secondProgress;
-
-  // anything other than the regular one-step tick (a new track, a seek, a
-  // repeat) is a jump: it eases out quickly instead of crawling linearly
-  const [shownProgress, setShownProgress] = useState(secondProgress);
-  const [progressJumped, setProgressJumped] = useState(false);
-  if (secondProgress !== shownProgress) {
-    const delta = secondProgress - shownProgress;
-    const step = durationMs > 0 ? PROGRESS_STEP_MS / durationMs : 0;
-    setProgressJumped(delta < 0 || delta > step * 1.5);
-    setShownProgress(secondProgress);
-  }
-
   return (
     <div
       ref={miniPlayerRootRef}
@@ -637,62 +639,7 @@ function MiniPlayer({
                 }`
               : "rounded-3xl border-[0.5px] border-border-tertiary bg-bg-primary"
         }`}
-        onPointerDown={(e) => {
-          if (e.button !== 0) return;
-          const target = e.target as Element | null;
-          if (
-            !target ||
-            target.closest?.(
-              "button, a, input, [role='button'], [role='slider'], .prevent-seek",
-            )
-          ) {
-            return;
-          }
-          const card = e.currentTarget;
-          const rect = card.getBoundingClientRect();
-          if (!rect.width || !durationMs) return;
-
-          const calcRatio = (clientX: number) =>
-            Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-
-          const initialRatio = calcRatio(e.clientX);
-          setScrubRatio(initialRatio);
-
-          const onMove = (ev: PointerEvent) => {
-            const r = calcRatio(ev.clientX);
-            setScrubRatio(r);
-          };
-
-          const onUp = (ev: PointerEvent) => {
-            const finalRatio = calcRatio(ev.clientX);
-            setScrubRatio(null);
-            playerEngine.seek(finalRatio * durationMs);
-            window.removeEventListener("pointermove", onMove);
-            window.removeEventListener("pointerup", onUp);
-            window.removeEventListener("pointercancel", onUp);
-          };
-
-          window.addEventListener("pointermove", onMove);
-          window.addEventListener("pointerup", onUp);
-          window.addEventListener("pointercancel", onUp);
-        }}
       >
-        {usesBackgroundProgress && (
-          <div
-            className="absolute inset-0 z-0 pointer-events-none origin-left"
-            style={{
-              backgroundColor: accentColor,
-              transform: `scaleX(${activeProgress})`,
-              transition:
-                scrubRatio !== null
-                  ? "none"
-                  : isPlaying && !progressJumped
-                    ? `transform ${PROGRESS_STEP_MS}ms linear`
-                    : PROGRESS_JUMP_TRANSITION,
-            }}
-          />
-        )}
-
         {embedded ? null : (
           <div
             className={`absolute z-30 prevent-seek ${
@@ -702,11 +649,8 @@ function MiniPlayer({
             }`}
             onPointerDown={(e) => e.stopPropagation()}
           >
-            <TimelineSlider
-              positionMs={player.positionMs}
-              durationMs={durationMs}
-              onSeek={(pos) => playerEngine.seek(pos)}
-              size="xs"
+            <MiniPlayerTimeline
+              fallbackDurationMs={currentTrack?.durationMs ?? 0}
               fillColor={accentColorSolid || undefined}
               fillClassName={
                 !accentColorSolid
@@ -716,12 +660,11 @@ function MiniPlayer({
                   : undefined
               }
               trackBg={
-                isLight ? "rgba(0, 0, 0, 0.08)" : "rgba(255, 255, 255, 0.15)"
+                isLight ? "rgba(0, 0, 0, 0.12)" : "rgba(255, 255, 255, 0.2)"
               }
               trackActiveBg={
-                isLight ? "rgba(0, 0, 0, 0.16)" : "rgba(255, 255, 255, 0.32)"
+                isLight ? "rgba(0, 0, 0, 0.12)" : "rgba(255, 255, 255, 0.2)"
               }
-              className="!h-[14px]"
             />
           </div>
         )}
@@ -804,7 +747,7 @@ function MiniPlayer({
                   lineHeight: "15px",
                 }}
               >
-                {player.currentTrack?.explicit && (
+                {currentTrack?.explicit && (
                   <span className="inline-flex h-[14px] w-[14px] shrink-0 -translate-y-px items-center justify-center rounded-[3.5px] bg-fill-strong text-[8px] font-[600] leading-none text-text-secondary">
                     <span className="translate-y-[0.5px] [text-box:trim-both_cap_alphabetic]">
                       E
@@ -813,16 +756,16 @@ function MiniPlayer({
                 )}
                 {!isLocal && (
                   <ArtistAvatar
-                    artistId={player.currentTrack?.artistId}
-                    artistList={player.currentTrack?.artistList}
+                    artistId={currentTrack?.artistId}
+                    artistList={currentTrack?.artistList}
                     size={15}
                     className="-translate-y-px"
                   />
                 )}
                 <ArtistLink
                   name={trackArtists}
-                  artistId={player.currentTrack?.artistId}
-                  artistList={player.currentTrack?.artistList}
+                  artistId={currentTrack?.artistId}
+                  artistList={currentTrack?.artistList}
                   plain={isLocal}
                   className="text-text-tertiary pointer-events-auto"
                 />
@@ -863,15 +806,13 @@ function MiniPlayer({
                 type="button"
                 aria-label="Shuffle"
                 title={
-                  player.shuffle
-                    ? t("player.shuffle_on")
-                    : t("player.shuffle_off")
+                  shuffle ? t("player.shuffle_on") : t("player.shuffle_off")
                 }
                 className={`${iconButtonClass} ${
-                  player.shuffle ? activeToggleClass : ""
+                  shuffle ? activeToggleClass : ""
                 }`}
                 onPointerDown={(e) => e.stopPropagation()}
-                onClick={() => playerEngine.setShuffle(!player.shuffle)}
+                onClick={() => playerEngine.setShuffle(!shuffle)}
               >
                 <Shuffle size={18} weight="Outline" />
               </button>
@@ -880,16 +821,13 @@ function MiniPlayer({
                 aria-label={repeatLabel}
                 title={repeatLabel}
                 className={`${iconButtonClass} ${
-                  player.repeat !== "off" ? activeToggleClass : ""
+                  repeat !== "off" ? activeToggleClass : ""
                 }`}
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={() =>
                   playerEngine.setRepeat(
                     // radio has no repeat-all: it refills instead of looping
-                    nextRepeatMode(
-                      player.repeat,
-                      isRadioContext(player.playbackContext),
-                    ),
+                    nextRepeatMode(repeat, isRadioContext(playbackContext)),
                   )
                 }
               >
@@ -928,11 +866,11 @@ function MiniPlayer({
                 ref={speedToggleRef}
                 type="button"
                 aria-label="Speed and Pitch"
-                title={`${t("player.speed_pitch")}: x${(player.playbackRate ?? 1).toFixed(2)}`}
+                title={`${t("player.speed_pitch")}: x${(playbackRate ?? 1).toFixed(2)}`}
                 className={`${iconButtonClass} ${
                   speedOpen ||
-                  Math.abs((player.playbackRate ?? 1) - 1) > 0.001 ||
-                  Math.abs(player.pitchSemitones ?? 0) > 0.001
+                  Math.abs((playbackRate ?? 1) - 1) > 0.001 ||
+                  Math.abs(pitchSemitones ?? 0) > 0.001
                     ? activeToggleClass
                     : ""
                 }`}
@@ -958,8 +896,8 @@ function MiniPlayer({
                   <PlaybackSpeed
                     size={18}
                     weight={
-                      Math.abs((player.playbackRate ?? 1) - 1) > 0.001 ||
-                      Math.abs(player.pitchSemitones ?? 0) > 0.001
+                      Math.abs((playbackRate ?? 1) - 1) > 0.001 ||
+                      Math.abs(pitchSemitones ?? 0) > 0.001
                         ? "Bold"
                         : "Outline"
                     }

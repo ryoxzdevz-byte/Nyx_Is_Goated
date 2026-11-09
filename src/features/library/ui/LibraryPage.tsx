@@ -13,6 +13,8 @@ import {
   usePlaylistsList,
   useExternalItems,
   useLikedTrackCount,
+  useLikedTracks,
+  hydrateLikedTracks,
   useYoutubeLibraryItems,
 } from "../hooks";
 import { useLikesCover } from "../hooks/useLikesCover";
@@ -21,6 +23,7 @@ import { useModalStore } from "../store/modalStore";
 import { useImportStore } from "../store/importStore";
 import { usePageBackdrop } from "@/shared/lib";
 import ImportingPlaylistCard from "./ImportingPlaylistCard";
+import PlaylistCard from "./PlaylistCard";
 import OfflineMixCard from "./OfflineMixCard";
 import { LocalFilesCard } from "../local";
 import { CachedSongsCard, useCachedTracksStore } from "../cached";
@@ -28,6 +31,8 @@ import { WifiOffLine } from "@mingcute/react";
 import { useOfflineModeStore } from "@/features/connectivity";
 import { goOnline } from "@/features/connectivity/engine/offlineController";
 import { useSavedTracks } from "../saved/hooks/useSavedTracks";
+import { useDownloadedPlaylistsStore } from "../saved";
+import { savedCoverUrl, savedTrackRecord } from "@/shared/media/saved";
 
 const PAGE_SIZE = 24;
 
@@ -500,7 +505,28 @@ function OfflineLibraryPage() {
   usePageBackdrop(likesCover, { blur: 56, dim: 0.22 });
   const source = useOfflineModeStore((state) => state.source);
   const checking = useOfflineModeStore((state) => state.checking);
-  const { tracks: savedLikes, isLoading: savedLoading } = useSavedTracks();
+  const { tracks: savedLikes } = useSavedTracks();
+  const { data: likedData, isLoading: likedLoading } = useLikedTracks({
+    enabled: false,
+  });
+  const downloadedPlaylists = useDownloadedPlaylistsStore(
+    (state) => state.playlists,
+  );
+  const loadDownloadedPlaylists = useDownloadedPlaylistsStore(
+    (state) => state.load,
+  );
+  const savedTrackIds = useMemo(
+    () => new Set(savedLikes.map((track) => track.id)),
+    [savedLikes],
+  );
+
+  useEffect(() => {
+    loadDownloadedPlaylists();
+  }, [loadDownloadedPlaylists]);
+
+  useEffect(() => {
+    hydrateLikedTracks();
+  }, []);
 
   return (
     <div className="relative h-full w-full overflow-hidden">
@@ -544,15 +570,43 @@ function OfflineLibraryPage() {
         <div className="px-[12px] pt-[14px] pb-[20px]">
           <div className="grid grid-cols-[repeat(auto-fill,minmax(165px,1fr))] gap-[24px] pb-[24px]">
             <OfflineMixCard />
-            {savedLikes.length > 0 || savedLoading ? (
+            {likedData.tracks.length > 0 || likedLoading ? (
               <LikesPlaylistCard
-                count={savedLikes.length}
-                isLoading={savedLoading}
-                onClick={() => navigate("/library/saved")}
+                count={likedData.tracks.length}
+                isLoading={likedLoading}
+                onClick={() => navigate("/library/playlist?id=likes")}
               />
             ) : null}
             <CachedSongsCard />
             <LocalFilesCard />
+            {downloadedPlaylists.map((playlist) => {
+              const localCovers = Array.from(
+                new Set(
+                  playlist.tracks.flatMap((track) => {
+                    const record = savedTrackRecord(track.id);
+                    return record?.coverFile ? [savedCoverUrl(record)] : [];
+                  }),
+                ),
+              );
+              const coverUrls =
+                localCovers.length > 0 ? localCovers : playlist.coverUrls;
+              const savedCount = playlist.tracks.filter((track) =>
+                savedTrackIds.has(track.id),
+              ).length;
+              return (
+                <PlaylistCard
+                  key={playlist.id}
+                  title={playlist.title || t("playlist.untitled_playlist")}
+                  author={t("playlist.download_progress", {
+                    saved: savedCount,
+                    total: playlist.tracks.length,
+                  })}
+                  imageUrl={coverUrls[0] ?? playlist.coverUrl}
+                  coverUrls={coverUrls}
+                  href={`/library/playlist?id=${encodeURIComponent(playlist.id)}`}
+                />
+              );
+            })}
           </div>
         </div>
       </div>

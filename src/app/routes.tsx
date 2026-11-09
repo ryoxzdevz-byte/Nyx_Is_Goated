@@ -41,6 +41,7 @@ const OFFLINE_PATHS = new Set([
   "/library/local",
   "/library/cached",
   "/library/saved",
+  "/library/playlist",
   PLAYER_PATH,
 ]);
 

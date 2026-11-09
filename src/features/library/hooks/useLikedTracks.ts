@@ -69,6 +69,45 @@ function snapshot() {
 }
 
 const SERVER_SNAPSHOT = { data: EMPTY, isLoading: true, error: false };
+const LIKED_CACHE_KEY = "liner_liked_tracks_cache_v1";
+
+let cacheOwner: string | null | undefined;
+
+function likedCacheKey(owner: string | null) {
+  return `${LIKED_CACHE_KEY}:${owner ?? "anonymous"}`;
+}
+
+function readLikedCache(owner: string | null): Track[] {
+  try {
+    const raw = localStorage.getItem(likedCacheKey(owner));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed) ? (parsed as Track[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeLikedCache(owner: string | null, tracks: Track[]) {
+  try {
+    localStorage.setItem(likedCacheKey(owner), JSON.stringify(tracks));
+  } catch {}
+}
+
+function hydrateLikedCache(owner: string | null) {
+  if (cacheOwner === owner) return;
+  cacheOwner = owner;
+  loaded = false;
+  fetchedFromServer = false;
+  loadFailed = false;
+  const tracks = readLikedCache(owner);
+  cache = tracks.length > 0 ? { tracks, total: tracks.length } : EMPTY;
+  emit(false);
+}
+
+export function hydrateLikedTracks() {
+  hydrateLikedCache(getAuthSession()?.user?.id ?? null);
+}
 
 function load(force = false): Promise<void> {
   if (request) {
@@ -77,18 +116,21 @@ function load(force = false): Promise<void> {
   }
   const session = getAuthSession();
   if (!session?.accessToken) {
+    cacheOwner = undefined;
     cache = EMPTY;
     loaded = false;
     fetchedFromServer = false;
     emit(false);
     return Promise.resolve();
   }
+  const owner = session.user?.id ?? null;
+  hydrateLikedCache(owner);
   if (loaded && !force) return Promise.resolve();
 
+  const hadCache = cache.tracks.length > 0;
   if (!loaded) emit(true);
 
   const startEpoch = likeEpoch;
-  const owner = session.user?.id ?? null;
   request = (async () => {
     const tracks: Track[] = [];
     let cursor: string | undefined;
@@ -104,6 +146,7 @@ function load(force = false): Promise<void> {
     } while (cursor);
     if ((getAuthSession()?.user?.id ?? null) !== owner) return;
     cache = { tracks, total: tracks.length };
+    writeLikedCache(owner, tracks);
     loaded = true;
     fetchedFromServer = true;
     loadFailed = false;
@@ -111,7 +154,7 @@ function load(force = false): Promise<void> {
   })()
     .catch(() => {
       if ((getAuthSession()?.user?.id ?? null) !== owner) return;
-      if (!fetchedFromServer) cache = EMPTY;
+      if (!fetchedFromServer && !hadCache) cache = EMPTY;
       loaded = fetchedFromServer;
       loadFailed = true;
     })
@@ -173,6 +216,7 @@ async function syncTrackLike(trackId: string, confirmed: boolean) {
   likeSettledEpoch.set(trackId, likeEpoch);
   optimisticOverrides.set(trackId, serverLiked);
   emit(false);
+  writeLikedCache(getAuthSession()?.user?.id ?? null, view.data.tracks);
   settleLikeWaiters(trackId, failure);
   if (sent) notifyLibraryChanged();
 }
@@ -253,15 +297,20 @@ export function likedTracksSnapshot(): {
   return { tracks: view.data.tracks, fromServer: fetchedFromServer };
 }
 
-export function useLikedTracks(_params?: { limit?: number; offset?: number }) {
+export function useLikedTracks(params?: {
+  limit?: number;
+  offset?: number;
+  enabled?: boolean;
+}) {
+  const enabled = params?.enabled ?? true;
   const state = useSyncExternalStore(
     subscribe,
     snapshot,
     () => SERVER_SNAPSHOT,
   );
   useEffect(() => {
-    void load();
-  }, []);
+    if (enabled) void load();
+  }, [enabled]);
   return state;
 }
 

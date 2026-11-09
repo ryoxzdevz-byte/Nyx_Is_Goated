@@ -36,6 +36,12 @@ import {
   type DiscordRpcStatePayload,
 } from "./discord";
 
+function createManager() {
+  const manager = new DiscordRpcManager();
+  manager.updateSettings({ enabled: true });
+  return manager;
+}
+
 function playing(
   id: string,
   coverUrl = "https://i.ytimg.com/vi/x/hq.jpg",
@@ -83,9 +89,16 @@ describe("DiscordRpcManager", () => {
     vi.useRealTimers();
   });
 
-  it("connects with Liner's built-in application id by default", async () => {
-    delete process.env.LINER_DISCORD_CLIENT_ID;
+  it("stays disconnected until the user enables rich presence", async () => {
     const manager = new DiscordRpcManager();
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(mocks.clients).toEqual([]);
+    manager.destroy();
+  });
+
+  it("connects with Liner's built-in application id when enabled", async () => {
+    delete process.env.LINER_DISCORD_CLIENT_ID;
+    const manager = createManager();
     await vi.advanceTimersByTimeAsync(1_000);
     expect(mocks.clients).toEqual(["1561339119617974362"]);
     manager.destroy();
@@ -93,7 +106,7 @@ describe("DiscordRpcManager", () => {
 
   it("ignores an application id sent in a settings patch", async () => {
     delete process.env.LINER_DISCORD_CLIENT_ID;
-    const manager = new DiscordRpcManager();
+    const manager = createManager();
     const legacyPatch: Record<string, unknown> = {
       applicationId: "987654321098765432",
     };
@@ -104,7 +117,7 @@ describe("DiscordRpcManager", () => {
   });
 
   it("collapses a burst of track changes into one update with the latest track", async () => {
-    const manager = new DiscordRpcManager();
+    const manager = createManager();
     await vi.advanceTimersByTimeAsync(5_000);
     mocks.setActivity.mockClear();
     for (const id of ["a", "b", "c", "d"]) {
@@ -120,7 +133,7 @@ describe("DiscordRpcManager", () => {
   });
 
   it("keeps updates at least 4 seconds apart", async () => {
-    const manager = new DiscordRpcManager();
+    const manager = createManager();
     await vi.advanceTimersByTimeAsync(5_000);
     mocks.setActivity.mockClear();
     manager.updateState(playing("a"));
@@ -134,7 +147,7 @@ describe("DiscordRpcManager", () => {
   });
 
   it("leaves out images discord cannot load", async () => {
-    const manager = new DiscordRpcManager();
+    const manager = createManager();
     await vi.advanceTimersByTimeAsync(5_000);
     mocks.setActivity.mockClear();
     manager.updateState(playing("a", "blob:file:///cover"));

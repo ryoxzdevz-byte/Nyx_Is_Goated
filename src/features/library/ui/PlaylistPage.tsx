@@ -27,8 +27,17 @@ import {
 } from "@/shared/ui";
 import { usePageBackdrop } from "@/shared/lib";
 import { useLikesCover } from "../hooks/useLikesCover";
-import { useSavedTracksStore } from "../saved";
-import { isSavedTrack } from "@/shared/media/saved";
+import {
+  resumeSavedTracks,
+  useDownloadedPlaylistsStore,
+  useSavedTracksStore,
+} from "../saved";
+import {
+  isSavedTrack,
+  savedRecordToTrack,
+  savedTrackRecord,
+} from "@/shared/media/saved";
+import { isLocalTrackId } from "@/shared/media/local";
 import { useAuthStore } from "@/features/auth";
 import { userDisplayName } from "@/entities/user";
 import {
@@ -55,8 +64,9 @@ import {
   useLikedTracks,
   useReorderPlaylistTracks,
   reloadLikedTracks,
+  hydrateLikedTracks,
 } from "../hooks";
-import { statusOf } from "@/features/connectivity";
+import { statusOf, useOfflineModeStore } from "@/features/connectivity";
 import { useListReorder } from "@/shared/hooks";
 import { playerEngine } from "@/features/player";
 import type { Track } from "@/shared/types";
@@ -192,13 +202,34 @@ function LibraryPlaylistContent() {
   const [searchParams] = useSearchParams();
   const id = searchParams.get("id");
   const isLikesMode = id === "likes";
+  const decodedId = id ? decodeURIComponent(id) : null;
+  const offline = useOfflineModeStore((state) => state.offline);
   const saveLikedEnabled = useSavedTracksStore((state) => state.enabled);
   useSavedTracksStore((state) => state.records);
+  const downloadedPlaylist = useDownloadedPlaylistsStore((state) =>
+    decodedId
+      ? state.playlists.find((playlist) => playlist.id === decodedId)
+      : undefined,
+  );
+  const downloadedPlaylistsHydrated = useDownloadedPlaylistsStore(
+    (state) => state.hydrated,
+  );
+  const loadDownloadedPlaylists = useDownloadedPlaylistsStore(
+    (state) => state.load,
+  );
   const currentUser = useAuthStore((state) => state.user);
   const likesOwnerName = userDisplayName(currentUser);
-  const decodedId = id ? decodeURIComponent(id) : null;
   const scrollRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation();
+  const canEditPlaylist = !isLikesMode && !offline;
+
+  useEffect(() => {
+    loadDownloadedPlaylists();
+  }, [loadDownloadedPlaylists]);
+
+  useEffect(() => {
+    if (offline && isLikesMode) hydrateLikedTracks();
+  }, [offline, isLikesMode]);
 
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
@@ -210,29 +241,42 @@ function LibraryPlaylistContent() {
     data: playlistDetail,
     isLoading: playlistLoading,
     error: playlistError,
-  } = usePlaylist(isLikesMode ? null : decodedId);
+  } = usePlaylist(isLikesMode || offline ? null : decodedId);
 
   const {
     data: likesData,
     isLoading: likesLoading,
     error: likesError,
-  } = useLikedTracks(isLikesMode ? { limit: 1000, offset: 0 } : undefined);
+  } = useLikedTracks(
+    isLikesMode
+      ? { limit: 1000, offset: 0, enabled: !offline }
+      : { enabled: false },
+  );
 
-  const loadFailed = isLikesMode
-    ? likesError && likesData.tracks.length === 0
-    : !playlistDetail &&
-      playlistError !== undefined &&
-      statusOf(playlistError) !== 404;
+  const loadFailed = offline
+    ? false
+    : isLikesMode
+      ? likesError && likesData.tracks.length === 0
+      : !playlistDetail &&
+        playlistError !== undefined &&
+        statusOf(playlistError) !== 404;
 
-  const isLoading = isLikesMode ? likesLoading : playlistLoading;
+  const isLoading = isLikesMode
+    ? likesLoading
+    : offline
+      ? !downloadedPlaylistsHydrated
+      : playlistLoading;
 
   const viewData = (() => {
     if (isLikesMode) {
       if (!likesData) return null;
-      const tracks: Track[] = (likesData.tracks ?? []).map((t) => ({
-        ...t,
-        playCount: 0,
-      }));
+      const tracks: Track[] = (likesData.tracks ?? []).map((track) => {
+        const record = savedTrackRecord(track.id);
+        return record
+          ? { ...savedRecordToTrack(record), addedAt: track.addedAt }
+          : { ...track, playCount: 0 };
+      });
+      if (tracks.length === 0) return null;
       return {
         title: t("playlist.liked_songs"),
         bio: "",
@@ -241,6 +285,33 @@ function LibraryPlaylistContent() {
         coverUrls: [] as string[],
         tracks,
         revision: 0,
+      };
+    }
+    if (offline) {
+      if (!downloadedPlaylist) return null;
+      const tracks = downloadedPlaylist.tracks.map((track) => {
+        const record = savedTrackRecord(track.id);
+        if (!record) return track;
+        const mapped = savedRecordToTrack(record);
+        const playlistItemId = track.playlistItemId ?? mapped.playlistItemId;
+        return {
+          ...mapped,
+          ...(playlistItemId ? { playlistItemId } : {}),
+        };
+      });
+      const coverUrls = Array.from(
+        new Set(tracks.map((track) => track.coverUrl).filter(Boolean)),
+      ).slice(0, 4);
+      return {
+        title: downloadedPlaylist.title || t("playlist.untitled_playlist"),
+        bio: downloadedPlaylist.description?.trim() ?? "",
+        countLabel: t("common.tracks", { count: tracks.length }),
+        coverUrl: coverUrls[0] ?? downloadedPlaylist.coverUrl ?? "",
+        coverUrls:
+          coverUrls.length > 0 ? coverUrls : downloadedPlaylist.coverUrls,
+        tracks,
+        durationMs: downloadedPlaylist.durationMs,
+        revision: downloadedPlaylist.revision,
       };
     }
     if (!playlistDetail) return null;
@@ -260,27 +331,36 @@ function LibraryPlaylistContent() {
   })();
   const likesCover = useLikesCover();
   const { data: playlistList } = usePlaylistsList();
-  const summary = isLikesMode
-    ? undefined
-    : playlistList?.playlists?.find((playlist) => playlist.id === decodedId);
+  const summary =
+    isLikesMode || offline
+      ? undefined
+      : playlistList?.playlists?.find((playlist) => playlist.id === decodedId);
   const preview = isLikesMode
     ? {
         title: t("playlist.liked_songs"),
         subtitle: likesOwnerName || undefined,
         coverUrls: [] as string[],
       }
-    : summary
-      ? {
-          title: summary.title || t("playlist.untitled_playlist"),
-          subtitle: summary.description?.trim() || undefined,
-          coverUrls:
-            summary.coverUrls?.length > 0
-              ? summary.coverUrls
-              : summary.coverUrl
-                ? [summary.coverUrl]
-                : [],
-        }
-      : undefined;
+    : offline
+      ? viewData
+        ? {
+            title: viewData.title,
+            subtitle: viewData.bio || undefined,
+            coverUrls: viewData.coverUrls,
+          }
+        : undefined
+      : summary
+        ? {
+            title: summary.title || t("playlist.untitled_playlist"),
+            subtitle: summary.description?.trim() || undefined,
+            coverUrls:
+              summary.coverUrls?.length > 0
+                ? summary.coverUrls
+                : summary.coverUrl
+                  ? [summary.coverUrl]
+                  : [],
+          }
+        : undefined;
   usePageBackdrop(
     isLikesMode
       ? likesCover
@@ -325,6 +405,37 @@ function LibraryPlaylistContent() {
   const currentTracks = useMemo(() => {
     return optimisticTracks ?? viewData?.tracks ?? [];
   }, [optimisticTracks, viewData?.tracks]);
+
+  const downloadableTracks = useMemo(
+    () => currentTracks.filter((track) => !isLocalTrackId(track.id)),
+    [currentTracks],
+  );
+  const savedDownloadCount = downloadableTracks.filter((track) =>
+    isSavedTrack(track.id),
+  ).length;
+  const downloadComplete =
+    downloadableTracks.length > 0 &&
+    savedDownloadCount === downloadableTracks.length;
+  const needsDownloadUpdate = Boolean(
+    downloadedPlaylist &&
+    viewData &&
+    downloadedPlaylist.revision !== viewData.revision,
+  );
+  const downloadLabel = !downloadedPlaylist
+    ? t("playlist.download_all")
+    : downloadComplete
+      ? needsDownloadUpdate
+        ? t("playlist.update_download")
+        : t("playlist.downloaded")
+      : t("playlist.download_progress", {
+          saved: savedDownloadCount,
+          total: downloadableTracks.length,
+        });
+  const downloadDisabled =
+    offline ||
+    !decodedId ||
+    downloadableTracks.length === 0 ||
+    (downloadComplete && !needsDownloadUpdate);
 
   const sort = useTrackSort(currentTracks, id);
   const sortedTracks = sort.sorted;
@@ -402,9 +513,50 @@ function LibraryPlaylistContent() {
     }
   }, [decodedId, viewData?.title, toast, t]);
 
+  const handleDownload = useCallback(() => {
+    if (!decodedId || !viewData || offline) return;
+    const saved = useDownloadedPlaylistsStore.getState().save({
+      id: decodedId,
+      title: viewData.title,
+      description: viewData.bio,
+      coverUrl: viewData.coverUrl,
+      coverUrls: viewData.coverUrls,
+      revision: viewData.revision,
+      durationMs: viewData.durationMs,
+      trackCount: downloadableTracks.length,
+      tracks: downloadableTracks,
+    });
+    if (!saved) return;
+    resumeSavedTracks();
+    toast(
+      downloadedPlaylist
+        ? t("playlist.download_updated")
+        : t("playlist.download_started"),
+      "info",
+      { description: viewData.title },
+    );
+  }, [
+    decodedId,
+    viewData,
+    offline,
+    downloadableTracks,
+    downloadedPlaylist,
+    toast,
+    t,
+  ]);
+
+  const handleRemoveDownload = useCallback(() => {
+    if (!decodedId) return;
+    useDownloadedPlaylistsStore.getState().remove(decodedId);
+    resumeSavedTracks();
+    toast(t("playlist.remove_download_done"), "checkmark", {
+      description: viewData?.title,
+    });
+  }, [decodedId, viewData?.title, toast, t]);
+
   const handleReorderCommit = useCallback(
     (fromIndex: number, toIndex: number, movingTrack: Track) => {
-      if (!decodedId || !viewData || isLikesMode) return;
+      if (!decodedId || !viewData || isLikesMode || offline) return;
       if (fromIndex === toIndex || !movingTrack.playlistItemId) return;
 
       const nextList = [...currentTracks];
@@ -423,7 +575,7 @@ function LibraryPlaylistContent() {
         revision: viewData.revision,
       });
     },
-    [currentTracks, decodedId, isLikesMode, reorderTracks, viewData],
+    [currentTracks, decodedId, isLikesMode, offline, reorderTracks, viewData],
   );
 
   const {
@@ -572,11 +724,21 @@ function LibraryPlaylistContent() {
   }
 
   if (!isLoading && !viewData) {
+    const missingOffline = offline && !isLikesMode;
     return (
-      <div className="h-full w-full bg-transparent flex items-center justify-center">
-        <span className="text-text-secondary">
-          {isLikesMode ? t("playlist.likes_empty") : t("playlist.not_found")}
+      <div className="h-full w-full bg-transparent flex flex-col items-center justify-center gap-[6px] px-[24px] text-center">
+        <span className="text-title font-[600] text-text-primary">
+          {missingOffline
+            ? t("playlist.not_downloaded")
+            : isLikesMode
+              ? t("playlist.likes_empty")
+              : t("playlist.not_found")}
         </span>
+        {missingOffline ? (
+          <span className="text-body text-text-secondary">
+            {t("playlist.not_downloaded_desc")}
+          </span>
+        ) : null}
       </div>
     );
   }
@@ -623,11 +785,11 @@ function LibraryPlaylistContent() {
                     <h1
                       ref={titleRef}
                       className={`${HERO_TITLE_CLASS} ${
-                        isLikesMode
-                          ? ""
-                          : "cursor-text outline-none transition-colors"
+                        canEditPlaylist
+                          ? "cursor-text outline-none transition-colors"
+                          : ""
                       } ${isEditingTitle ? "bg-border-alpha-14 rounded-[4px] -ml-[4px] px-[4px]" : ""}`}
-                      contentEditable={isLikesMode ? false : isEditingTitle}
+                      contentEditable={canEditPlaylist && isEditingTitle}
                       suppressContentEditableWarning
                       onBlur={(e) => {
                         if (!isEditingTitle) return;
@@ -655,7 +817,7 @@ function LibraryPlaylistContent() {
                         }
                       }}
                       onClick={() => {
-                        if (!isLikesMode) setIsEditingTitle(true);
+                        if (canEditPlaylist) setIsEditingTitle(true);
                       }}
                     >
                       {viewData.title}
@@ -666,15 +828,20 @@ function LibraryPlaylistContent() {
                       likesOwnerName ? (
                         <p className={HERO_SUBTITLE_CLASS}>{likesOwnerName}</p>
                       ) : undefined
-                    ) : viewData.bio || isEditingDescription ? (
+                    ) : viewData.bio ||
+                      (canEditPlaylist && isEditingDescription) ? (
                       <p
                         ref={descriptionRef}
-                        className={`${HERO_SUBTITLE_CLASS} cursor-text outline-none transition-colors empty:min-h-[21px] ${
+                        className={`${HERO_SUBTITLE_CLASS} outline-none transition-colors empty:min-h-[21px] ${
+                          canEditPlaylist ? "cursor-text" : ""
+                        } ${
                           isEditingDescription
                             ? "bg-border-alpha-14 rounded-[4px] -ml-[4px] px-[4px]"
                             : ""
                         }`}
-                        contentEditable={isEditingDescription}
+                        contentEditable={
+                          canEditPlaylist && isEditingDescription
+                        }
                         suppressContentEditableWarning
                         onBlur={(e) => {
                           if (!isEditingDescription) return;
@@ -702,11 +869,13 @@ function LibraryPlaylistContent() {
                             setIsEditingDescription(false);
                           }
                         }}
-                        onClick={() => setIsEditingDescription(true)}
+                        onClick={() => {
+                          if (canEditPlaylist) setIsEditingDescription(true);
+                        }}
                       >
                         {viewData.bio}
                       </p>
-                    ) : (
+                    ) : canEditPlaylist ? (
                       <button
                         type="button"
                         onClick={() => setIsEditingDescription(true)}
@@ -714,7 +883,7 @@ function LibraryPlaylistContent() {
                       >
                         {t("common.add_description")}
                       </button>
-                    )
+                    ) : undefined
                   }
                   meta={
                     <div className="flex items-center flex-wrap gap-[6px]">
@@ -787,6 +956,27 @@ function LibraryPlaylistContent() {
                       >
                         <LuShuffle size={18} />
                       </Button>
+                      {!isLikesMode ? (
+                        <Button
+                          variant="secondary"
+                          onClick={handleDownload}
+                          disabled={downloadDisabled}
+                          className={`${HERO_BUTTON_CLASS} ${HERO_GLASS_BUTTON_CLASS} max-w-[220px] px-[16px]`}
+                          title={downloadLabel}
+                        >
+                          {downloadComplete && !needsDownloadUpdate ? (
+                            <CheckLine
+                              size={16}
+                              className="shrink-0 text-emerald-400"
+                            />
+                          ) : (
+                            <DownloadLine size={16} className="shrink-0" />
+                          )}
+                          <span className="truncate">
+                            {t("playlist.download_all")}
+                          </span>
+                        </Button>
+                      ) : null}
                     </>
                   }
                   trailingActions={
@@ -853,40 +1043,58 @@ function LibraryPlaylistContent() {
                             </Button>
                           }
                           items={[
-                            {
-                              id: "rename",
-                              icon: <LuPencil size={15} />,
-                              label: t("common.rename"),
-                              onClick: () => setIsEditingTitle(true),
-                            },
-                            {
-                              id: "edit-description",
-                              icon: <LuText size={15} />,
-                              label: t("common.edit_description"),
-                              onClick: () => setIsEditingDescription(true),
-                            },
-                            {
-                              id: "share",
-                              icon: <ShareForwardLine size={15} />,
-                              label: t("common.share"),
-                              onClick: handleShare,
-                            },
-                            {
-                              id: "delete",
-                              icon: <LuTrash2 size={15} />,
-                              label: t("common.delete"),
-                              danger: true,
-                              onClick: () => {
-                                if (!decodedId) return;
-                                useModalStore.getState().openRemoveFromLibrary({
-                                  id: decodedId,
-                                  title: viewData.title,
-                                  coverUrl: viewData.coverUrl,
-                                  type: "playlist",
-                                  isOwned: true,
-                                });
-                              },
-                            },
+                            ...(!offline
+                              ? [
+                                  {
+                                    id: "rename",
+                                    icon: <LuPencil size={15} />,
+                                    label: t("common.rename"),
+                                    onClick: () => setIsEditingTitle(true),
+                                  },
+                                  {
+                                    id: "edit-description",
+                                    icon: <LuText size={15} />,
+                                    label: t("common.edit_description"),
+                                    onClick: () =>
+                                      setIsEditingDescription(true),
+                                  },
+                                  {
+                                    id: "share",
+                                    icon: <ShareForwardLine size={15} />,
+                                    label: t("common.share"),
+                                    onClick: handleShare,
+                                  },
+                                  {
+                                    id: "delete",
+                                    icon: <LuTrash2 size={15} />,
+                                    label: t("common.delete"),
+                                    danger: true,
+                                    onClick: () => {
+                                      if (!decodedId) return;
+                                      useModalStore
+                                        .getState()
+                                        .openRemoveFromLibrary({
+                                          id: decodedId,
+                                          title: viewData.title,
+                                          coverUrl: viewData.coverUrl,
+                                          type: "playlist",
+                                          isOwned: true,
+                                        });
+                                    },
+                                  },
+                                ]
+                              : []),
+                            ...(downloadedPlaylist
+                              ? [
+                                  {
+                                    id: "remove-download",
+                                    icon: <LuTrash2 size={15} />,
+                                    label: t("playlist.remove_download"),
+                                    danger: true,
+                                    onClick: handleRemoveDownload,
+                                  },
+                                ]
+                              : []),
                           ]}
                         />
                       )}
@@ -968,6 +1176,7 @@ function LibraryPlaylistContent() {
                       // reordering a filtered view would be ambiguous, so it waits for the full list
                       const canReorder = Boolean(
                         !isLikesMode &&
+                        !offline &&
                         decodedId &&
                         track.playlistItemId &&
                         !isFiltering &&

@@ -223,6 +223,18 @@ describe("saved track sync", () => {
     expect(t.removed).toEqual([["a"], ["b"]]);
   });
 
+  it("keeps pinned playlist tracks and removes them once unpinned", async () => {
+    const t = setup();
+    t.sync.setRecords([record("liked"), record("pinned"), record("stale")]);
+
+    await t.sync.reconcile([track("liked")], true, [track("pinned")]);
+    expect(t.removed).toEqual([["stale"]]);
+
+    await t.sync.reconcile([track("liked")], true, []);
+    expect(t.removed).toEqual([["stale"], ["pinned"]]);
+    expect(t.sync.records().map((entry) => entry.trackId)).toEqual(["liked"]);
+  });
+
   it("never removes anything when the liked list failed to load", async () => {
     const t = setup();
     t.sync.setRecords([record("a")]);

@@ -35,6 +35,10 @@ import {
   resolveKeepOnSignOut,
   type SignOutChoice,
 } from "../engine/signOutChoice";
+import {
+  downloadedPlaylistTracks,
+  useDownloadedPlaylistsStore,
+} from "../downloads/downloadedPlaylistsStore";
 
 export const SAVE_LIKED_ENABLED_KEY = "liner_save_liked_enabled";
 export const SAVED_LIMIT_KEY = "liner_saved_limit_bytes";
@@ -168,7 +172,9 @@ const sync = createSavedTrackSync({
   waitForOnline,
   isPlayerBusy: () => usePlayerStore.getState().status === "loading",
   currentTrackId: () => usePlayerStore.getState().currentTrack?.id ?? null,
-  isEnabled: () => useSavedTracksStore.getState().enabled,
+  isEnabled: () =>
+    useSavedTracksStore.getState().enabled ||
+    downloadedPlaylistTracks().length > 0,
   limitBytes: () => useSavedTracksStore.getState().limitBytes,
   usage: async () => {
     const usage = await window.linerElectron?.savedTracksUsage();
@@ -256,6 +262,7 @@ export const useSavedTracksStore = create<SavedTracksState>((set, get) => ({
     const removing = get().records.map((record) => record.trackId);
     writeStorage(SAVE_LIKED_ENABLED_KEY, "0");
     set({ enabled: false });
+    useDownloadedPlaylistsStore.getState().clear();
     if (current && removing.includes(current))
       await playerEngine.stopAndClear().catch(() => {});
     return sync.removeClaimed();
@@ -278,10 +285,17 @@ function scheduleReconcile(delay = RECONCILE_DEBOUNCE_MS, resumeNow = false) {
     const resume = resumeAfterReconcile;
     resumeAfterReconcile = false;
     const { tracks: liked, fromServer } = likedTracksSnapshot();
-    void sync.reconcile(liked, fromServer).then(() => {
-      if (resume) void sync.resume();
-    });
+    void sync
+      .reconcile(liked, fromServer, downloadedPlaylistTracks())
+      .then(() => {
+        if (resume) void sync.resume();
+      });
   }, delay);
+}
+
+export function resumeSavedTracks() {
+  sync.forgetFailures();
+  scheduleReconcile(0, true);
 }
 
 let started = false;
@@ -293,8 +307,12 @@ export function initSavedTracks() {
   registerSignOutTask(async () => {
     const { signOutChoice, signOutAnswer } = useSavedTracksStore.getState();
     useSavedTracksStore.setState({ signOutAnswer: null });
-    await sync.signOut(resolveKeepOnSignOut(signOutChoice, signOutAnswer));
+    const keep = resolveKeepOnSignOut(signOutChoice, signOutAnswer);
+    await sync.signOut(keep);
+    if (!keep) useDownloadedPlaylistsStore.getState().clear();
   });
+  useDownloadedPlaylistsStore.getState().load();
+  useDownloadedPlaylistsStore.subscribe(() => scheduleReconcile());
   void useSavedTracksStore
     .getState()
     .load()

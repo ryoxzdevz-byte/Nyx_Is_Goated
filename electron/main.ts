@@ -11,7 +11,6 @@ import {
   powerSaveBlocker,
 } from "electron";
 import type { Display, Rectangle } from "electron";
-import { autoUpdater } from "electron-updater";
 import path from "node:path";
 import fs from "node:fs";
 import os from "node:os";
@@ -53,8 +52,6 @@ import { registerAuthSessionIpc } from "./auth-session-ipc.js";
 import { ThumbarController } from "./thumbar.js";
 import { OverlayManager } from "./overlay.js";
 import { detectCompositor } from "./compositor/index.js";
-import { BundleManager } from "./bundle-manager.js";
-import { createBundleErrorStamp } from "./bundle-stamp.js";
 import { createSleepBlocker } from "./sleep-blocker.js";
 import { keepsOwnCors, needsOpenCors, withOpenCors } from "./cors.js";
 import { createShutdown } from "./shutdown.js";
@@ -131,7 +128,6 @@ let mainWindow: BrowserWindow | null = null;
 let touchBarManager: TouchBarManager | null = null;
 let overlayManager: OverlayManager | null = null;
 let thumbar: ThumbarController | null = null;
-let bundleManager: BundleManager | null = null;
 let discordRpcManager: DiscordRpcManager | null = null;
 let poTokenService: PoTokenService | null = null;
 let windowStateStore: ReturnType<typeof createWindowStateStore> | null = null;
@@ -276,7 +272,7 @@ function createWindow() {
     { width: MIN_WINDOW_WIDTH, height: MIN_WINDOW_HEIGHT },
   );
   mainWindow = new BrowserWindow({
-    title: "Liner",
+    title: "Nyx",
     icon: path.join(process.env.VITE_PUBLIC!, "icon.png"),
     ...(restoredBounds ?? {
       width: DEFAULT_WINDOW_WIDTH,
@@ -296,8 +292,12 @@ function createWindow() {
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       nodeIntegration: false,
+      nodeIntegrationInWorker: false,
+      nodeIntegrationInSubFrames: false,
       contextIsolation: true,
       sandbox: false,
+      webviewTag: false,
+      allowRunningInsecureContent: false,
       devTools: true,
       backgroundThrottling: false, // keeps audio timer and playback ticks running when app is in background or another workspace
       webSecurity: true,
@@ -440,26 +440,6 @@ function createWindow() {
     }
   });
 
-  const bundleErrorStamp = createBundleErrorStamp(
-    {
-      getVersionInfo: () => {
-        const active = bundleManager?.getActiveState();
-        return {
-          version: active?.bundleVersion || app.getVersion(),
-          isOta: Boolean(active),
-          sha256: active?.sha256 || null,
-        };
-      },
-      peekUpdate: async () =>
-        bundleManager ? bundleManager.peekUpdate() : { kind: "inactive" },
-    },
-    { emit: (line) => mainWindow?.webContents.send("bundle:stamp", line) },
-  );
-  mainWindow.webContents.on("console-message", (_event, level) => {
-    if (level >= 3) bundleErrorStamp.onRendererError();
-  });
-  mainWindow.on("closed", () => bundleErrorStamp.dispose());
-
   mainWindow.webContents.on("before-input-event", (_event, input) => {
     if (input.type === "keyDown") {
       if (
@@ -477,17 +457,8 @@ function createWindow() {
   if (process.env.VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
   } else {
-    bundleManager = new BundleManager({
-      defaultRendererDist: RENDERER_DIST,
-    });
-    bundleManager.setMainWindow(mainWindow);
-    const manager = bundleManager;
-    const win = mainWindow;
-    void (async () => {
-      if (app.isPackaged)
-        await manager.updateBeforeLaunch().catch(() => undefined);
-      if (!win.isDestroyed()) win.loadFile(manager.getEffectiveIndexPath());
-    })();
+    // Nyx: always load the bundled renderer. Remote/OTA code loading is disabled.
+    void mainWindow.loadFile(path.join(RENDERER_DIST, "index.html"));
   }
 
   mainWindow.once("ready-to-show", () => {
@@ -527,7 +498,7 @@ function createWindow() {
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   console.warn(
-    "\n\x1b[33m[Liner]\x1b[0m Another instance of Liner is already running in the background. Exiting development instance.\nTo run in development mode, please close the running Liner application first.\n",
+    "\n\x1b[33m[Nyx]\x1b[0m Another instance of Nyx is already running in the background. Exiting development instance.\nTo run in development mode, please close the running Nyx application first.\n",
   );
   app.quit();
 } else {
@@ -568,7 +539,15 @@ if (!gotTheLock) {
       );
     }
 
-    // register liner:// so browsers / xdg-open route share links to us
+    // Nyx hardening: this music player never needs camera, microphone,
+    // geolocation, notifications, MIDI, clipboard reading or any other
+    // browser permission, so deny every request and permission check.
+    session.defaultSession.setPermissionRequestHandler(
+      (_webContents, _permission, callback) => callback(false),
+    );
+    session.defaultSession.setPermissionCheckHandler(() => false);
+
+    // register nyx:// so browsers / xdg-open route share links to us
     // (on linux the packaged .desktop carries the mime handler too)
     if (process.defaultApp && process.argv.length >= 2) {
       app.setAsDefaultProtocolClient(DEEP_LINK_SCHEME, process.execPath, [
@@ -611,10 +590,8 @@ if (!gotTheLock) {
       path.join(__dirname, "preload.cjs"),
       RENDERER_DIST,
     );
-    overlayManager.setIndexPathResolver(
-      () =>
-        bundleManager?.getEffectiveIndexPath() ??
-        path.join(RENDERER_DIST, "index.html"),
+    overlayManager.setIndexPathResolver(() =>
+      path.join(RENDERER_DIST, "index.html"),
     );
     overlayManager.setMainWindow(mainWindow);
     // F in the overlay: the window grows back out of the pill (windows 11 + add-on)
@@ -1902,153 +1879,40 @@ if (!gotTheLock) {
       },
     );
 
-    // updater config: production github releases only, no prereleases or auto-install on close
-    autoUpdater.autoDownload = false;
-    autoUpdater.autoInstallOnAppQuit = false;
-    autoUpdater.allowPrerelease = false;
-    autoUpdater.allowDowngrade = false;
+    // Nyx security hardening: automatic updates and OTA bundle loading are
+    // permanently disabled in this local build. The app never downloads or
+    // executes code from updates.tryliner.fun or GitHub releases.
+    handleTrusted("updater:check-for-updates", async () => ({
+      available: false,
+      error: "Automatic updates are disabled in this Nyx build",
+    }));
 
-    autoUpdater.on("update-available", (info) => {
-      mainWindow?.webContents.send("updater:update-available", {
-        version: info.version,
-        releaseDate: info.releaseDate,
-        releaseNotes:
-          typeof info.releaseNotes === "string" ? info.releaseNotes : undefined,
-      });
-    });
+    handleTrusted("updater:download-update", async () => ({
+      success: false,
+      error: "Automatic updates are disabled in this Nyx build",
+    }));
 
-    autoUpdater.on("download-progress", (progressObj) => {
-      mainWindow?.webContents.send("updater:download-progress", {
-        percent: Math.round(progressObj.percent * 10) / 10,
-        transferred: progressObj.transferred,
-        total: progressObj.total,
-        bytesPerSecond: progressObj.bytesPerSecond,
-      });
-    });
+    handleTrusted("updater:quit-and-install", () => false);
 
-    autoUpdater.on("update-downloaded", (info) => {
-      mainWindow?.webContents.send("updater:update-downloaded", {
-        version: info.version,
-      });
-    });
+    ipcMain.handle("bundle:check", async () => ({
+      available: false,
+      error: "OTA bundles are disabled in this Nyx build",
+    }));
 
-    autoUpdater.on("error", (err) => {
-      console.error(
-        "\x1b[31m updater \x1b[0m autoUpdater error:",
-        err?.message || err,
-      );
-      mainWindow?.webContents.send("updater:error", {
-        message: err?.message || "Update check failed",
-      });
-    });
+    ipcMain.handle("bundle:download-and-install", async () => ({
+      success: false,
+      error: "OTA bundles are disabled in this Nyx build",
+    }));
 
-    handleTrusted("updater:check-for-updates", async () => {
-      if (!app.isPackaged) {
-        return { available: false, error: "Updater is disabled in dev mode" };
-      }
-      try {
-        const result = await autoUpdater.checkForUpdates();
-        return {
-          available: Boolean(
-            result?.updateInfo?.version &&
-            result.updateInfo.version !== app.getVersion(),
-          ),
-          version: result?.updateInfo?.version,
-          releaseNotes:
-            typeof result?.updateInfo?.releaseNotes === "string"
-              ? result.updateInfo.releaseNotes
-              : undefined,
-        };
-      } catch (err: any) {
-        return {
-          available: false,
-          error: err?.message || "Failed to check for updates",
-        };
-      }
-    });
-
-    handleTrusted("updater:download-update", async () => {
-      if (!app.isPackaged) {
-        return { success: false, error: "Updater is disabled in dev mode" };
-      }
-      try {
-        await autoUpdater.downloadUpdate();
-        return { success: true };
-      } catch (err: any) {
-        return {
-          success: false,
-          error: err?.message || "Failed to download update",
-        };
-      }
-    });
-
-    handleTrusted("updater:quit-and-install", () => {
-      setImmediate(() => {
-        autoUpdater.quitAndInstall(false, true);
-      });
-      return true;
-    });
-
-    // OTA bundle updater IPC handlers
-    ipcMain.handle("bundle:check", async () => {
-      if (!bundleManager) {
-        return {
-          available: false,
-          error: "Bundle updater inactive (dev mode)",
-        };
-      }
-      return await bundleManager.checkForUpdates();
-    });
-
-    ipcMain.handle("bundle:download-and-install", async (_event, manifest) => {
-      if (!bundleManager) {
-        return { success: false, error: "Bundle updater inactive (dev mode)" };
-      }
-      return await bundleManager.downloadAndInstall(manifest);
-    });
-
-    ipcMain.handle("bundle:hot-swap", () => {
-      if (!bundleManager) return false;
-      return bundleManager.hotSwap();
-    });
-
-    ipcMain.handle("bundle:rollback", () => {
-      if (!bundleManager) return false;
-      return bundleManager.rollback();
-    });
-
-    ipcMain.handle("bundle:get-status", () => {
-      const activeState = bundleManager?.getActiveState?.() || null;
-      return {
-        appVersion: app.getVersion(),
-        bundleVersion: activeState?.bundleVersion || app.getVersion(),
-        isOta: Boolean(activeState),
-        sha256: activeState?.sha256 || null,
-        effectivePath: bundleManager
-          ? bundleManager.getEffectiveIndexPath()
-          : RENDERER_DIST,
-      };
-    });
-
-    // automatic update check after window initialization (packaged app only)
-    if (app.isPackaged) {
-      setTimeout(() => {
-        autoUpdater.checkForUpdates().catch((err) => {
-          console.error(
-            "\x1b[31m updater \x1b[0m background check error:",
-            err?.message || err,
-          );
-        });
-      }, 4000);
-
-      // check for OTA bundles every 15 minutes silently in background
-      setInterval(
-        () => {
-          bundleManager?.checkForUpdates().catch(() => {});
-        },
-        15 * 60 * 1000,
-      );
-    }
+    ipcMain.handle("bundle:hot-swap", () => false);
+    ipcMain.handle("bundle:rollback", () => false);
+    ipcMain.handle("bundle:get-status", () => ({
+      appVersion: app.getVersion(),
+      bundleVersion: app.getVersion(),
+      isOta: false,
+      sha256: null,
+      effectivePath: RENDERER_DIST,
+    }));
 
     app.on("activate", () => {
       if (

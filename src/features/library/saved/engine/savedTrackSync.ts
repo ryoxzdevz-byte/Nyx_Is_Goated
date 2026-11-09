@@ -100,6 +100,7 @@ export function createSavedTrackSync(deps: SavedTrackSyncDeps) {
   let records: SavedTrackRecord[] = [];
   let queue: Track[] = [];
   let liked: Track[] = [];
+  let pinned: Track[] = [];
   let authoritative = false;
   let startAt = deps.now() + START_DELAY_MS;
   let pausedUntil = 0;
@@ -121,6 +122,8 @@ export function createSavedTrackSync(deps: SavedTrackSyncDeps) {
   const remember = () => deps.writeMemory(memory);
 
   const savedIds = () => new Set(records.map((record) => record.trackId));
+
+  const wantedTracks = () => wantedForSaving([...liked, ...pinned]);
 
   const isGivenUp = (trackId: string) => {
     const since = memory.givenUp[trackId];
@@ -166,7 +169,7 @@ export function createSavedTrackSync(deps: SavedTrackSyncDeps) {
   };
 
   const claimWanted = () => {
-    const wanted = new Set(wantedForSaving(liked).map((track) => track.id));
+    const wanted = new Set(wantedTracks().map((track) => track.id));
     let changed = false;
     for (const record of records) {
       if (!wanted.has(record.trackId) || claimed.has(record.trackId)) continue;
@@ -189,14 +192,14 @@ export function createSavedTrackSync(deps: SavedTrackSyncDeps) {
 
   const rebuildQueue = () => {
     const saved = savedIds();
-    queue = wantedForSaving(liked).filter(
+    queue = wantedTracks().filter(
       (track) => !saved.has(track.id) && !isGivenUp(track.id),
     );
   };
 
   const applyRemovals = async () => {
     if (!authoritative || records.length === 0) return;
-    const wanted = new Set(wantedForSaving(liked).map((track) => track.id));
+    const wanted = new Set(wantedTracks().map((track) => track.id));
     const playing = deps.currentTrackId();
     const stale = claimedRecords()
       .map((record) => record.trackId)
@@ -395,9 +398,14 @@ export function createSavedTrackSync(deps: SavedTrackSyncDeps) {
     records: () => records,
     claimedRecords,
     sharedRecords,
-    async reconcile(nextLiked: Track[], isAuthoritative: boolean) {
+    async reconcile(
+      nextLiked: Track[],
+      isAuthoritative: boolean,
+      nextPinned: Track[] = [],
+    ) {
       syncClaims();
       liked = nextLiked;
+      pinned = nextPinned;
       authoritative = isAuthoritative;
       if (authoritative) claimWanted();
       await applyRemovals();
@@ -423,6 +431,7 @@ export function createSavedTrackSync(deps: SavedTrackSyncDeps) {
       generation += 1;
       queue = [];
       liked = [];
+      pinned = [];
       authoritative = false;
       pendingRemovals = new Set();
       memory = { ...memory, attempts: {}, givenUp: {} };

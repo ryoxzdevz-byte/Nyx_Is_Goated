@@ -1,6 +1,6 @@
 /**
- * Client Telemetry & Metrics Configuration for Liner Desktop.
- * Easily toggled via environment variables or runtime switch.
+ * Client Telemetry & Metrics Configuration for Nyx.
+ * Nyx never sends telemetry or crash reports anywhere.
  */
 
 export interface TelemetryConfig {
@@ -16,13 +16,8 @@ export interface TelemetryConfig {
   flushIntervalMs: number;
 }
 
-const DEFAULT_INGEST_URL =
-  (import.meta.env.VITE_MONITOR_INGEST_URL as string | undefined) ||
-  "https://monitor.tryliner.fun/v1/ingest";
-
-const DEFAULT_ERROR_URL =
-  (import.meta.env.VITE_MONITOR_ERROR_URL as string | undefined) ||
-  "https://monitor.tryliner.fun/v1/client/error";
+const DEFAULT_INGEST_URL = "";
+const DEFAULT_ERROR_URL = "";
 
 const STORAGE_KEY = "liner_telemetry_opt_in";
 

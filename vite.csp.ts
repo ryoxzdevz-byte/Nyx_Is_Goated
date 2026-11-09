@@ -10,8 +10,8 @@ function contentSecurityPolicy(isDev: boolean): string {
   return [
     "default-src 'self'",
     `script-src ${scriptSources.join(" ")}`,
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "font-src 'self' data: https://fonts.gstatic.com",
+    "style-src 'self' 'unsafe-inline'",
+    "font-src 'self' data:",
     "img-src 'self' * http: https: data: blob: liner-local:",
     "media-src 'self' * http: https: data: blob: liner-local:",
     "connect-src 'self' * http: https: ws: wss: data: blob:",

@@ -20,7 +20,7 @@ import {
 
 export type OverlayPosition = "top-left" | "top-center" | "top-right";
 
-const OVERLAY_TITLE = "Liner Overlay";
+const OVERLAY_TITLE = "Nyx Overlay";
 const OVERLAY_MARGIN = 20;
 const TOGGLE_ACTION = "toggle-overlay";
 const LIKE_ACTION = "like-track";

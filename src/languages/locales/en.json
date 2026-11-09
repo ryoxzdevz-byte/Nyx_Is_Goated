@@ -43,7 +43,7 @@
   },
   "common": {
     "app": {
-      "name": "Liner",
+      "name": "Nyx",
       "description": "More of what you like",
       "version": "Version 0.1.0"
     },
@@ -246,12 +246,12 @@
     "search_music": "Search music",
     "local": {
       "title": "On this device",
-      "subtitle": "Your own audio files. They stay on this computer and never go to YouTube or Liner servers.",
+      "subtitle": "Your own audio files. They stay on this computer and never go to YouTube or Nyx servers.",
       "add_files": "Add files",
       "importing": "Adding…",
       "empty_title": "No local files yet",
       "empty_subtitle": "Add MP3, FLAC, M4A, OGG, OPUS or WAV files, or drop them anywhere in the window.",
-      "drop_title": "Drop to add to Liner",
+      "drop_title": "Drop to add to Nyx",
       "drop_subtitle": "Files are copied to this device only",
       "drop_count_one": "{count} file",
       "drop_count_other": "{count} files",
@@ -266,7 +266,7 @@
       "remove": "Remove from device",
       "remove_all": "Remove all imported files",
       "remove_all_title": "Remove all local music?",
-      "remove_all_desc": "{tracks} ({size}) will be removed from Liner, together with their covers. Your original files stay where they are.",
+      "remove_all_desc": "{tracks} ({size}) will be removed from Nyx, together with their covers. Your original files stay where they are.",
       "removed_all": "Local music removed"
     },
     "offline_mix": {
@@ -274,7 +274,7 @@
     },
     "cached": {
       "title": "Cached songs",
-      "subtitle": "Songs Liner kept while you listened. They play without a connection until the cache makes room for new ones.",
+      "subtitle": "Songs Nyx kept while you listened. They play without a connection until the cache makes room for new ones.",
       "clear_all": "Clear cached songs",
       "empty_title": "No cached songs yet",
       "empty_subtitle": "Songs you play are kept here for a while, so they start instantly and work offline."
@@ -291,7 +291,7 @@
     "sign_in_to_account": "Sign in to your account",
     "auth_title_login": "Your music, your way",
     "auth_subtitle_login": "Sign in and pick up right where you left off.",
-    "auth_title_register": "Join Liner",
+    "auth_title_register": "Join Nyx",
     "auth_subtitle_register": "Create an account and start building your personal library.",
     "profile_setup_title": "Set up your profile",
     "profile_setup_subtitle": "Choose your unique handle and display name.",
@@ -363,7 +363,7 @@
       "email_invalid": "Enter a valid email address.",
       "password_min_8": "Password must contain at least 8 characters.",
       "server_unavailable": "Unable to reach the server. Please check your connection.",
-      "server_error": "Liner's servers are having trouble right now. Please try again in a few minutes.",
+      "server_error": "Nyx's servers are having trouble right now. Please try again in a few minutes.",
       "invalid_credentials": "Email or password is incorrect.",
       "email_already_used": "This email is already in use.",
       "username_invalid": "Username must be 3-30 lowercase letters, numbers, or underscores.",
@@ -559,7 +559,17 @@
     "likes_empty": "No liked songs yet",
     "likes_load_failed": "Couldn't load your liked songs",
     "load_failed": "Couldn't load this playlist",
-    "load_failed_desc": "Check your connection and try again."
+    "load_failed_desc": "Check your connection and try again.",
+    "download": "Download",
+    "download_progress": "{saved} of {total} downloaded",
+    "downloaded": "Downloaded",
+    "update_download": "Update download",
+    "download_started": "Download started",
+    "download_updated": "Download updated",
+    "remove_download": "Remove download",
+    "remove_download_done": "Download removed",
+    "not_downloaded": "This playlist isn't downloaded",
+    "not_downloaded_desc": "Go online and download it to listen without a connection."
   },
   "search": {
     "placeholder": "Search tracks, artists, albums...",
@@ -608,17 +618,17 @@
     "shortcuts": {
       "description": "Customize global system-wide and player keyboard shortcuts.",
       "global_section": "Global Shortcuts (System-wide)",
-      "global_desc": "Work from any application across your computer, even when Liner is minimized or not focused.",
+      "global_desc": "Work from any application across your computer, even when Nyx is minimized or not focused.",
       "main_app_section": "Main Application",
-      "main_app_desc": "Active when the main Liner window is open and focused.",
+      "main_app_desc": "Active when the main Nyx window is open and focused.",
       "miniplayer_section": "Miniplayer Mode",
       "miniplayer_desc": "Active when the desktop overlay miniplayer is focused.",
       "toggle_overlay": "Toggle miniplayer overlay",
       "toggle_overlay_desc": "Show or hide the floating desktop overlay from anywhere in the OS.",
       "quick_like_song": "Quick like current song",
       "quick_like_song_desc": "Like or unlike current playing track system-wide without focusing the player.",
-      "show_main_window": "Show Liner",
-      "show_main_window_desc": "Bring the main Liner window to the front from anywhere.",
+      "show_main_window": "Show Nyx",
+      "show_main_window_desc": "Bring the main Nyx window to the front from anywhere.",
       "not_set": "Not set",
       "play_pause": "Play / Pause",
       "play_pause_desc": "Toggle audio playback.",
@@ -702,7 +712,7 @@
       },
       "auto_show_on_minimize": {
         "title": "Auto-show on minimize",
-        "description": "Automatically show the overlay when Liner is minimized."
+        "description": "Automatically show the overlay when Nyx is minimized."
       },
       "always_on_top": {
         "title": "Always on top",
@@ -723,11 +733,11 @@
       },
       "sync_library": {
         "title": "Sync library",
-        "description": "Show playlists from your YouTube account in the library next to Liner playlists."
+        "description": "Show playlists from your YouTube account in the library next to Nyx playlists."
       },
       "sign_out_with_liner": {
-        "title": "Sign out with Liner",
-        "description": "Also sign out of YouTube when you sign out of your Liner account."
+        "title": "Sign out with Nyx",
+        "description": "Also sign out of YouTube when you sign out of your Nyx account."
       },
       "sign_out": "Sign out",
       "sign_in": "Sign in",
@@ -749,7 +759,7 @@
         "song": "Song title",
         "artist_song": "Artist - Song",
         "song_artist": "Song - Artist",
-        "app": "Liner"
+        "app": "Nyx"
       },
       "show_timeline": {
         "title": "Playback timeline",
@@ -768,11 +778,11 @@
         "description": "Keep status visible on Discord with a paused indicator when music is paused."
       },
       "show_button": {
-        "title": "“Listen on Liner” button",
-        "description": "Add an interactive button linking to the song on Liner."
+        "title": "“Listen on Nyx” button",
+        "description": "Add an interactive button linking to the song on Nyx."
       },
       "show_download_button": {
-        "title": "“Download Liner” button",
+        "title": "“Download Nyx” button",
         "description": "Add an interactive button linking to tryliner.fun to download the app."
       },
       "status": {
@@ -859,8 +869,8 @@
       "title": "Cache & Storage",
       "description": "Storage breakdown, local cache analytics and media files.",
       "usage_title": "Storage Usage",
-      "device_usage": "Liner is currently using {size} of local storage.",
-      "device_usage_raw": "Liner is currently using {size} of local storage.",
+      "device_usage": "Nyx is currently using {size} of local storage.",
+      "device_usage_raw": "Nyx is currently using {size} of local storage.",
       "audio_cache_limit": "Cache size limit",
       "audio_cache_limit_desc": "Older files and media are automatically removed when full",
       "cache_limit": "Maximum cache size",
@@ -876,15 +886,15 @@
       "empty_storage": "Cache is squeaky clean!",
       "cloud_disclaimer": "All media, covers and tracks stay in the cloud and will be re-downloaded seamlessly when played.",
       "clearing_title": "Clearing cache...",
-      "clearing_subtitle": "Please keep this window open while Liner is cleaning your cache.",
+      "clearing_subtitle": "Please keep this window open while Nyx is cleaning your cache.",
       "cleared_title": "Storage Cleared",
       "cleared_subtitle": "Your cache has been swept clean. New media will stream and cache automatically.",
       "removing_liked_title": "Removing downloaded liked songs...",
       "removing_local_title": "Removing imported files...",
-      "removing_subtitle": "Keep this window open until Liner finishes.",
+      "removing_subtitle": "Keep this window open until Nyx finishes.",
       "removed_title": "Removed",
       "removed_liked_subtitle": "Your liked songs are still in your library. They'll download again while you're online if downloading is on.",
-      "removed_local_subtitle": "Liner's copies are gone. The original files on your computer weren't touched.",
+      "removed_local_subtitle": "Nyx's copies are gone. The original files on your computer weren't touched.",
       "done_button": "Done",
       "categories": {
         "covers": "Cover Artwork",
@@ -896,13 +906,13 @@
         "shared": "Kept from earlier sign-ins"
       },
       "local_confirm_title": "Remove imported files?",
-      "local_confirm_desc": "{tracks} ({size}) will be deleted from Liner, together with their covers. Your original files stay where they are.",
+      "local_confirm_desc": "{tracks} ({size}) will be deleted from Nyx, together with their covers. Your original files stay where they are.",
       "local_confirm_button": "Remove imported files",
       "total_on_device": "{size} on this device",
       "music_title": "Your music",
       "music_desc": "Kept on this device until you remove it. Clearing the cache never touches it.",
       "cache_title": "Cache",
-      "cache_desc": "Temporary copies for faster playback. Safe to clear — Liner downloads them again when needed.",
+      "cache_desc": "Temporary copies for faster playback. Safe to clear — Nyx downloads them again when needed.",
       "liked_count": "{saved} of {total} downloaded",
       "liked_toggle": "Download automatically",
       "liked_limit": "Download limit",
@@ -929,7 +939,7 @@
       "local_desc": "{songs} · originals stay where they are",
       "downloads_limit": "Space for downloads",
       "cache_row_title": "Songs, lyrics and artwork",
-      "cache_row_desc": "Saved while you listen. Liner gets them again when needed.",
+      "cache_row_desc": "Saved while you listen. Nyx gets them again when needed.",
       "clear": "Clear",
       "cache_limit_hint": "About {count} songs. Oldest are removed first.",
       "cache_limit_unlimited": "Grows until you clear it",
@@ -945,13 +955,13 @@
       "removing_shared_title": "Removing kept songs...",
       "removed_shared_subtitle": "Songs you've liked on this account weren't touched.",
       "sign_out_choice": "Downloads when you sign out",
-      "sign_out_choice_ask": "Liner asks each time you sign out.",
+      "sign_out_choice_ask": "Nyx asks each time you sign out.",
       "sign_out_choice_remove": "Downloaded songs are removed when you sign out.",
       "sign_out_choice_keep": "Songs stay for the next sign-in. Any account reuses the ones it likes.",
       "sign_out_option_ask": "Ask",
       "sign_out_option_remove": "Remove",
       "sign_out_option_keep": "Keep",
-      "sign_out_title": "Sign out of Liner?",
+      "sign_out_title": "Sign out of Nyx?",
       "sign_out_desc_remove": "The {songs} you downloaded ({size}) will be removed from this device.",
       "sign_out_desc_keep": "The {songs} you downloaded ({size}) will stay on this device for the next sign-in.",
       "sign_out_keep_toggle": "Keep downloads",
@@ -996,7 +1006,7 @@
       "title": "Profile",
       "signed_in_as": "Signed in as",
       "not_signed_in": "Not currently signed in to a recognized session.",
-      "sign_in": "Sign in to Liner",
+      "sign_in": "Sign in to Nyx",
       "sign_out": "Sign out",
       "sign_out_confirm": "Are you sure you want to sign out?",
       "edit_profile": "Edit profile",
@@ -1007,7 +1017,7 @@
       "stat_active": "Active",
       "no_bio": "No bio yet",
       "details_section": "Profile Details",
-      "details_subtitle": "Customize your public appearance across Liner",
+      "details_subtitle": "Customize your public appearance across Nyx",
       "username_label": "Username",
       "username_hint": "3-30 lowercase characters (a-z, 0-9, _). Must be unique.",
       "username_invalid": "Username must be 3-30 lowercase letters, numbers, or underscores.",
@@ -1024,7 +1034,7 @@
       "saved_success": "Profile updated successfully",
       "save_failed": "Failed to update profile",
       "privacy_section": "Privacy & Social",
-      "privacy_subtitle": "Control your visibility and social presence across Liner",
+      "privacy_subtitle": "Control your visibility and social presence across Nyx",
       "public_profile": {
         "title": "Public profile",
         "description": "Allow others to search for your profile and view your public information."
@@ -1049,7 +1059,7 @@
       "badge_private": "Private"
     },
     "about": {
-      "liner": "Liner",
+      "liner": "Nyx",
       "telegram": "Channel",
       "discord": "Discord",
       "github": "GitHub",
@@ -1162,7 +1172,7 @@
   },
   "error_screen": {
     "title": "Something went wrong",
-    "subtitle": "An unexpected error occurred in Liner. You can reload the app or try again.",
+    "subtitle": "An unexpected error occurred in Nyx. You can reload the app or try again.",
     "reload": "Reload app",
     "try_again": "Try again",
     "go_home": "Go to home",
@@ -1189,13 +1199,13 @@
   },
   "connectivity": {
     "wall_title": "Connection failed",
-    "wall_subtitle": "Liner can't reach its servers. Your music and library are safe.",
-    "wall_title_server": "Liner's servers are having trouble",
+    "wall_subtitle": "Nyx can't reach its servers. Your music and library are safe.",
+    "wall_title_server": "Nyx's servers are having trouble",
     "wall_subtitle_server": "Your connection is fine, the server answered with an error. Your music and library are safe, try again in a few minutes.",
     "steps_title": "Quick fixes worth trying",
     "step_net": "Check that Wi-Fi or cable is connected and pages open in a browser.",
     "step_vpn": "Pause VPN, proxy or DNS filters for a minute — they often block the app.",
-    "step_firewall": "Allow Liner through the firewall and antivirus network shields.",
+    "step_firewall": "Allow Nyx through the firewall and antivirus network shields.",
     "step_router": "Restart the router, then press Retry below.",
     "retry": "Retry",
     "retrying": "Checking…",
@@ -1217,18 +1227,18 @@
     "check_platform": "Platform",
     "check_main": "Desktop checks",
     "support": "Contact support",
-    "wall_title_unreachable": "Liner's servers aren't responding",
-    "wall_subtitle_unreachable": "Your internet works, but Liner can't reach its servers. They may be down, or your network may be blocking Liner. A VPN often helps."
+    "wall_title_unreachable": "Nyx's servers aren't responding",
+    "wall_subtitle_unreachable": "Your internet works, but Nyx can't reach its servers. They may be down, or your network may be blocking Nyx. A VPN often helps."
   },
   "updater": {
     "modal_title": "New Update Available",
-    "modal_desc": "A new version of Liner (v{version}) is ready to download.",
+    "modal_desc": "A new version of Nyx (v{version}) is ready to download.",
     "view_changelog": "Changelog",
     "skip_button": "Skip",
     "update_button": "Update",
     "downloading_title": "Downloading update…",
     "downloaded_title": "Update downloaded",
-    "downloaded_desc": "Restart Liner to install version {version}.",
+    "downloaded_desc": "Restart Nyx to install version {version}.",
     "install_button": "Install",
     "error_title": "Update failed"
   },
@@ -1260,7 +1270,7 @@
   },
   "human_check": {
     "title": "Confirm you're not a bot",
-    "description": "A quick Cloudflare check keeps bots away from Liner accounts. It usually passes on its own in a second.",
+    "description": "A quick Cloudflare check keeps bots away from Nyx accounts. It usually passes on its own in a second.",
     "expired": "The check timed out and is starting again.",
     "failed": "The check didn't load. Check your connection and try again.",
     "waiting": "Checking…",
@@ -1271,14 +1281,14 @@
   "offline": {
     "entered_auto_title": "Switched to offline mode",
     "entered_manual_title": "Offline mode is on",
-    "entered_desc_auto": "Music saved on this device keeps playing. Liner switches back once the connection returns.",
+    "entered_desc_auto": "Music saved on this device keeps playing. Nyx switches back once the connection returns.",
     "entered_desc_manual": "Only music saved on this device plays until you go back online.",
     "open_device": "Open library",
     "back_online_title": "You're back online",
     "back_online_desc": "Everything is working again.",
     "still_offline_title": "Still no connection",
-    "still_server_title": "Liner's servers still aren't responding",
-    "still_desc": "Staying offline for now. Liner switches back on its own once it can connect.",
+    "still_server_title": "Nyx's servers still aren't responding",
+    "still_desc": "Staying offline for now. Nyx switches back on its own once it can connect.",
     "skipped_title": "Skipped songs that aren't downloaded",
     "skipped_desc": "In offline mode only music saved on this device plays.",
     "nothing_playable": "Nothing left in the queue is saved on this device",
@@ -1295,8 +1305,8 @@
     "issue_youtube_unreachable_desc": "Some songs won't play right now. Try again in a moment, use a VPN, or listen to music saved on this device.",
     "issue_youtube_refused_title": "YouTube is blocking playback",
     "issue_youtube_refused_desc": "This often happens with a VPN or proxy. Switch VPN server or turn it off, then try again.",
-    "issue_server_title": "Liner's servers aren't responding",
-    "issue_server_desc": "Your internet works, but Liner can't reach its servers. Music saved on this device still plays.",
+    "issue_server_title": "Nyx's servers aren't responding",
+    "issue_server_desc": "Your internet works, but Nyx can't reach its servers. Music saved on this device still plays.",
     "issue_offline_title": "You're offline",
     "issue_offline_desc": "Check your internet connection. Music saved on this device still plays.",
     "try_again": "Try again",
