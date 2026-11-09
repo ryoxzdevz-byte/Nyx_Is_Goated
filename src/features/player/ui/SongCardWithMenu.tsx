@@ -115,6 +115,13 @@ function SongCardWithMenu({
   const trackDoubleClickBehavior = usePlayerStore(
     (state) => state.trackDoubleClickBehavior,
   );
+  const isActive = usePlayerStore(
+    (state) => id != null && state.currentTrack?.id === id,
+  );
+  const isPlaying = usePlayerStore(
+    (state) =>
+      id != null && state.currentTrack?.id === id && state.status === "playing",
+  );
 
   const handleDoubleClick = useCallback(() => {
     if (!id) return;
@@ -192,6 +199,8 @@ function SongCardWithMenu({
       showReorderHandle={showReorderHandle}
       onGrabStart={onGrabStart}
       trailingAction={trailingAction}
+      isActive={isActive}
+      isPlaying={isPlaying}
     />
   );
 }

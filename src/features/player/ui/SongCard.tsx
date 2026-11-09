@@ -41,6 +41,8 @@ export interface SongCardProps {
   highlight?: string;
   hideArtists?: boolean;
   trailingAction?: React.ReactNode;
+  isActive?: boolean;
+  isPlaying?: boolean;
 }
 
 function SongCard({
@@ -71,6 +73,8 @@ function SongCard({
   highlight,
   hideArtists = false,
   trailingAction,
+  isActive = false,
+  isPlaying = false,
 }: SongCardProps) {
   const { t } = useTranslation();
   const [imageLoaded, setImageLoaded] = useState(() => isCoverReady(coverUrl));
@@ -123,11 +127,16 @@ function SongCard({
     }, 200);
   };
 
+  const activeBg =
+    isActive && !className?.match(/(?:^|\s)bg-/) ? "bg-fill-subtle" : "";
+
   return (
     <div
+      data-active={isActive || undefined}
+      data-playing={isPlaying || undefined}
       className={`group w-full flex items-center justify-between rounded-control ${paddingClass} outline-none transition-colors duration-150 ease-out ${
         className ?? ""
-      } ${onPlay ? "cursor-pointer" : ""} ${onPlay && !className?.includes("hover:bg-") ? "hover:bg-border-alpha-14" : ""}`}
+      } ${activeBg} ${onPlay ? "cursor-pointer" : ""} ${onPlay && !className?.includes("hover:bg-") ? "hover:bg-border-alpha-14" : ""}`}
       onClick={handleClick}
       onPointerDown={(e) => {
         if (clickTimerRef.current) {
@@ -161,7 +170,7 @@ function SongCard({
       <div className={`flex items-center ${gapClass} min-w-0`}>
         {trackNumber !== undefined ? (
           <div
-            className={`flex ${imageSizeClass} shrink-0 items-center justify-center ${titleSizeClass} text-text-tertiary`}
+            className={`flex ${imageSizeClass} shrink-0 items-center justify-center ${titleSizeClass} ${isActive ? "text-accent-primary" : "text-text-tertiary"}`}
             style={{
               fontWeight: 400,
             }}
@@ -201,9 +210,9 @@ function SongCard({
               <ExplicitBadge size="md" className="-mr-[2px] shrink-0" />
             )}
             <h3
-              className={`m-0 max-w-[min(52vw,560px)] overflow-hidden text-ellipsis whitespace-nowrap ${titleSizeClass} leading-[1.2] text-text-primary`}
+              className={`m-0 max-w-[min(52vw,560px)] overflow-hidden text-ellipsis whitespace-nowrap ${titleSizeClass} leading-[1.2] transition-colors duration-150 ${isActive ? "text-accent-primary" : "text-text-primary"}`}
               style={{
-                fontWeight: hideArtists ? 500 : 400,
+                fontWeight: hideArtists ? 500 : isActive ? 500 : 400,
               }}
             >
               {highlight ? (

@@ -166,7 +166,6 @@ const QueueList = memo(function QueueList({
       )}
 
       {visibleQueue.map((item, index) => {
-        const isCurrent = index === 0;
         const isThisDragged = isDragging && index === dragIndex;
         const isRemoving = removingIndex === index;
         const restoringHere = restoring?.index === index;
@@ -255,9 +254,7 @@ const QueueList = memo(function QueueList({
                   ? (e) => handleCardGrab(index, item, e)
                   : undefined
               }
-              className={`p-[8px] rounded-item transition-colors duration-150 ${
-                isCurrent ? "bg-fill" : "bg-transparent hover:bg-fill-subtle"
-              }`}
+              className="p-[8px] rounded-item"
               imageShape="square"
               onPlay={() => {
                 if (typeof window !== "undefined" && window.__linerWasDragging)
