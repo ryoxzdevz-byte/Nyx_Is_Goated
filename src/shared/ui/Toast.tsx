@@ -828,7 +828,7 @@ function NotificationCard({
         gridArea: "1 / 1",
         zIndex,
         transformOrigin: "bottom center",
-        maxWidth: "min(520px, calc(100vw - 32px))",
+        maxWidth: "min(920px, calc(100vw - 24px))",
         minHeight: "38px",
         width:
           index > 0 && activeCardWidth ? `${activeCardWidth}px` : undefined,
@@ -844,7 +844,7 @@ function NotificationCard({
       </span>
       <div className="flex min-w-0 flex-1 flex-col justify-center overflow-hidden">
         <div className="flex min-w-0 items-center gap-[6px]">
-          <span className="block min-w-0 max-w-[220px] shrink-0 truncate text-text-primary text-body font-[600] leading-tight">
+          <span className="block min-w-0 max-w-[min(440px,46vw)] shrink truncate text-text-primary text-body font-[600] leading-tight">
             {item.message}
           </span>
           {item.description && (
@@ -856,7 +856,7 @@ function NotificationCard({
                 ·
               </span>
               <span
-                className="block min-w-0 max-w-[260px] truncate text-text-tertiary text-[12.5px] leading-tight translate-y-[1px]"
+                className="block min-w-0 max-w-[min(440px,44vw)] truncate text-text-tertiary text-[12.5px] leading-tight translate-y-[1px]"
                 title={item.description}
               >
                 {item.description}

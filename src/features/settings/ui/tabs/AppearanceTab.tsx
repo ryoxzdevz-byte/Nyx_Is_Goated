@@ -126,8 +126,14 @@ export function AppearanceTab({ searchQuery }: { searchQuery?: string }) {
       </SettingBlock>
 
       <SettingRow
-        title={t("settings.appearance.strong_glass.title")}
-        description={t("settings.appearance.strong_glass.description")}
+        title={
+          t("settings.appearance.strong_glass.title") ||
+          "Transparent glass theme"
+        }
+        description={
+          t("settings.appearance.strong_glass.description") ||
+          "Use a stronger transparent/glass blur across Nyx. Restart required."
+        }
         titleKey="settings.appearance.strong_glass.title"
         descKey="settings.appearance.strong_glass.description"
         searchQuery={searchQuery}

@@ -15,6 +15,18 @@ export interface UseSearchAllResult {
   runNow: () => void;
 }
 
+const SEARCH_CACHE_MAX = 40;
+const searchCache = new Map<string, ApiSearchItem[]>();
+
+function cacheSearch(key: string, items: ApiSearchItem[]) {
+  searchCache.delete(key);
+  searchCache.set(key, items);
+  if (searchCache.size > SEARCH_CACHE_MAX) {
+    const oldest = searchCache.keys().next().value;
+    if (oldest) searchCache.delete(oldest);
+  }
+}
+
 export function useSearchAll(
   query: string,
   options: UseSearchAllOptions,
@@ -30,19 +42,32 @@ export function useSearchAll(
   const shouldRunSearch = options.enabled && trimmed.length >= 2;
 
   const runRequest = useCallback(async (requestId: number, q: string) => {
-    setLoading(true);
+    const cacheKey = `all:${q.toLowerCase()}`;
+    const cached = searchCache.get(cacheKey);
+    if (cached) {
+      setItems(cached);
+      setPartialWarning(undefined);
+      lastFetchedQueryRef.current = q;
+      setHasLoaded(true);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
     try {
       const res = await api.search(q, "all");
       if (requestId !== latestRequestIdRef.current) return;
+      cacheSearch(cacheKey, res.items);
       setItems(res.items);
       setPartialWarning(undefined);
       lastFetchedQueryRef.current = q;
       setHasLoaded(true);
     } catch {
       if (requestId !== latestRequestIdRef.current) return;
-      setItems([]);
-      setPartialWarning(undefined);
-      setHasLoaded(true);
+      if (!cached) {
+        setItems([]);
+        setPartialWarning(undefined);
+        setHasLoaded(true);
+      }
     } finally {
       if (requestId === latestRequestIdRef.current) setLoading(false);
     }
@@ -76,7 +101,7 @@ export function useSearchAll(
         return;
       }
       void runRequest(requestId, trimmed);
-    }, options.debounceMs ?? 320);
+    }, options.debounceMs ?? 180);
 
     return () => {
       clearTimeout(timer);

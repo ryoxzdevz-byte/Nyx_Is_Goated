@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
-import { SkipNext, SkipPrevious } from "@solar-icons/react";
+import { MaximizeSquare3, SkipNext, SkipPrevious } from "@solar-icons/react";
 import {
   PlayerMorphIcon,
   ICON_PLAY,
@@ -162,15 +162,18 @@ export function OverlayPlayer() {
   useEffect(() => {
     if (!isPlaying || !isShown) return;
     let animId: number;
+    let lastPaint = 0;
 
-    const step = () => {
+    const step = (now: number) => {
+      animId = requestAnimationFrame(step);
+      if (now - lastPaint < 90) return;
+      lastPaint = now;
       const elapsed = performance.now() - anchorTimeRef.current;
       const current = Math.min(
         durationMs,
         anchorPosRef.current + elapsed * rate,
       );
       setInterpolatedPosMs(current);
-      animId = requestAnimationFrame(step);
     };
     animId = requestAnimationFrame(step);
     return () => {
@@ -340,12 +343,29 @@ export function OverlayPlayer() {
             </div>
           </div>
 
-          {/* Right: Like Button + Playback Controls (Previous, Play/Pause, Next) */}
+          {/* Right: Restore, Like, Playback Controls */}
           <div
             className="flex items-center gap-0.5 shrink-0 pl-1"
             style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
             onMouseDown={(e) => e.stopPropagation()}
           >
+            <button
+              type="button"
+              tabIndex={-1}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                sendAction({ type: "focusMainWindow" });
+              }}
+              className="flex h-[26px] w-[26px] items-center justify-center rounded-lg border-0 bg-transparent text-white/55 hover:text-white active:scale-90 transition-all outline-none cursor-pointer"
+              aria-label="Restore Nyx"
+              title="Restore Nyx"
+            >
+              <MaximizeSquare3 size={15} weight="Bold" />
+            </button>
             {!isLocalTrackId(state.track?.id) && (
               <button
                 type="button"

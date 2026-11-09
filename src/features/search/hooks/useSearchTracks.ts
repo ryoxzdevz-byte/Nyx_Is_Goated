@@ -18,11 +18,23 @@ export interface UseSearchTracksResult {
   runNow: () => void;
 }
 
+const TRACK_CACHE_MAX = 40;
+const trackCache = new Map<string, Track[]>();
+
+function cacheTracks(key: string, tracks: Track[]) {
+  trackCache.delete(key);
+  trackCache.set(key, tracks);
+  if (trackCache.size > TRACK_CACHE_MAX) {
+    const oldest = trackCache.keys().next().value;
+    if (oldest) trackCache.delete(oldest);
+  }
+}
+
 export function useSearchTracks(
   query: string,
   options: UseSearchTracksOptions = {},
 ): UseSearchTracksResult {
-  const { enabled = true, debounceMs = 250 } = options;
+  const { enabled = true, debounceMs = 180 } = options;
   const [tracks, setTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
@@ -35,27 +47,38 @@ export function useSearchTracks(
   const shouldRunSearch = enabled && trimmed.length >= 2;
 
   const runRequest = useCallback(async (requestId: number, q: string) => {
-    setLoading(true);
+    const cacheKey = `track:${q.toLowerCase()}`;
+    const cached = trackCache.get(cacheKey);
+    if (cached) {
+      setTracks(cached);
+      setError(null);
+      setPartialWarning(undefined);
+      lastFetchedQueryRef.current = q;
+      setHasLoaded(true);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
     try {
       const res = await api.search(q, "track");
       if (requestId !== latestRequestIdRef.current) return;
-      setTracks(
-        res.items
-          .filter(
-            (it): it is ApiTrack & { type: "track" } => it.type === "track",
-          )
-          .map(toClientTrack),
-      );
+      const next = res.items
+        .filter((it): it is ApiTrack & { type: "track" } => it.type === "track")
+        .map(toClientTrack);
+      cacheTracks(cacheKey, next);
+      setTracks(next);
       setError(null);
       setPartialWarning(undefined);
       lastFetchedQueryRef.current = q;
       setHasLoaded(true);
     } catch (err) {
       if (requestId !== latestRequestIdRef.current) return;
-      setTracks([]);
-      setError(err instanceof Error ? err : new Error(String(err)));
-      setPartialWarning(undefined);
-      setHasLoaded(true);
+      if (!cached) {
+        setTracks([]);
+        setError(err instanceof Error ? err : new Error(String(err)));
+        setPartialWarning(undefined);
+        setHasLoaded(true);
+      }
     } finally {
       if (requestId === latestRequestIdRef.current) setLoading(false);
     }

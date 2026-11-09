@@ -2016,44 +2016,83 @@ if (!gotTheLock) {
       notes?: string;
     } | null = null;
 
+    type GithubRelease = {
+      tag_name?: string;
+      name?: string;
+      body?: string;
+      html_url?: string;
+      draft?: boolean;
+      prerelease?: boolean;
+      published_at?: string;
+      assets?: Array<{
+        name: string;
+        browser_download_url: string;
+        size: number;
+      }>;
+    };
+
+    const pickWindowsInstaller = (release: GithubRelease) =>
+      (release.assets || []).find(
+        (a) =>
+          /\.exe$/i.test(a.name) &&
+          /setup|nyx/i.test(a.name) &&
+          a.browser_download_url?.startsWith("https://"),
+      );
+
     handleTrusted("updater:check-for-updates", async () => {
+      const current = app.getVersion();
       try {
-        const release = await githubJson<{
-          tag_name: string;
-          name?: string;
-          body?: string;
-          html_url?: string;
-          assets?: Array<{
-            name: string;
-            browser_download_url: string;
-            size: number;
-          }>;
-        }>(`https://api.github.com/repos/${NYX_UPDATE_REPO}/releases/latest`);
-        const version = String(release.tag_name || "").replace(/^v/, "");
-        const current = app.getVersion();
-        const asset = (release.assets || []).find(
-          (a) =>
-            /\.exe$/i.test(a.name) &&
-            /setup|nyx/i.test(a.name) &&
-            a.browser_download_url.startsWith("https://"),
+        const releases = await githubJson<GithubRelease[]>(
+          `https://api.github.com/repos/${NYX_UPDATE_REPO}/releases?per_page=20`,
         );
-        if (!asset || compareSemver(version, current) <= 0) {
+        const candidates = (Array.isArray(releases) ? releases : [])
+          .filter((r) => !r.draft && !r.prerelease)
+          .map((release) => {
+            const version = String(release.tag_name || release.name || "")
+              .trim()
+              .replace(/^v/i, "");
+            const asset = pickWindowsInstaller(release);
+            return version ? { release, version, asset } : null;
+          })
+          .filter(
+            (
+              c,
+            ): c is {
+              release: GithubRelease;
+              version: string;
+              asset: NonNullable<ReturnType<typeof pickWindowsInstaller>>;
+            } => Boolean(c?.asset && c.version),
+          )
+          .filter((c) => compareSemver(c.version, current) > 0)
+          .sort((a, b) => compareSemver(b.version, a.version));
+
+        const best = candidates[0];
+        if (!best) {
           latestUpdateAsset = null;
+          if (!Array.isArray(releases) || releases.length === 0) {
+            return {
+              available: false,
+              error:
+                "No published Nyx releases with a Windows installer were found. The release may still be building.",
+            };
+          }
           return { available: false };
         }
+
         latestUpdateAsset = {
-          version,
-          url: asset.browser_download_url,
-          name: asset.name,
-          notes: release.body,
+          version: best.version,
+          url: best.asset.browser_download_url,
+          name: best.asset.name,
+          notes: best.release.body,
         };
         return {
           available: true,
-          version,
-          releaseNotes: release.body,
-          releaseDate: undefined,
+          version: best.version,
+          releaseNotes: best.release.body,
+          releaseDate: best.release.published_at,
         };
       } catch (error) {
+        latestUpdateAsset = null;
         return {
           available: false,
           error: String((error as Error)?.message || error),

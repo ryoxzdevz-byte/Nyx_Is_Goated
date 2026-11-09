@@ -96,20 +96,20 @@ export function SettingsSidebar<T extends string>({
 
         <div className="flex flex-col gap-0">
           <GroupLabel>{t("settings.groups.help")}</GroupLabel>
-          <NavItem
-            icon={Book2}
-            label={t("settings.docs")}
-            onClick={() =>
-              openExternal(
-                "https://github.com/tryliner/desktop/blob/main/README.md",
-              )
-            }
-          />
-          <NavItem
-            icon={QuestionCircle}
-            label={t("settings.support")}
-            onClick={() => openExternal("https://discord.gg/liner")}
-          />
+            <NavItem
+              icon={Book2}
+              label={t("settings.docs")}
+              onClick={() =>
+                openExternal("https://github.com/ryoxzdevz-byte/Nyx_Is_Goated")
+              }
+            />
+            <NavItem
+              icon={QuestionCircle}
+              label={t("settings.support")}
+              onClick={() =>
+                openExternal("https://github.com/ryoxzdevz-byte/Nyx_Is_Goated")
+              }
+            />
         </div>
       </nav>
 

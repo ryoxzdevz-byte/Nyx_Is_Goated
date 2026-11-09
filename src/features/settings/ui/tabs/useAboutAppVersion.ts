@@ -51,12 +51,12 @@ export function useAboutAppVersion() {
       const error = useUpdaterStore.getState().error;
       if (status === "available" && updateInfo) {
         useUpdaterStore.getState().openDialog();
-      } else if (status === "error" && error) {
-        toast(error, "error");
+      } else if (error) {
+        toast(error, "error", { duration: 7000 });
       } else {
         toast(
           t("settings.about.latest_version_toast", { version: appVersion }),
-          "info",
+          "checkmark",
         );
       }
     } catch (err) {

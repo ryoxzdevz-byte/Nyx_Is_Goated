@@ -21,7 +21,7 @@ import {
 export type OverlayPosition = "top-left" | "top-center" | "top-right";
 
 const OVERLAY_TITLE = "Nyx Overlay";
-const OVERLAY_MARGIN = 20;
+const OVERLAY_MARGIN = 15;
 const TOGGLE_ACTION = "toggle-overlay";
 const LIKE_ACTION = "like-track";
 const COMPOSITOR_SETTLE_MS = 300;
@@ -643,7 +643,7 @@ export class OverlayManager {
     }
 
     const { workArea } = targetDisplay;
-    const padding = 20;
+    const padding = OVERLAY_MARGIN;
     const finalHeight = height ?? this.getTargetHeight();
 
     let x: number;
@@ -1240,8 +1240,8 @@ export class OverlayManager {
         nodeIntegration: false,
         contextIsolation: true,
         sandbox: false,
-        devTools: true,
-        backgroundThrottling: false,
+        devTools: false,
+        backgroundThrottling: true,
       },
     });
 

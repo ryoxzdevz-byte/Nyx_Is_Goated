@@ -1107,12 +1107,12 @@
     },
     "appearance": {
       "strong_glass": {
-        "title": "Stronger background blur",
-        "description": "Makes the whole app glass/background blur stronger while keeping content readable. Requires restart.",
+        "title": "Transparent glass theme",
+        "description": "Makes the app use a stronger transparent/glass blur effect while keeping content readable. Restart Nyx to apply this setting fully.",
         "restart_title": "Restart required",
-        "restart_desc": "Restart Nyx to apply the stronger blur setting.",
-        "restart": "Restart now",
-        "restarting": "Restarting..."
+        "restart_desc": "Restart Nyx to apply the transparent glass theme.",
+        "restart": "Restart Nyx",
+        "restarting": "Restarting…"
       }
     }
   },
