@@ -691,6 +691,16 @@ if (!gotTheLock) {
       mainWindow?.close();
     });
 
+    handleTrusted("app:relaunch", async () => {
+      await flushRendererPlayerSession(1200).catch(() => {});
+      shutdown.begin();
+      app.relaunch({
+        args: process.argv.slice(1).filter((a) => !a.startsWith("--inspect")),
+      });
+      setTimeout(() => app.exit(0), 150);
+      return true;
+    });
+
     handleTrusted("window:is-maximized", () => {
       return mainWindow?.isMaximized() ?? false;
     });

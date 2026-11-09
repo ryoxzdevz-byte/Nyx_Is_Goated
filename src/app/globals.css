@@ -176,6 +176,55 @@
   --surface-glass: rgba(22, 22, 24, 0.9);
 }
 
+:root {
+  --glass-shell-blur: 20px;
+  --glass-panel-blur: 48px;
+  --glass-blur: 20px;
+}
+:root[data-glass-intensity="strong"] {
+  --bg-glass: rgba(255, 255, 255, 0.76);
+  --glass-shell-blur: 34px;
+  --glass-panel-blur: 72px;
+  --glass-blur: 34px;
+}
+:root[data-theme="dark"],
+:root.dark,
+[data-theme="dark"],
+.dark {
+  --glass-shell-blur: 20px;
+  --glass-panel-blur: 48px;
+  --glass-blur: 20px;
+}
+:root[data-theme="dark"][data-glass-intensity="strong"],
+:root.dark[data-glass-intensity="strong"],
+[data-theme="dark"][data-glass-intensity="strong"],
+.dark[data-glass-intensity="strong"] {
+  --bg-glass: rgba(34, 34, 38, 0.58);
+  --glass-shell-blur: 34px;
+  --glass-panel-blur: 72px;
+  --glass-blur: 34px;
+}
+:root[data-glass-intensity="strong"] .bg-bg-glass {
+  background-color: var(--bg-glass) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+:root[data-glass-intensity="strong"] .backdrop-blur-\[20px\] {
+  backdrop-filter: blur(var(--glass-shell-blur)) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(var(--glass-shell-blur)) saturate(150%) !important;
+}
+:root[data-glass-intensity="strong"] .backdrop-blur-\[48px\] {
+  backdrop-filter: blur(var(--glass-panel-blur)) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(var(--glass-panel-blur)) saturate(150%) !important;
+}
+:root[data-glass-intensity="strong"] .backdrop-blur-2xl {
+  backdrop-filter: blur(44px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(44px) saturate(150%) !important;
+}
+:root[data-glass-intensity="strong"] .backdrop-blur-xl {
+  backdrop-filter: blur(34px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(34px) saturate(150%) !important;
+}
+
 @theme inline {
   --color-bg-canvas: var(--bg-canvas);
   --color-bg-surface: var(--bg-surface);

@@ -1104,6 +1104,16 @@
     },
     "connection": {
       "open_folder": "Open saved location"
+    },
+    "appearance": {
+      "strong_glass": {
+        "title": "Stronger background blur",
+        "description": "Makes the whole app glass/background blur stronger while keeping content readable. Requires restart.",
+        "restart_title": "Restart required",
+        "restart_desc": "Restart Nyx to apply the stronger blur setting.",
+        "restart": "Restart now",
+        "restarting": "Restarting..."
+      }
     }
   },
   "toast": {

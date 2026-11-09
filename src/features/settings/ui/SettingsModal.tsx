@@ -217,6 +217,11 @@ const SETTING_ITEMS: { tabId: TabId; titleKey: string; descKey?: string }[] = [
   },
   {
     tabId: "Appearance",
+    titleKey: "settings.appearance.strong_glass.title",
+    descKey: "settings.appearance.strong_glass.description",
+  },
+  {
+    tabId: "Appearance",
     titleKey: "settings.theme.title",
     descKey: "settings.theme.description",
   },

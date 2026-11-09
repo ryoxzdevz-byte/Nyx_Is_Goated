@@ -11,11 +11,19 @@ interface ShownCover {
   crossOrigin?: "anonymous";
 }
 
+function isStrongGlass() {
+  return (
+    typeof document !== "undefined" &&
+    document.documentElement.dataset.glassIntensity === "strong"
+  );
+}
+
 export function DynamicBlurBackground({
   isDark = true,
 }: DynamicBlurBackgroundProps) {
   const { cover, pageBackdropOptions } = useActiveBackgroundCover();
   const [shown, setShown] = useState<ShownCover | null>(null);
+  const strong = isStrongGlass();
 
   if (cover.kind === "ready") {
     if (shown?.src !== cover.src || shown.crossOrigin !== cover.crossOrigin) {
@@ -32,8 +40,8 @@ export function DynamicBlurBackground({
       coverSrc={shown.src}
       coverCrossOrigin={shown.crossOrigin}
       isDark={isDark}
-      blur={pageBackdropOptions?.blur}
-      dim={pageBackdropOptions?.dim}
+      blur={(pageBackdropOptions?.blur ?? 56) + (strong ? 24 : 0)}
+      dim={(pageBackdropOptions?.dim ?? 0.22) + (strong ? 0.08 : 0)}
     />
   );
 }

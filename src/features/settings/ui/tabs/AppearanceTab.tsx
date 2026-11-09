@@ -3,6 +3,12 @@ import { useTheme } from "next-themes";
 import { useTranslation, LOCALE_OPTIONS } from "@/languages";
 import { MenuSelect, ToggleSwitch } from "@/shared/ui";
 import { revealThemeChange } from "@/shared/lib";
+import {
+  applyGlassIntensity,
+  readStoredGlassIntensity,
+  storeGlassIntensity,
+  type GlassIntensity,
+} from "../../store/customizationStore";
 import { SettingBlock, SettingRow, SettingSection } from "../controls";
 import { ThemeCard } from "./ThemeCard";
 
@@ -12,6 +18,11 @@ export function AppearanceTab({ searchQuery }: { searchQuery?: string }) {
   const { theme, setTheme } = useTheme();
   const electron = typeof window !== "undefined" ? window.linerElectron : null;
   const [rememberWindowBounds, setRememberWindowBounds] = useState(false);
+  const [appliedGlass] = useState<GlassIntensity>(() =>
+    readStoredGlassIntensity(),
+  );
+  const [savedGlass, setSavedGlass] = useState<GlassIntensity>(appliedGlass);
+  const [restarting, setRestarting] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -37,6 +48,24 @@ export function AppearanceTab({ searchQuery }: { searchQuery?: string }) {
       .then(setRememberWindowBounds)
       .catch(() => setRememberWindowBounds(!enabled));
   };
+
+  const changeGlassIntensity = (value: GlassIntensity) => {
+    setSavedGlass(value);
+    storeGlassIntensity(value);
+  };
+
+  const restartToApplyGlass = async () => {
+    setRestarting(true);
+    applyGlassIntensity(savedGlass);
+    try {
+      if (electron?.relaunchApp) await electron.relaunchApp();
+      else window.location.reload();
+    } finally {
+      setRestarting(false);
+    }
+  };
+
+  const glassRestartPending = mounted && savedGlass !== appliedGlass;
 
   return (
     <SettingSection>
@@ -95,6 +124,44 @@ export function AppearanceTab({ searchQuery }: { searchQuery?: string }) {
           </div>
         ) : null}
       </SettingBlock>
+
+      <SettingRow
+        title={t("settings.appearance.strong_glass.title")}
+        description={t("settings.appearance.strong_glass.description")}
+        titleKey="settings.appearance.strong_glass.title"
+        descKey="settings.appearance.strong_glass.description"
+        searchQuery={searchQuery}
+        control={
+          <ToggleSwitch
+            checked={mounted ? savedGlass === "strong" : false}
+            onChange={(checked) =>
+              changeGlassIntensity(checked ? "strong" : "default")
+            }
+          />
+        }
+      />
+
+      {glassRestartPending ? (
+        <SettingRow
+          title={t("settings.appearance.strong_glass.restart_title")}
+          description={t("settings.appearance.strong_glass.restart_desc")}
+          titleKey="settings.appearance.strong_glass.restart_title"
+          descKey="settings.appearance.strong_glass.restart_desc"
+          searchQuery={searchQuery}
+          control={
+            <button
+              type="button"
+              onClick={() => void restartToApplyGlass()}
+              disabled={restarting}
+              className="h-[32px] rounded-[10px] border-0 bg-fill px-[12px] text-label font-[500] text-text-primary transition-colors hover:bg-fill-hover disabled:opacity-60"
+            >
+              {restarting
+                ? t("settings.appearance.strong_glass.restarting")
+                : t("settings.appearance.strong_glass.restart")}
+            </button>
+          }
+        />
+      ) : null}
 
       {electron?.setRememberWindowBounds ? (
         <SettingRow
