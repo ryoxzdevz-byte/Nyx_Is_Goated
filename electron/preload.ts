@@ -147,6 +147,9 @@ export interface LinerElectronApi {
   }>;
   downloadUpdate: () => Promise<{ success: boolean; error?: string }>;
   quitAndInstall: () => Promise<boolean>;
+  getAudioOutputDevices: () => Promise<
+    Array<{ deviceId: string; label: string }>
+  >;
   onUpdateAvailable: (cb: (info: UpdateInfo) => void) => () => void;
   onUpdateDownloadProgress: (
     cb: (progress: UpdateDownloadProgress) => void,
@@ -328,6 +331,7 @@ const api: LinerElectronApi = {
   checkForUpdates: () => ipcRenderer.invoke("updater:check-for-updates"),
   downloadUpdate: () => ipcRenderer.invoke("updater:download-update"),
   quitAndInstall: () => ipcRenderer.invoke("updater:quit-and-install"),
+  getAudioOutputDevices: () => ipcRenderer.invoke("audio:get-output-devices"),
   onUpdateAvailable: (cb) => {
     const listener = (_event: unknown, info: UpdateInfo) => cb(info);
     ipcRenderer.on("updater:update-available", listener);

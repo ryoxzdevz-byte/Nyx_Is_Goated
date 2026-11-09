@@ -48,18 +48,23 @@ export function useAboutAppVersion() {
       await useUpdaterStore.getState().checkForUpdates();
       const status = useUpdaterStore.getState().status;
       const updateInfo = useUpdaterStore.getState().updateInfo;
+      const error = useUpdaterStore.getState().error;
       if (status === "available" && updateInfo) {
         useUpdaterStore.getState().openDialog();
+      } else if (status === "error" && error) {
+        toast(error, "error");
       } else {
         toast(
           t("settings.about.latest_version_toast", { version: appVersion }),
           "info",
         );
       }
-    } catch {
+    } catch (err) {
       toast(
-        t("settings.about.latest_version_toast", { version: appVersion }),
-        "info",
+        err instanceof Error
+          ? err.message
+          : t("settings.about.update_error_toast"),
+        "error",
       );
     } finally {
       setCheckingUpdate(false);

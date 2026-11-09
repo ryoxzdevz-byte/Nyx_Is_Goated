@@ -62,6 +62,7 @@ export interface SessionState {
   miniPlayerStyle: MiniPlayerStyle;
   accentVariant: AccentVariant;
   pauseOnDeviceChange: boolean;
+  audioOutputDeviceId: string;
   autoplaySimilar: boolean;
   trackDoubleClickBehavior: TrackDoubleClickBehavior;
   defaultPlaybackContext: DefaultPlaybackContext;
@@ -119,6 +120,7 @@ export interface PlayerStore extends PlayerState {
   setMiniPlayerStyle: (style: MiniPlayerStyle) => void;
   setAccentVariant: (variant: AccentVariant) => void;
   setPauseOnDeviceChange: (value: boolean) => void;
+  setAudioOutputDeviceId: (value: string) => void;
   setAutoplaySimilar: (value: boolean) => void;
   setTrackDoubleClickBehavior: (value: TrackDoubleClickBehavior) => void;
   setDefaultPlaybackContext: (value: DefaultPlaybackContext) => void;
@@ -191,6 +193,7 @@ export const usePlayerStore = create<PlayerStore>()(
       miniPlayerStyle: "default",
       accentVariant: "default",
       pauseOnDeviceChange: true,
+      audioOutputDeviceId: "default",
       autoplaySimilar: true,
       trackDoubleClickBehavior: "play",
       defaultPlaybackContext: "resume",
@@ -236,6 +239,8 @@ export const usePlayerStore = create<PlayerStore>()(
         set({ accentVariant }),
       setPauseOnDeviceChange: (pauseOnDeviceChange: boolean) =>
         set({ pauseOnDeviceChange }),
+      setAudioOutputDeviceId: (audioOutputDeviceId: string) =>
+        set({ audioOutputDeviceId: audioOutputDeviceId || "default" }),
       setAutoplaySimilar: (autoplaySimilar: boolean) =>
         set({ autoplaySimilar }),
       setTrackDoubleClickBehavior: (
@@ -339,6 +344,18 @@ export const usePlayerStore = create<PlayerStore>()(
         }
         if (state) {
           if (
+            typeof (state as Partial<PlayerState>).pauseOnDeviceChange !==
+            "boolean"
+          ) {
+            state.pauseOnDeviceChange = true;
+          }
+          if (
+            typeof (state as Partial<PlayerState>).audioOutputDeviceId !==
+            "string"
+          ) {
+            state.audioOutputDeviceId = "default";
+          }
+          if (
             typeof state.playbackRate !== "number" ||
             isNaN(state.playbackRate)
           ) {
@@ -393,6 +410,7 @@ export const usePlayerStore = create<PlayerStore>()(
         miniPlayerStyle: state.miniPlayerStyle,
         accentVariant: state.accentVariant,
         pauseOnDeviceChange: state.pauseOnDeviceChange,
+        audioOutputDeviceId: state.audioOutputDeviceId,
         autoplaySimilar: state.autoplaySimilar,
         trackDoubleClickBehavior: state.trackDoubleClickBehavior,
         defaultPlaybackContext: state.defaultPlaybackContext,

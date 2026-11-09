@@ -20,6 +20,7 @@ const EMPTY_STATE: PlayerState = {
   miniPlayerStyle: "default",
   accentVariant: "default",
   pauseOnDeviceChange: true,
+  audioOutputDeviceId: "default",
   autoplaySimilar: true,
   trackDoubleClickBehavior: "play",
   defaultPlaybackContext: "resume",

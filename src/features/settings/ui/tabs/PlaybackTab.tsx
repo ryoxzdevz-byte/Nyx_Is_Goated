@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "@/languages";
-import { usePlayerStore } from "@/features/player";
+import { playerEngine, usePlayerStore } from "@/features/player";
 import { ToggleSwitch } from "@/shared/ui";
 import { SettingRow, SettingSection, SegmentedControl } from "../controls";
 
@@ -29,10 +29,47 @@ export function PlaybackTab({ searchQuery }: { searchQuery?: string }) {
   const setPauseOnDeviceChange = usePlayerStore(
     (state) => state.setPauseOnDeviceChange,
   );
+  const audioOutputDeviceId = usePlayerStore(
+    (state) => state.audioOutputDeviceId,
+  );
+  const [outputDevices, setOutputDevices] = useState<
+    Array<{ deviceId: string; label: string }>
+  >([]);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    let active = true;
+    const load = async () => {
+      try {
+        const devices =
+          (await window.linerElectron?.getAudioOutputDevices?.()) ??
+          (await navigator.mediaDevices
+            .enumerateDevices()
+            .then((list) =>
+              list
+                .filter((d) => d.kind === "audiooutput")
+                .map((d) => ({
+                  deviceId: d.deviceId,
+                  label: d.label || "Audio output",
+                })),
+            )
+            .catch(() => []));
+        if (active) setOutputDevices(devices);
+      } catch {
+        if (active) setOutputDevices([]);
+      }
+    };
+    void load();
+    navigator.mediaDevices?.addEventListener?.("devicechange", load);
+    return () => {
+      active = false;
+      navigator.mediaDevices?.removeEventListener?.("devicechange", load);
+    };
+  }, [mounted]);
 
   return (
     <SettingSection>
@@ -103,6 +140,40 @@ export function PlaybackTab({ searchQuery }: { searchQuery?: string }) {
                 },
               ]}
             />
+          ) : (
+            <span />
+          )
+        }
+      />
+
+      <SettingRow
+        title={t("settings.audio.output_device.title")}
+        description={t("settings.audio.output_device.description")}
+        titleKey="settings.audio.output_device.title"
+        descKey="settings.audio.output_device.description"
+        searchQuery={searchQuery}
+        control={
+          mounted ? (
+            <select
+              aria-label={t("settings.audio.output_device.title")}
+              value={audioOutputDeviceId}
+              onChange={(e) =>
+                void playerEngine.setAudioOutputDevice(e.target.value)
+              }
+              className="h-[34px] max-w-[260px] rounded-item border border-border-subtle bg-fill px-[10px] text-label text-text-primary outline-none"
+            >
+              <option value="default">
+                {t("settings.audio.output_device.default")}
+              </option>
+              {outputDevices
+                .filter((d) => d.deviceId && d.deviceId !== "default")
+                .map((d, i) => (
+                  <option key={d.deviceId} value={d.deviceId}>
+                    {d.label ||
+                      `${t("settings.audio.output_device.device")} ${i + 1}`}
+                  </option>
+                ))}
+            </select>
           ) : (
             <span />
           )

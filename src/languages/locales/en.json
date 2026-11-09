@@ -997,6 +997,12 @@
         "title": "Pause on device change",
         "description": "Automatically pause playback when the audio output device changes."
       },
+      "output_device": {
+        "title": "Output device",
+        "description": "Choose which speaker or audio device Nyx plays to (system devices, Bluetooth speakers, paired Alexa-as-speaker, etc.).",
+        "default": "System default",
+        "device": "Device"
+      },
       "download_current_song": {
         "title": "Download current song",
         "description": "Download the currently playing track as an MP3 file."
@@ -1070,6 +1076,7 @@
       "checking_updates": "Checking…",
       "up_to_date": "Up to date",
       "latest_version_toast": "You are running the latest version (v{version})",
+      "update_error_toast": "Could not check for updates",
       "build_info": "Production release · Electron 44 · React 19",
       "tech_stack_title": "Technology & Engine",
       "tech_electron": "Electron 44 & Web Audio",

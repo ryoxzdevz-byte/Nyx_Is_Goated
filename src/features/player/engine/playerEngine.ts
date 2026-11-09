@@ -802,6 +802,10 @@ class PlayerEngine {
     this.setVolume(volume);
   }
 
+  public async setAudioOutputDevice(deviceId: string): Promise<boolean> {
+    return playerRuntime?.setAudioOutputDevice(deviceId) ?? false;
+  }
+
   public setPlaybackRate(rate: number): void {
     pitchShifter.resumeContext();
     const clampedRate = Math.min(2.0, Math.max(0.5, Number(rate.toFixed(2))));

@@ -17,6 +17,7 @@ import os from "node:os";
 import dns from "node:dns";
 import net from "node:net";
 import tls from "node:tls";
+import http from "node:http";
 import https from "node:https";
 import {
   execFile as nodeExecFile,
@@ -539,13 +540,23 @@ if (!gotTheLock) {
       );
     }
 
-    // Nyx hardening: this music player never needs camera, microphone,
-    // geolocation, notifications, MIDI, clipboard reading or any other
-    // browser permission, so deny every request and permission check.
+    // Nyx hardening: deny browser permissions except speaker/output selection
+    // (used to route audio to a Bluetooth speaker / Alexa-as-speaker etc.).
     session.defaultSession.setPermissionRequestHandler(
-      (_webContents, _permission, callback) => callback(false),
+      (_webContents, permission, callback) => {
+        callback(
+          permission === "speaker-selection" ||
+            permission ===
+              "media" /* output enumeration only; getUserMedia still blocked by app usage */,
+        );
+      },
     );
-    session.defaultSession.setPermissionCheckHandler(() => false);
+    session.defaultSession.setPermissionCheckHandler(
+      (_webContents, permission) => {
+        return permission === "speaker-selection" || permission === "media";
+      },
+    );
+    session.defaultSession.setDevicePermissionHandler(() => false);
 
     // register nyx:// so browsers / xdg-open route share links to us
     // (on linux the packaged .desktop carries the mime handler too)
@@ -1879,20 +1890,221 @@ if (!gotTheLock) {
       },
     );
 
-    // Nyx security hardening: automatic updates and OTA bundle loading are
-    // permanently disabled in this local build. The app never downloads or
-    // executes code from updates.tryliner.fun or GitHub releases.
-    handleTrusted("updater:check-for-updates", async () => ({
-      available: false,
-      error: "Automatic updates are disabled in this Nyx build",
-    }));
+    const NYX_UPDATE_REPO = "ryoxzdevz-byte/Nyx_Is_Goated";
+    let nyxDownloadedInstaller: string | null = null;
 
-    handleTrusted("updater:download-update", async () => ({
-      success: false,
-      error: "Automatic updates are disabled in this Nyx build",
-    }));
+    const compareSemver = (a: string, b: string) => {
+      const pa = a
+        .replace(/^v/, "")
+        .split(/[.-]/)
+        .map((n) => Number(n) || 0);
+      const pb = b
+        .replace(/^v/, "")
+        .split(/[.-]/)
+        .map((n) => Number(n) || 0);
+      for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+        const da = pa[i] ?? 0;
+        const db = pb[i] ?? 0;
+        if (da > db) return 1;
+        if (da < db) return -1;
+      }
+      return 0;
+    };
 
-    handleTrusted("updater:quit-and-install", () => false);
+    const githubJson = <T>(url: string): Promise<T> =>
+      new Promise((resolve, reject) => {
+        const req = https.get(
+          url,
+          {
+            headers: {
+              "user-agent": `Nyx/${app.getVersion()}`,
+              accept: "application/vnd.github+json",
+            },
+          },
+          (res) => {
+            let body = "";
+            res.on("data", (c) => (body += c));
+            res.on("end", () => {
+              if ((res.statusCode ?? 0) >= 400)
+                return reject(new Error(`GitHub ${res.statusCode}`));
+              try {
+                resolve(JSON.parse(body) as T);
+              } catch (e) {
+                reject(e);
+              }
+            });
+          },
+        );
+        req.on("error", reject);
+      });
+
+    const downloadToFile = (
+      url: string,
+      filePath: string,
+      onProgress: (p: {
+        percent: number;
+        transferred: number;
+        total: number;
+        bytesPerSecond: number;
+      }) => void,
+    ): Promise<void> =>
+      new Promise((resolve, reject) => {
+        const run = (target: string, redirects = 0) => {
+          if (redirects > 5) return reject(new Error("Too many redirects"));
+          const lib = target.startsWith("https:") ? https : http;
+          const req = lib.get(
+            target,
+            {
+              headers: { "user-agent": `Nyx/${app.getVersion()}` },
+            },
+            (res) => {
+              if (
+                res.statusCode &&
+                res.statusCode >= 300 &&
+                res.statusCode < 400 &&
+                res.headers.location
+              ) {
+                res.resume();
+                return run(res.headers.location, redirects + 1);
+              }
+              if ((res.statusCode ?? 0) >= 400) {
+                res.resume();
+                return reject(new Error(`Download failed (${res.statusCode})`));
+              }
+              const total = Number(res.headers["content-length"] || 0);
+              let transferred = 0;
+              const started = Date.now();
+              const out = fs.createWriteStream(filePath);
+              res.on("data", (chunk: Buffer) => {
+                transferred += chunk.length;
+                const elapsed = Math.max(1, Date.now() - started) / 1000;
+                onProgress({
+                  percent:
+                    total > 0 ? Math.round((transferred / total) * 100) : 0,
+                  transferred,
+                  total,
+                  bytesPerSecond: Math.round(transferred / elapsed),
+                });
+              });
+              res.pipe(out);
+              out.on("finish", () => out.close(() => resolve()));
+              out.on("error", reject);
+              res.on("error", reject);
+            },
+          );
+          req.on("error", reject);
+        };
+        run(url);
+      });
+
+    let latestUpdateAsset: {
+      version: string;
+      url: string;
+      name: string;
+      notes?: string;
+    } | null = null;
+
+    handleTrusted("updater:check-for-updates", async () => {
+      try {
+        const release = await githubJson<{
+          tag_name: string;
+          name?: string;
+          body?: string;
+          html_url?: string;
+          assets?: Array<{
+            name: string;
+            browser_download_url: string;
+            size: number;
+          }>;
+        }>(`https://api.github.com/repos/${NYX_UPDATE_REPO}/releases/latest`);
+        const version = String(release.tag_name || "").replace(/^v/, "");
+        const current = app.getVersion();
+        const asset = (release.assets || []).find(
+          (a) =>
+            /\.exe$/i.test(a.name) &&
+            /setup|nyx/i.test(a.name) &&
+            a.browser_download_url.startsWith("https://"),
+        );
+        if (!asset || compareSemver(version, current) <= 0) {
+          latestUpdateAsset = null;
+          return { available: false };
+        }
+        latestUpdateAsset = {
+          version,
+          url: asset.browser_download_url,
+          name: asset.name,
+          notes: release.body,
+        };
+        return {
+          available: true,
+          version,
+          releaseNotes: release.body,
+          releaseDate: undefined,
+        };
+      } catch (error) {
+        return {
+          available: false,
+          error: String((error as Error)?.message || error),
+        };
+      }
+    });
+
+    handleTrusted("updater:download-update", async (event) => {
+      if (process.platform !== "win32")
+        return {
+          success: false,
+          error: "Installer updates are only supported on Windows.",
+        };
+      if (!latestUpdateAsset)
+        return { success: false, error: "No update available." };
+      try {
+        const target = path.join(app.getPath("temp"), latestUpdateAsset.name);
+        await downloadToFile(latestUpdateAsset.url, target, (progress) => {
+          event.sender.send("updater:download-progress", progress);
+        });
+        nyxDownloadedInstaller = target;
+        event.sender.send("updater:update-downloaded", {
+          version: latestUpdateAsset.version,
+        });
+        return { success: true };
+      } catch (error) {
+        event.sender.send("updater:error", {
+          message: String((error as Error)?.message || error),
+        });
+        return {
+          success: false,
+          error: String((error as Error)?.message || error),
+        };
+      }
+    });
+
+    handleTrusted("audio:get-output-devices", async (event) => {
+      try {
+        const devices = await event.sender.executeJavaScript(
+          `(async()=>{try{const list=await navigator.mediaDevices.enumerateDevices();return list.filter(d=>d.kind==='audiooutput').map(d=>({deviceId:d.deviceId,label:d.label||'Audio output'}));}catch{return[]}})()`,
+          true,
+        );
+        return Array.isArray(devices) ? devices : [];
+      } catch {
+        return [];
+      }
+    });
+
+    handleTrusted("updater:quit-and-install", () => {
+      if (!nyxDownloadedInstaller || !fs.existsSync(nyxDownloadedInstaller))
+        return false;
+      try {
+        const child = nodeExecFile(nyxDownloadedInstaller, [], (error) => {
+          if (error)
+            console.error("[updater] failed to launch installer", error);
+        });
+        child.unref?.();
+        setTimeout(() => app.quit(), 250);
+        return true;
+      } catch {
+        return false;
+      }
+    });
 
     ipcMain.handle("bundle:check", async () => ({
       available: false,

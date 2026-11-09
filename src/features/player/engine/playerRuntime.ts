@@ -84,6 +84,7 @@ export class PlayerRuntime {
     const initialVolume = usePlayerStore.getState().volume;
     this.audio.volume = initialVolume;
     this.applyPlaybackRateAndPitch();
+    void this.ensureOutputDevice();
     log("cyan", "boot", `volume ${initialVolume}`);
 
     usePlayerStore.subscribe((state, prevState) => {
@@ -95,6 +96,9 @@ export class PlayerRuntime {
         if (!this.audio.paused) {
           this.audio.volume = state.volume;
         }
+      }
+      if (state.audioOutputDeviceId !== prevState.audioOutputDeviceId) {
+        void this.ensureOutputDevice(state.audioOutputDeviceId);
       }
       if (
         state.playbackRate !== prevState.playbackRate ||
@@ -125,13 +129,17 @@ export class PlayerRuntime {
         initial = false;
         return;
       }
-      if (!usePlayerStore.getState().pauseOnDeviceChange) return;
-      if (
-        !this.audio.paused &&
-        usePlayerStore.getState().status === "playing"
-      ) {
-        this.pause();
+      if (usePlayerStore.getState().pauseOnDeviceChange) {
+        if (
+          !this.audio.paused &&
+          usePlayerStore.getState().status === "playing"
+        ) {
+          this.pause();
+        }
       }
+      void this.ensureOutputDevice(
+        usePlayerStore.getState().audioOutputDeviceId,
+      );
     };
 
     try {
@@ -141,6 +149,46 @@ export class PlayerRuntime {
       });
     } catch {
       // ignore unsupported environments
+    }
+  }
+
+  private async ensureOutputDevice(deviceId?: string) {
+    const target =
+      deviceId ?? usePlayerStore.getState().audioOutputDeviceId ?? "default";
+    const audio = this.audio as HTMLAudioElement & {
+      setSinkId?: (id: string) => Promise<void>;
+      sinkId?: string;
+    };
+    if (typeof audio.setSinkId !== "function") return;
+    try {
+      if ((audio.sinkId || "default") === target) return;
+      await audio.setSinkId(target);
+    } catch {
+      try {
+        if (target !== "default") await audio.setSinkId("default");
+      } catch {}
+      if (target !== "default") {
+        usePlayerStore.getState().setAudioOutputDeviceId("default");
+      }
+    }
+  }
+
+  public async setAudioOutputDevice(deviceId: string): Promise<boolean> {
+    const target = deviceId || "default";
+    usePlayerStore.getState().setAudioOutputDeviceId(target);
+    const audio = this.audio as HTMLAudioElement & {
+      setSinkId?: (id: string) => Promise<void>;
+    };
+    if (typeof audio.setSinkId !== "function") return false;
+    try {
+      await audio.setSinkId(target);
+      return true;
+    } catch {
+      try {
+        await audio.setSinkId("default");
+      } catch {}
+      usePlayerStore.getState().setAudioOutputDeviceId("default");
+      return false;
     }
   }
 
