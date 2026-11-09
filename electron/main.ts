@@ -107,6 +107,9 @@ app.commandLine.appendSwitch("enable-gpu-rasterization");
 app.commandLine.appendSwitch("enable-zero-copy");
 app.commandLine.appendSwitch("ignore-gpu-blocklist");
 app.commandLine.appendSwitch("enable-native-gpu-memory-buffers");
+app.commandLine.appendSwitch("enable-accelerated-2d-canvas");
+app.commandLine.appendSwitch("disable-renderer-backgrounding");
+app.commandLine.appendSwitch("disable-background-timer-throttling");
 // forces resilient http/1.1 to prevent chromium err_http2_ping_failed on dropped network frames
 app.commandLine.appendSwitch("disable-http2");
 if (detectCompositor() !== "none") {
@@ -287,6 +290,7 @@ function createWindow() {
       ? { titleBarStyle: "hidden" as const }
       : { frame: false }),
     transparent: true,
+    ...(process.platform === "win32" ? { backgroundMaterial: "acrylic" as const } : {}),
     backgroundColor: "#00000000",
     hasShadow: false,
     fullscreenable: true,
@@ -2089,17 +2093,23 @@ if (!gotTheLock) {
           latestUpdateAsset = null;
           const hasAny = Array.isArray(releases) && releases.length > 0;
           const hasAssets = hasAny
-            ? releases.some((r) => (r.assets || []).length > 0)
+            ? releases.some((r) => (r.assets || []).some((a) => pickWindowsInstaller({ assets: [a] })))
             : false;
-          return {
-            available: false,
-            ...(hasAny && !hasAssets
-              ? {
-                  error:
-                    "A release exists but no installer asset is published yet. Wait for GitHub Actions to finish building the Windows setup.",
-                }
-              : {}),
-          };
+          if (hasAny && !hasAssets) {
+            return {
+              available: false,
+              error:
+                "Release found, but the Windows installer is still being built/uploaded by GitHub Actions. Try again in a minute.",
+            };
+          }
+          if (!hasAny) {
+            return {
+              available: false,
+              error:
+                `No published releases found for ${NYX_UPDATE_REPO}. If the repo is private, updater checks need repo access; if public, wait for the release workflow to publish assets.`,
+            };
+          }
+          return { available: false };
         }
 
         latestUpdateAsset = {

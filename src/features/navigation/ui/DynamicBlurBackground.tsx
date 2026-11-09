@@ -4,6 +4,7 @@ import { useActiveBackgroundCover } from "../hooks/useActiveBackgroundCover";
 
 export interface DynamicBlurBackgroundProps {
   isDark?: boolean;
+  force?: boolean;
 }
 
 interface ShownCover {
@@ -20,6 +21,7 @@ function isStrongGlass() {
 
 export function DynamicBlurBackground({
   isDark = true,
+  force = false,
 }: DynamicBlurBackgroundProps) {
   const { cover, pageBackdropOptions } = useActiveBackgroundCover();
   const [shown, setShown] = useState<ShownCover | null>(null);
@@ -33,7 +35,27 @@ export function DynamicBlurBackground({
     setShown({ src: null });
   }
 
-  if (!shown) return null;
+  if (!shown && !force) return null;
+
+  if (!shown?.src) {
+    return (
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-item"
+      >
+        <div
+          className="absolute inset-0"
+          style={{
+            background: isDark
+              ? "radial-gradient(120% 90% at 20% 0%, rgba(120,90,255,0.18), transparent 55%), radial-gradient(90% 80% at 100% 20%, rgba(255,120,180,0.10), transparent 60%), linear-gradient(180deg, rgba(18,18,22,0.72), rgba(10,10,12,0.92))"
+              : "radial-gradient(120% 90% at 20% 0%, rgba(120,90,255,0.12), transparent 55%), linear-gradient(180deg, rgba(255,255,255,0.68), rgba(245,245,247,0.9))",
+            filter: `blur(${strong ? 56 : 28}px) saturate(140%)`,
+            transform: "scale(1.08)",
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <PageCoverBackdrop

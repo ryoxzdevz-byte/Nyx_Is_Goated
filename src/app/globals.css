@@ -231,6 +231,27 @@
   -webkit-backdrop-filter: blur(40px) saturate(165%) !important;
 }
 
+.nyx-smooth * {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+.nyx-smooth main,
+.nyx-smooth aside,
+.nyx-smooth [class*="overflow-y-auto"],
+.nyx-smooth [class*="overflow-auto"] {
+  contain: layout paint style;
+}
+.nyx-smooth img,
+.nyx-smooth canvas,
+.nyx-smooth video {
+  content-visibility: auto;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .nyx-smooth .page-transition > * {
+    will-change: transform, opacity;
+  }
+}
+
 @theme inline {
   --color-bg-canvas: var(--bg-canvas);
   --color-bg-surface: var(--bg-surface);

@@ -9,7 +9,8 @@ import {
   storeGlassIntensity,
   type GlassIntensity,
 } from "../../store/customizationStore";
-import { SettingBlock, SettingRow, SettingSection } from "../controls";
+import { useVisualModeStore } from "@/features/player/store/visualModeStore";
+import { SettingBlock, SettingRow, SettingSection, SegmentedControl } from "../controls";
 import { ThemeCard } from "./ThemeCard";
 
 export function AppearanceTab({ searchQuery }: { searchQuery?: string }) {
@@ -23,6 +24,8 @@ export function AppearanceTab({ searchQuery }: { searchQuery?: string }) {
   );
   const [savedGlass, setSavedGlass] = useState<GlassIntensity>(appliedGlass);
   const [restarting, setRestarting] = useState(false);
+  const visualMode = useVisualModeStore((s) => s.mode);
+  const setVisualMode = useVisualModeStore((s) => s.setMode);
 
   useEffect(() => {
     setMounted(true);
@@ -145,6 +148,28 @@ export function AppearanceTab({ searchQuery }: { searchQuery?: string }) {
               changeGlassIntensity(checked ? "strong" : "default")
             }
           />
+        }
+      />
+
+      <SettingRow
+        title="Performance mode"
+        description="Full is smoothest visuals. Balanced/lite reduce effects if your PC struggles."
+        searchQuery={searchQuery}
+        control={
+          mounted ? (
+            <SegmentedControl
+              ariaLabel="Performance mode"
+              value={visualMode}
+              onChange={setVisualMode}
+              options={[
+                { value: "full", label: "Full" },
+                { value: "balanced", label: "Balanced" },
+                { value: "lite", label: "Lite" },
+              ]}
+            />
+          ) : (
+            <span />
+          )
         }
       />
 
