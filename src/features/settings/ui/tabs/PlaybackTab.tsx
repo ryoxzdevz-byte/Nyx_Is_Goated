@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useTranslation } from "@/languages";
 import { playerEngine, usePlayerStore } from "@/features/player";
-import { ToggleSwitch } from "@/shared/ui";
+import { MenuSelect, ToggleSwitch } from "@/shared/ui";
 import { SettingRow, SettingSection, SegmentedControl } from "../controls";
 
 export function PlaybackTab({ searchQuery }: { searchQuery?: string }) {
@@ -54,11 +54,11 @@ export function PlaybackTab({ searchQuery }: { searchQuery?: string }) {
                 .filter((d) => d.kind === "audiooutput")
                 .map((d) => ({
                   deviceId: d.deviceId,
-                  label: d.label || "Audio output",
+                  label: d.label?.trim() || "",
                 })),
             )
             .catch(() => []));
-        if (active) setOutputDevices(devices);
+        if (active) setOutputDevices(Array.isArray(devices) ? devices : []);
       } catch {
         if (active) setOutputDevices([]);
       }
@@ -70,6 +70,32 @@ export function PlaybackTab({ searchQuery }: { searchQuery?: string }) {
       navigator.mediaDevices?.removeEventListener?.("devicechange", load);
     };
   }, [mounted]);
+
+  const outputOptions = useMemo(() => {
+    const options: Array<{ value: string; label: string }> = [
+      { value: "default", label: t("settings.audio.output_device.default") },
+    ];
+    outputDevices
+      .filter((d) => d.deviceId && d.deviceId !== "default")
+      .forEach((d, i) => {
+        options.push({
+          value: d.deviceId,
+          label:
+            d.label || `${t("settings.audio.output_device.device")} ${i + 1}`,
+        });
+      });
+    if (
+      audioOutputDeviceId &&
+      audioOutputDeviceId !== "default" &&
+      !options.some((o) => o.value === audioOutputDeviceId)
+    ) {
+      options.push({
+        value: audioOutputDeviceId,
+        label: t("settings.audio.output_device.device"),
+      });
+    }
+    return options;
+  }, [outputDevices, audioOutputDeviceId, t]);
 
   return (
     <SettingSection>
@@ -154,26 +180,19 @@ export function PlaybackTab({ searchQuery }: { searchQuery?: string }) {
         searchQuery={searchQuery}
         control={
           mounted ? (
-            <select
+            <MenuSelect
               aria-label={t("settings.audio.output_device.title")}
-              value={audioOutputDeviceId}
-              onChange={(e) =>
-                void playerEngine.setAudioOutputDevice(e.target.value)
+              value={
+                outputOptions.some((o) => o.value === audioOutputDeviceId)
+                  ? audioOutputDeviceId
+                  : "default"
               }
-              className="h-[34px] max-w-[260px] rounded-item border border-border-subtle bg-fill px-[10px] text-label text-text-primary outline-none"
-            >
-              <option value="default">
-                {t("settings.audio.output_device.default")}
-              </option>
-              {outputDevices
-                .filter((d) => d.deviceId && d.deviceId !== "default")
-                .map((d, i) => (
-                  <option key={d.deviceId} value={d.deviceId}>
-                    {d.label ||
-                      `${t("settings.audio.output_device.device")} ${i + 1}`}
-                  </option>
-                ))}
-            </select>
+              onChange={(value) =>
+                void playerEngine.setAudioOutputDevice(value)
+              }
+              options={outputOptions}
+              className="max-w-[260px]"
+            />
           ) : (
             <span />
           )

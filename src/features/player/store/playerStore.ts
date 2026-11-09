@@ -431,6 +431,13 @@ export const usePlayerStore = create<PlayerStore>()(
 let lastResumeSavedAt = 0;
 let lastResumeValue: string | null = null;
 
+export function flushPersistedPlayerSession() {
+  try {
+    saveResumePosition(usePlayerStore.getState());
+    debouncedStorage.flush();
+  } catch {}
+}
+
 function saveResumePosition(state: PlayerState) {
   lastResumeSavedAt = Date.now();
   if (state.defaultPlaybackContext !== "resume" || !state.currentTrack) {
@@ -468,7 +475,9 @@ usePlayerStore.subscribe((state, prev) => {
 
 if (typeof window !== "undefined") {
   window.addEventListener("beforeunload", () => {
-    saveResumePosition(usePlayerStore.getState());
-    debouncedStorage.flush();
+    flushPersistedPlayerSession();
   });
+  (
+    window as Window & { __nyxFlushPlayerSession?: () => void }
+  ).__nyxFlushPlayerSession = flushPersistedPlayerSession;
 }

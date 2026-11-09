@@ -1,10 +1,5 @@
 import type { ReactNode } from "react";
-import {
-  DiscordFill,
-  GithubFill,
-  World2Line,
-  TelegramFill,
-} from "@mingcute/react";
+import { BookLine, GithubFill } from "@mingcute/react";
 import { useTranslation } from "@/languages";
 
 interface AboutLink {
@@ -14,6 +9,8 @@ interface AboutLink {
   icon: ReactNode;
 }
 
+const NYX_REPO_URL = "https://github.com/ryoxzdevz-byte/Nyx_Is_Goated";
+
 const openUrl = (url: string) =>
   window.open(url, "_blank", "noopener,noreferrer");
 
@@ -22,28 +19,16 @@ export function AboutTabLinks() {
 
   const links: AboutLink[] = [
     {
-      id: "telegram",
-      url: "https://t.me/liner_app",
-      label: t("settings.about.telegram"),
-      icon: <TelegramFill size={17} />,
-    },
-    {
-      id: "discord",
-      url: "https://discord.gg/liner",
-      label: t("settings.about.discord"),
-      icon: <DiscordFill size={17} />,
+      id: "docs",
+      url: NYX_REPO_URL,
+      label: t("settings.about.docs"),
+      icon: <BookLine size={17} />,
     },
     {
       id: "github",
-      url: "https://github.com/tryliner/desktop",
+      url: NYX_REPO_URL,
       label: t("settings.about.github"),
       icon: <GithubFill size={17} />,
-    },
-    {
-      id: "website",
-      url: "https://tryliner.fun",
-      label: t("settings.about.website"),
-      icon: <World2Line size={17} />,
     },
   ];
 

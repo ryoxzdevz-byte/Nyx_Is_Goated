@@ -556,7 +556,9 @@ if (!gotTheLock) {
         return permission === "speaker-selection" || permission === "media";
       },
     );
-    session.defaultSession.setDevicePermissionHandler(() => false);
+    session.defaultSession.setDevicePermissionHandler((details) => {
+      return (details.deviceType as string) === "speaker";
+    });
 
     // register nyx:// so browsers / xdg-open route share links to us
     // (on linux the packaged .desktop carries the mime handler too)
@@ -2080,8 +2082,14 @@ if (!gotTheLock) {
 
     handleTrusted("audio:get-output-devices", async (event) => {
       try {
+        await event.sender
+          .executeJavaScript(
+            `(async()=>{try{const m=navigator.mediaDevices;if(!m?.getUserMedia)return;const s=await m.getUserMedia({audio:true});try{s.getTracks().forEach(t=>t.stop())}catch{}}catch{}})()`,
+            true,
+          )
+          .catch(() => undefined);
         const devices = await event.sender.executeJavaScript(
-          `(async()=>{try{const list=await navigator.mediaDevices.enumerateDevices();return list.filter(d=>d.kind==='audiooutput').map(d=>({deviceId:d.deviceId,label:d.label||'Audio output'}));}catch{return[]}})()`,
+          `(async()=>{try{const list=await navigator.mediaDevices.enumerateDevices();return list.filter(d=>d.kind==='audiooutput').map(d=>({deviceId:d.deviceId,label:(d.label||'').trim()}));}catch{return[]}})()`,
           true,
         );
         return Array.isArray(devices) ? devices : [];
@@ -2090,10 +2098,11 @@ if (!gotTheLock) {
       }
     });
 
-    handleTrusted("updater:quit-and-install", () => {
+    handleTrusted("updater:quit-and-install", async () => {
       if (!nyxDownloadedInstaller || !fs.existsSync(nyxDownloadedInstaller))
         return false;
       try {
+        await flushRendererPlayerSession(1200);
         const child = nodeExecFile(nyxDownloadedInstaller, [], (error) => {
           if (error)
             console.error("[updater] failed to launch installer", error);
@@ -2143,6 +2152,34 @@ app.on("window-all-closed", () => {
   }
 });
 
+async function flushRendererPlayerSession(timeoutMs = 1500): Promise<void> {
+  const win =
+    mainWindow && !mainWindow.isDestroyed()
+      ? mainWindow
+      : BrowserWindow.getAllWindows().find((w) => !w.isDestroyed());
+  if (!win) return;
+  try {
+    win.webContents.send("app:flush");
+  } catch {}
+  try {
+    await Promise.race([
+      win.webContents.executeJavaScript(
+        `Promise.resolve(globalThis.__nyxFlushPlayerSession?.()).catch(()=>{})`,
+        true,
+      ),
+      new Promise<void>((resolve) => setTimeout(resolve, timeoutMs)),
+    ]);
+  } catch {}
+}
+
 // covers every other way out: cmd+q, the updater's quitAndInstall, os shutdown
-app.on("before-quit", () => shutdown.begin());
+let beforeQuitFlush: Promise<void> | null = null;
+app.on("before-quit", (event) => {
+  if (beforeQuitFlush) return;
+  beforeQuitFlush = flushRendererPlayerSession().finally(() => {
+    shutdown.begin();
+  });
+  event.preventDefault();
+  void beforeQuitFlush.finally(() => app.quit());
+});
 app.on("will-quit", () => shutdown.begin());

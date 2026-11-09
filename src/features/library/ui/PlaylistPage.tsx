@@ -421,8 +421,8 @@ function LibraryPlaylistContent() {
     viewData &&
     downloadedPlaylist.revision !== viewData.revision,
   );
-  const downloadLabel = !downloadedPlaylist
-    ? t("playlist.download_all")
+  const downloadTitle = !downloadedPlaylist
+    ? t("playlist.download")
     : downloadComplete
       ? needsDownloadUpdate
         ? t("playlist.update_download")
@@ -961,8 +961,9 @@ function LibraryPlaylistContent() {
                           variant="secondary"
                           onClick={handleDownload}
                           disabled={downloadDisabled}
-                          className={`${HERO_BUTTON_CLASS} ${HERO_GLASS_BUTTON_CLASS} max-w-[220px] px-[16px]`}
-                          title={downloadLabel}
+                          className={`${HERO_BUTTON_CLASS} ${HERO_GLASS_BUTTON_CLASS} px-[16px]`}
+                          title={downloadTitle}
+                          aria-label={downloadTitle}
                         >
                           {downloadComplete && !needsDownloadUpdate ? (
                             <CheckLine
@@ -972,9 +973,7 @@ function LibraryPlaylistContent() {
                           ) : (
                             <DownloadLine size={16} className="shrink-0" />
                           )}
-                          <span className="truncate">
-                            {t("playlist.download_all")}
-                          </span>
+                          <span>{t("playlist.download")}</span>
                         </Button>
                       ) : null}
                     </>

@@ -34,6 +34,7 @@ import { preloadCoverArt } from "@/features/covers";
 import { preloadArtistAvatars } from "@/features/artist/lib/artistAvatar";
 import { linerDb, type CachedLyricsRecord } from "@/shared/storage";
 import { debouncedStorage } from "@/shared/utils/storage";
+import { flushPersistedPlayerSession } from "../store/playerStore";
 import { showToast } from "@/shared/ui";
 import { createTranslatorSync, getStoredLocale } from "@/languages";
 import type { Track } from "@/shared/types";
@@ -353,9 +354,14 @@ class PlayerEngine {
         g.__playerEngineUnsub();
       }
 
-      window.addEventListener("beforeunload", () => {
+      const flushSession = () => {
         this.telemetry.flushCurrentTrack();
-      });
+        try {
+          flushPersistedPlayerSession();
+        } catch {}
+      };
+      window.addEventListener("beforeunload", flushSession);
+      window.linerElectron?.onAppFlush?.(flushSession);
 
       let prevTrackId: string | null =
         usePlayerStore.getState().currentTrack?.id || null;

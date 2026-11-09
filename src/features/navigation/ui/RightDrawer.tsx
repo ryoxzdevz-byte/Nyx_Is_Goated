@@ -19,11 +19,11 @@ import { useListReorder } from "@/shared/hooks";
 import RightDrawerHeader from "./RightDrawerHeader";
 
 const QUEUE_ITEM_HEIGHT = 68;
-const REMOVE_FADE_MS = 180;
-const REMOVE_SHIFT_DELAY_MS = 90;
-const REMOVE_SHIFT_MS = 260;
+const REMOVE_FADE_MS = 200;
+const REMOVE_SHIFT_DELAY_MS = 70;
+const REMOVE_SHIFT_MS = 280;
 const REMOVE_MS = REMOVE_SHIFT_DELAY_MS + REMOVE_SHIFT_MS;
-const CALM_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
+const CALM_EASE = "cubic-bezier(0.16, 1, 0.3, 1)";
 const RESTORE_FADE_DELAY_MS = REMOVE_SHIFT_MS - REMOVE_SHIFT_DELAY_MS;
 
 interface QueueRestore {
@@ -192,11 +192,11 @@ const QueueList = memo(function QueueList({
           shiftY = -QUEUE_ITEM_HEIGHT;
         if (restoreBelow && restoreStart) shiftY = -QUEUE_ITEM_HEIGHT;
 
-        const fade = `transform ${REMOVE_FADE_MS}ms ${CALM_EASE}, opacity ${REMOVE_FADE_MS}ms ${CALM_EASE}, filter ${REMOVE_FADE_MS}ms ${CALM_EASE}`;
         const restoreFade = `transform ${REMOVE_FADE_MS}ms ${CALM_EASE} ${RESTORE_FADE_DELAY_MS}ms, opacity ${REMOVE_FADE_MS}ms ${CALM_EASE} ${RESTORE_FADE_DELAY_MS}ms, filter ${REMOVE_FADE_MS}ms ${CALM_EASE} ${RESTORE_FADE_DELAY_MS}ms`;
         let transition: string | undefined;
         if (isDragging)
-          transition = "transform 180ms cubic-bezier(0.2, 0, 0, 1)";
+          transition =
+            "transform 220ms cubic-bezier(0.16, 1, 0.3, 1), opacity 180ms ease";
         else if (restoring)
           transition = restoreStart
             ? "none"
@@ -205,9 +205,11 @@ const QueueList = memo(function QueueList({
               : restoreBelow
                 ? `transform ${REMOVE_SHIFT_MS}ms ${CALM_EASE}`
                 : undefined;
-        else if (isRemoving) transition = fade;
+        else if (isRemoving)
+          transition = `transform 220ms ${CALM_EASE}, opacity ${REMOVE_FADE_MS}ms ease, filter ${REMOVE_FADE_MS}ms ease`;
         else if (removingIndex !== null)
           transition = `transform ${REMOVE_SHIFT_MS}ms ${CALM_EASE} ${REMOVE_SHIFT_DELAY_MS}ms`;
+        else transition = `transform 180ms ${CALM_EASE}`;
 
         return (
           <div

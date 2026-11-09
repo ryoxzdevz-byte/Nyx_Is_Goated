@@ -17,9 +17,9 @@ const DEFAULT_RESTORE_LEVEL = 0.7;
 const clampLevel = (level: number) => Math.min(1, Math.max(0, level));
 
 function VolumeIcon({ percent }: { percent: number }) {
-  if (percent === 0) return <VolumeCross size={14} weight="Bold" />;
-  if (percent < 40) return <VolumeSmall size={14} weight="Bold" />;
-  return <VolumeLoud size={14} weight="Bold" />;
+  if (percent === 0) return <VolumeCross size={15} weight="Bold" />;
+  if (percent < 40) return <VolumeSmall size={15} weight="Bold" />;
+  return <VolumeLoud size={15} weight="Bold" />;
 }
 
 export function VolumeColumn({ onDraggingChange }: VolumeColumnProps) {
@@ -83,7 +83,7 @@ export function VolumeColumn({ onDraggingChange }: VolumeColumnProps) {
   const toggleMute = () => apply(level === 0 ? restoreLevelRef.current : 0);
 
   const label = (
-    <span className="text-[10px] font-[700] tabular-nums">{percent}%</span>
+    <span className="text-[11px] font-[700] tabular-nums">{percent}%</span>
   );
 
   return (
@@ -104,7 +104,7 @@ export function VolumeColumn({ onDraggingChange }: VolumeColumnProps) {
         apply(level + (event.deltaY < 0 ? WHEEL_STEP : -WHEEL_STEP))
       }
       onKeyDown={handleKeyDown}
-      className="prevent-seek relative h-[120px] w-[38px] cursor-pointer touch-none select-none overflow-hidden rounded-[7px] bg-black/[0.08] outline-none focus-visible:ring-2 focus-visible:ring-text-primary/30 dark:bg-white/[0.08]"
+      className="prevent-seek relative h-[164px] w-[46px] cursor-pointer touch-none select-none overflow-hidden rounded-[9px] bg-black/[0.08] outline-none focus-visible:ring-2 focus-visible:ring-text-primary/30 dark:bg-white/[0.08]"
     >
       <div
         className={cn(
@@ -113,7 +113,7 @@ export function VolumeColumn({ onDraggingChange }: VolumeColumnProps) {
         )}
         style={{ height: `${percent}%` }}
       />
-      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-between py-[6px] text-text-primary">
+      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-between py-[8px] text-text-primary">
         <button
           type="button"
           onPointerDown={(event) => event.stopPropagation()}
@@ -123,7 +123,7 @@ export function VolumeColumn({ onDraggingChange }: VolumeColumnProps) {
               ? t("player.unmute") || "Unmute"
               : t("player.mute") || "Mute"
           }
-          className="pointer-events-auto flex size-[20px] items-center justify-center rounded-full border-0 bg-transparent p-0 text-inherit"
+          className="pointer-events-auto flex size-[22px] items-center justify-center rounded-full border-0 bg-transparent p-0 text-inherit"
         >
           <VolumeIcon percent={percent} />
         </button>

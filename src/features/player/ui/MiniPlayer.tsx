@@ -203,12 +203,16 @@ function MiniPlayerTimeline({
   fillClassName,
   trackBg,
   trackActiveBg,
+  showThumb = true,
+  className = "!h-[14px]",
 }: {
   fallbackDurationMs: number;
   fillColor?: string;
   fillClassName?: string;
   trackBg?: string;
   trackActiveBg?: string;
+  showThumb?: boolean;
+  className?: string;
 }) {
   const positionMs = usePlayerStore((s) => s.positionMs);
   const durationMs = usePlayerStore((s) =>
@@ -224,7 +228,8 @@ function MiniPlayerTimeline({
       fillClassName={fillClassName}
       trackBg={trackBg}
       trackActiveBg={trackActiveBg}
-      className="!h-[14px]"
+      showThumb={showThumb}
+      className={className}
     />
   );
 }
@@ -425,7 +430,7 @@ function MiniPlayer({
       toggle.closest<HTMLElement>(".bg-bg-toolbox") || toggle.parentElement;
     const barRect = bar?.getBoundingClientRect();
 
-    const popupW = 46;
+    const popupW = 54;
     const btnW = toggleRect.width;
     const right = rootRect.right - toggleRect.right + (btnW - popupW) / 2;
     const targetTop = barRect ? barRect.top : toggleRect.top;
@@ -578,7 +583,7 @@ function MiniPlayer({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 6, scale: 0.96, pointerEvents: "none" }}
             transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute bottom-[52px] z-[99] w-[46px] rounded-[11px] p-[4px] bg-fill backdrop-blur-2xl backdrop-saturate-150 prevent-seek"
+            className="absolute bottom-[52px] z-[99] w-[54px] rounded-[13px] p-[5px] bg-fill backdrop-blur-2xl backdrop-saturate-150 prevent-seek"
             style={volumePopupStyle}
             onPointerDown={(e) => e.stopPropagation()}
             onMouseEnter={clearVolumeHoverTimer}
@@ -640,38 +645,40 @@ function MiniPlayer({
               : "rounded-3xl border-[0.5px] border-border-tertiary bg-bg-primary"
         }`}
       >
-        {embedded ? null : (
-          <div
-            className={`absolute z-30 prevent-seek ${
-              usesRoundedStyle
+        <div
+          className={`absolute z-30 prevent-seek ${
+            embedded
+              ? "inset-x-0 bottom-0"
+              : usesRoundedStyle
                 ? "left-[18px] right-[18px] bottom-[2px]"
                 : "left-[8px] right-[8px] bottom-[2px]"
-            }`}
-            onPointerDown={(e) => e.stopPropagation()}
-          >
-            <MiniPlayerTimeline
-              fallbackDurationMs={currentTrack?.durationMs ?? 0}
-              fillColor={accentColorSolid || undefined}
-              fillClassName={
-                !accentColorSolid
-                  ? isLight
-                    ? "bg-text-primary"
-                    : "bg-white"
-                  : undefined
-              }
-              trackBg={
-                isLight ? "rgba(0, 0, 0, 0.12)" : "rgba(255, 255, 255, 0.2)"
-              }
-              trackActiveBg={
-                isLight ? "rgba(0, 0, 0, 0.12)" : "rgba(255, 255, 255, 0.2)"
-              }
-            />
-          </div>
-        )}
+          }`}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <MiniPlayerTimeline
+            fallbackDurationMs={currentTrack?.durationMs ?? 0}
+            fillColor={accentColorSolid || undefined}
+            fillClassName={
+              !accentColorSolid
+                ? isLight
+                  ? "bg-text-primary"
+                  : "bg-white"
+                : undefined
+            }
+            trackBg={
+              isLight ? "rgba(0, 0, 0, 0.12)" : "rgba(255, 255, 255, 0.2)"
+            }
+            trackActiveBg={
+              isLight ? "rgba(0, 0, 0, 0.12)" : "rgba(255, 255, 255, 0.2)"
+            }
+            showThumb={!embedded}
+            className={embedded ? "!h-[6px]" : "!h-[14px]"}
+          />
+        </div>
         <div
           className={`relative grid h-full pointer-events-none ${
             embedded
-              ? "grid-cols-[280px_minmax(0,1fr)_260px]"
+              ? "grid-cols-[280px_minmax(0,1fr)_260px] pb-[6px]"
               : "grid-cols-[286px_minmax(0,1fr)]"
           } ${!usesRoundedStyle && !embedded ? "pb-[4px]" : ""}`}
         >

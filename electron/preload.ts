@@ -76,6 +76,7 @@ export interface LinerElectronApi {
   setRememberWindowBounds: (enabled: boolean) => Promise<boolean>;
   onWindowStateChange: (cb: (state: WindowState) => void) => () => void;
   onWindowRestored?: (cb: () => void) => () => void;
+  onAppFlush?: (cb: () => void) => () => void;
   onWindowMinimized?: (cb: () => void) => () => void;
   notePresence?: () => void;
   dragStart: () => void;
@@ -269,6 +270,13 @@ const api: LinerElectronApi = {
     ipcRenderer.on("window:restored", listener);
     return () => {
       ipcRenderer.removeListener("window:restored", listener);
+    };
+  },
+  onAppFlush: (cb) => {
+    const listener = () => cb();
+    ipcRenderer.on("app:flush", listener);
+    return () => {
+      ipcRenderer.removeListener("app:flush", listener);
     };
   },
   onWindowMinimized: (cb) => {

@@ -1099,7 +1099,8 @@
       "report_issue_desc": "Submit bug reports, feature suggestions, or feedback on GitHub.",
       "special_thanks": "Special Thanks",
       "special_thanks_desc": "@braccato/core, @kawarp/react, Solar Icons and MingCute Icons.",
-      "license_notice": "Distributed under Liner Source-Available & Non-Commercial License."
+      "license_notice": "Distributed under Liner Source-Available & Non-Commercial License.",
+      "docs": "Docs"
     },
     "connection": {
       "open_folder": "Open saved location"
