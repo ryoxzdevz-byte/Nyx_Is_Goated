@@ -650,6 +650,7 @@ if (!gotTheLock) {
     handleTrusted("window:minimize", () => {
       // cannot minimize a native fullscreen window or under hyprland tiling wm
       if (!mainWindow || mainWindow.isFullScreen() || isHyprland) return;
+      overlayManager?.suppressAutoShow(1800);
       // windows 11 + add-on: the window flies into the overlay pill it is about to become
       if (
         nativeSnap &&
@@ -1925,20 +1926,37 @@ if (!gotTheLock) {
 
     const githubJson = <T>(url: string): Promise<T> =>
       new Promise((resolve, reject) => {
+        const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
         const req = https.get(
           url,
           {
             headers: {
-              "user-agent": `Nyx/${app.getVersion()}`,
+              "user-agent": `Nyx/${app.getVersion()} (+https://github.com/${NYX_UPDATE_REPO})`,
               accept: "application/vnd.github+json",
+              "x-github-api-version": "2022-11-28",
+              ...(token ? { authorization: `Bearer ${token}` } : {}),
             },
           },
           (res) => {
             let body = "";
             res.on("data", (c) => (body += c));
             res.on("end", () => {
-              if ((res.statusCode ?? 0) >= 400)
-                return reject(new Error(`GitHub ${res.statusCode}`));
+              const status = res.statusCode ?? 0;
+              if (status >= 400) {
+                const detail = body.slice(0, 180).replace(/\s+/g, " ").trim();
+                if (status === 404) {
+                  return reject(
+                    new Error(
+                      token
+                        ? `Update repo/release not found (GitHub 404) for ${NYX_UPDATE_REPO}. ${detail}`
+                        : `Update check failed (GitHub 404) for ${NYX_UPDATE_REPO}. If private, set GITHUB_TOKEN. If public, make sure a published release with Nyx-Setup-*.exe exists. ${detail}`,
+                    ),
+                  );
+                }
+                return reject(
+                  new Error(`GitHub ${status}${detail ? `: ${detail}` : ""}`),
+                );
+              }
               try {
                 resolve(JSON.parse(body) as T);
               } catch (e) {
@@ -2069,14 +2087,19 @@ if (!gotTheLock) {
         const best = candidates[0];
         if (!best) {
           latestUpdateAsset = null;
-          if (!Array.isArray(releases) || releases.length === 0) {
-            return {
-              available: false,
-              error:
-                "No published Nyx releases with a Windows installer were found. The release may still be building.",
-            };
-          }
-          return { available: false };
+          const hasAny = Array.isArray(releases) && releases.length > 0;
+          const hasAssets = hasAny
+            ? releases.some((r) => (r.assets || []).length > 0)
+            : false;
+          return {
+            available: false,
+            ...(hasAny && !hasAssets
+              ? {
+                  error:
+                    "A release exists but no installer asset is published yet. Wait for GitHub Actions to finish building the Windows setup.",
+                }
+              : {}),
+          };
         }
 
         latestUpdateAsset = {

@@ -52,6 +52,7 @@ export function AppearanceTab({ searchQuery }: { searchQuery?: string }) {
   const changeGlassIntensity = (value: GlassIntensity) => {
     setSavedGlass(value);
     storeGlassIntensity(value);
+    applyGlassIntensity(value);
   };
 
   const restartToApplyGlass = async () => {

@@ -21,7 +21,7 @@ import {
 export type OverlayPosition = "top-left" | "top-center" | "top-right";
 
 const OVERLAY_TITLE = "Nyx Overlay";
-const OVERLAY_MARGIN = 15;
+const OVERLAY_MARGIN = 4;
 const TOGGLE_ACTION = "toggle-overlay";
 const LIKE_ACTION = "like-track";
 const COMPOSITOR_SETTLE_MS = 300;
@@ -186,6 +186,11 @@ export class OverlayManager {
   private isAuthenticated = false;
   // set once the app is quitting: nothing may create a window or grab a shortcut again
   private disposed = false;
+  private suppressAutoShowUntil = 0;
+
+  public suppressAutoShow(ms = 1500) {
+    this.suppressAutoShowUntil = Date.now() + ms;
+  }
 
   private moveAnimationTimer: NodeJS.Timeout | null = null;
   private currentAnimatedX: number | null = null;
@@ -402,15 +407,27 @@ export class OverlayManager {
     this.mainWindow = win;
     if (this.mainWindow) {
       this.mainWindow.on("minimize", () => {
-        if (!this.isAuthenticated || !this.enabled || !this.autoShowOnMinimize)
+        if (
+          !this.isAuthenticated ||
+          !this.enabled ||
+          !this.autoShowOnMinimize ||
+          Date.now() < this.suppressAutoShowUntil ||
+          this.wantVisible ||
+          this.pendingShow ||
+          this.isOnScreen()
+        )
           return;
         this.wasAutoOpened = true;
-        // Small delay so the OS completes window minimization and activates
-        // the underlying window (e.g. fullscreen browser) before overlay displays and elevates
         setTimeout(() => {
-          if (!this.isAuthenticated) return;
+          if (
+            !this.isAuthenticated ||
+            Date.now() < this.suppressAutoShowUntil ||
+            this.wantVisible ||
+            this.pendingShow
+          )
+            return;
           this.showOverlay();
-        }, 50);
+        }, 60);
       });
 
       this.mainWindow.on("restore", () => {
@@ -754,6 +771,7 @@ export class OverlayManager {
   ): Promise<BrowserWindow | null> {
     if (this.disposed || !this.isAuthenticated || !this.enabled) return null;
     if (this.hasNothingToShow()) return null;
+    this.suppressAutoShowUntil = Date.now() + 1500;
     this.cancelIdleDestroy();
     if (this.closeTimeout) {
       clearTimeout(this.closeTimeout);
