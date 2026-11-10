@@ -56,10 +56,10 @@ export default function UpdateToastBridge() {
       const version = updateInfo?.version ? `v${updateInfo.version}` : "";
       toast(t("updater.downloaded_title") || "Update ready", "checkmark", {
         id: TOAST_ID,
-        description: version ? `${version} ready to install` : t("updater.downloaded_desc", { version: "" }) || "Ready to install.",
+        description: version || "Ready",
         duration: 999999,
         action: {
-          label: t("updater.restart") || t("updater.install_button") || "Install",
+          label: "Install",
           onClick: () => {
             void installUpdate();
           },

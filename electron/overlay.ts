@@ -417,17 +417,18 @@ export class OverlayManager {
           this.isOnScreen()
         )
           return;
-        this.wasAutoOpened = true;
         setTimeout(() => {
           if (
             !this.isAuthenticated ||
             Date.now() < this.suppressAutoShowUntil ||
             this.wantVisible ||
-            this.pendingShow
+            this.pendingShow ||
+            this.isOnScreen()
           )
             return;
+          this.wasAutoOpened = true;
           this.showOverlay();
-        }, 60);
+        }, 80);
       });
 
       this.mainWindow.on("restore", () => {
@@ -1157,17 +1158,7 @@ export class OverlayManager {
     }
 
     if (this.overlayWindow && !this.overlayWindow.isDestroyed()) {
-      if (this.overlayWindow.isVisible()) {
-        this.overlayWindow.webContents.send("overlay:visibility", false);
-        this.closeTimeout = setTimeout(() => {
-          if (this.overlayWindow && !this.overlayWindow.isDestroyed()) {
-            this.overlayWindow.hide();
-          }
-          this.closeTimeout = null;
-        }, 90);
-      } else {
-        this.overlayWindow.hide();
-      }
+      this.overlayWindow.hide();
     }
     this.scheduleIdleDestroy();
   }

@@ -950,7 +950,7 @@ function LibraryPlaylistContent() {
                           className={`${HERO_BUTTON_CLASS} px-[22px]`}
                         >
                           <PlayFill size={16} />
-                          <span>{t("common.play")}</span>
+                          <span>Play</span>
                         </Button>
                         <Button
                           variant="secondary"

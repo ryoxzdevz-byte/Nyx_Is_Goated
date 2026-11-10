@@ -827,18 +827,13 @@ function NotificationCard({
         gridArea: "1 / 1",
         zIndex,
         transformOrigin: "bottom center",
-        maxWidth: "min(560px, calc(100vw - 24px))",
-        minWidth:
-          index === 0
-            ? resolvedAction
-              ? "min(360px, calc(100vw - 24px))"
-              : "min(280px, calc(100vw - 24px))"
-            : undefined,
+        maxWidth: resolvedAction ? "min(430px, calc(100vw - 24px))" : "min(360px, calc(100vw - 24px))",
+        minWidth: undefined,
         width:
           index === 0
             ? resolvedAction
-              ? "max-content"
-              : "fit-content"
+              ? "min(430px, calc(100vw - 24px))"
+              : "min(300px, calc(100vw - 24px))"
             : index > 1 && activeCardWidth
               ? `${activeCardWidth}px`
               : undefined,
@@ -855,7 +850,7 @@ function NotificationCard({
       </span>
       <div className="flex min-w-0 flex-1 flex-col justify-center overflow-hidden">
         <div className="flex min-w-0 items-center gap-[6px]">
-          <span className="block min-w-0 max-w-[min(280px,34vw)] shrink-0 truncate text-text-primary text-body font-[600] leading-tight">
+          <span className="block min-w-0 max-w-[150px] shrink-0 truncate text-text-primary text-body font-[600] leading-tight">
             {item.message}
           </span>
           {item.description && (
@@ -867,7 +862,7 @@ function NotificationCard({
                 ·
               </span>
               <span
-                className="block min-w-0 max-w-[min(260px,32vw)] truncate text-text-tertiary text-[12.5px] tabular-nums leading-tight translate-y-[1px]"
+                className="block min-w-0 flex-1 truncate text-text-tertiary text-[12.5px] tabular-nums leading-tight translate-y-[1px]"
                 title={item.description}
               >
                 {item.description}

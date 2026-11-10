@@ -396,10 +396,6 @@ function MiniPlayer({
   );
 
   // off -> all (loop the whole queue/playlist) -> one (loop the track) -> off
-  const repeatIcon = useMemo(() => {
-    if (repeat === "one") return <RepeatOne size={18} weight="Outline" />;
-    return <Repeat size={18} weight="Outline" />;
-  }, [repeat]);
   const repeatLabel = t(`player.repeat_${repeat}`);
 
   // "on" state for the shuffle / repeat toggles: the hover tint, but opaque, so the
@@ -791,7 +787,9 @@ function MiniPlayer({
                 onClick={handleLikeToggle}
                 style={{ cursor: "pointer" }}
               >
-                {isLiked ? <HeartFill size={20} /> : <HeartLine size={20} />}
+                <span className={`inline-flex transition-transform duration-150 ease-out ${isLiked ? "scale-110" : "scale-100"} active:scale-90`}>
+                  {isLiked ? <HeartFill size={20} /> : <HeartLine size={20} />}
+                </span>
               </button>
             )}
           </div>
@@ -815,19 +813,19 @@ function MiniPlayer({
                 title={
                   shuffle ? t("player.shuffle_on") : t("player.shuffle_off")
                 }
-                className={`${iconButtonClass} ${
+                className={`${iconButtonClass} group ${
                   shuffle ? activeToggleClass : ""
                 }`}
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={() => playerEngine.setShuffle(!shuffle)}
               >
-                <Shuffle size={18} weight="Outline" />
+                <Shuffle size={18} weight="Outline" className="transition-transform duration-200 ease-out group-active:rotate-[18deg] group-hover:scale-110" />
               </button>
               <button
                 type="button"
                 aria-label={repeatLabel}
                 title={repeatLabel}
-                className={`${iconButtonClass} ${
+                className={`${iconButtonClass} group ${
                   repeat !== "off" ? activeToggleClass : ""
                 }`}
                 onPointerDown={(e) => e.stopPropagation()}
@@ -838,7 +836,11 @@ function MiniPlayer({
                   )
                 }
               >
-                {repeatIcon}
+                {repeat === "one" ? (
+                  <RepeatOne size={18} weight="Outline" className="transition-transform duration-200 ease-out group-active:-rotate-12 group-hover:scale-110" />
+                ) : (
+                  <Repeat size={18} weight="Outline" className="transition-transform duration-200 ease-out group-active:-rotate-12 group-hover:scale-110" />
+                )}
               </button>
               <button
                 ref={eqToggleRef}

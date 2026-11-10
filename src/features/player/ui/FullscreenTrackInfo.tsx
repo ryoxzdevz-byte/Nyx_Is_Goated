@@ -77,11 +77,13 @@ export function FullscreenTrackInfo({ onClose }: FullscreenTrackInfoProps) {
           aria-label={isLiked ? t("common.unlike") : t("common.like")}
           onClick={handleLikeToggle}
           className={cn(
-            "relative inline-flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-[11px] border-none bg-white/[0.06] cursor-pointer text-white transition-colors duration-200 ease-out hover:bg-white/[0.12] active:scale-[0.92]",
+            "relative inline-flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-[11px] border-none bg-white/[0.06] cursor-pointer text-white transition-[background-color,transform,opacity] duration-200 ease-out hover:scale-[1.06] hover:bg-white/[0.12] active:scale-[0.9]",
             glassBlur && "backdrop-blur-xl backdrop-brightness-[1.15]",
           )}
         >
-          <LikeMorphIcon liked={Boolean(isLiked)} size={20} />
+          <span className={cn("inline-flex transition-transform duration-150 ease-out", isLiked && "scale-110")}>
+            <LikeMorphIcon liked={Boolean(isLiked)} size={20} />
+          </span>
         </button>
       )}
     </div>
