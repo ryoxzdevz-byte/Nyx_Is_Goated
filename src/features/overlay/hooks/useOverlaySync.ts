@@ -131,15 +131,14 @@ export function useOverlaySync() {
             }
             break;
           }
-          case "like":
-            if (currentTrack) {
-              const fromGlobal = Boolean(
-                (action.payload as any)?.fromGlobalShortcut ||
-                (action as any).fromGlobalShortcut,
-              );
-              toggleLike(currentTrack.id, {
-                onSuccess: (liked) => {
-                  if (!fromGlobal) return;
+            case "like":
+              if (currentTrack) {
+                const fromGlobal = Boolean(
+                  (action.payload as any)?.fromGlobalShortcut ||
+                  (action as any).fromGlobalShortcut,
+                );
+                const liked = toggleLike(currentTrack.id);
+                if (fromGlobal) {
                   showToast(
                     currentTrack.title || "Song",
                     liked ? "checkmark" : "info",
@@ -150,10 +149,9 @@ export function useOverlaySync() {
                         : "Removed from favorites",
                     },
                   );
-                },
-              });
-            }
-            break;
+                }
+              }
+              break;
           case "volumeUp":
           case "volumeDown": {
             const current = usePlayerStore.getState().volume;

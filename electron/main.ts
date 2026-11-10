@@ -469,6 +469,11 @@ function createWindow() {
   }
 
   mainWindow.once("ready-to-show", () => {
+    if (process.platform === "win32") {
+      try {
+        (mainWindow as any).setBackgroundMaterial?.("acrylic");
+      } catch {}
+    }
     mainWindow?.show();
     mainWindow?.focus();
   });
@@ -720,7 +725,12 @@ if (!gotTheLock) {
       if (!mainWindow || mainWindow.isDestroyed() || process.platform !== "win32")
         return false;
       const allowed = new Set(["auto", "acrylic", "mica", "none"]);
-      const value = typeof material === "string" && allowed.has(material) ? material : "auto";
+      const requested =
+        typeof material === "string" && allowed.has(material) ? material : "auto";
+      const value =
+        requested === "auto" && process.platform === "win32"
+          ? "acrylic"
+          : requested;
       try {
         (mainWindow as any).setBackgroundMaterial?.(value);
         return true;

@@ -18,6 +18,7 @@ import {
   formatStorageBytes,
   getAudioCacheLimitBytes,
   setAudioCacheLimitBytes,
+  isAudioCacheLimitConfigured,
   type StorageAnalytics,
   LIBRARY_CATEGORY_IDS,
 } from "@/shared/utils/cacheManager";
@@ -121,6 +122,9 @@ export function StorageTab({ searchQuery }: { searchQuery?: string }) {
   const [cacheLimit, setCacheLimit] = useState<number>(() =>
     getAudioCacheLimitBytes(),
   );
+  const [cacheLimitConfigured, setCacheLimitConfigured] = useState(() =>
+    isAudioCacheLimitConfigured(),
+  );
   const savedCount = useSavedTracksStore((state) => state.records.length);
   const sharedCount = useSavedTracksStore((state) => state.sharedCount);
   const cachedVisibleOnline = useCachedTracksStore(
@@ -137,6 +141,7 @@ export function StorageTab({ searchQuery }: { searchQuery?: string }) {
   const handleLimitChange = async (newLimit: number) => {
     setCacheLimit(newLimit);
     await setAudioCacheLimitBytes(newLimit);
+    setCacheLimitConfigured(true);
     await refresh();
   };
 
@@ -185,9 +190,18 @@ export function StorageTab({ searchQuery }: { searchQuery?: string }) {
   }, [musicCategories]);
 
   const cacheLimitSongs = useSongEstimate(cacheLimit, songBytes);
-  const cacheLimitDescription =
-    cacheLimit > 0
-      ? t("settings.storage.cache_limit_hint", { count: cacheLimitSongs })
+  const cacheFull =
+    cacheLimit > 0 && cacheBytes >= Math.max(1, Math.floor(cacheLimit * 0.95));
+  const cacheLimitDescription = !cacheLimitConfigured
+    ? t("settings.storage.cache_limit_choose") ||
+      "Choose how much space Nyx can use for cached music."
+    : cacheLimit > 0
+      ? cacheFull
+        ? t("settings.storage.cache_limit_full", {
+            size: formatStorageBytes(cacheLimit),
+          }) ||
+          `Cache limit reached (${formatStorageBytes(cacheLimit)}). Clear cache or increase the limit.`
+        : t("settings.storage.cache_limit_hint", { count: cacheLimitSongs })
       : t("settings.storage.cache_limit_unlimited");
 
   const runClear = async (
@@ -305,6 +319,12 @@ export function StorageTab({ searchQuery }: { searchQuery?: string }) {
                   cacheLimit > 0
                     ? Math.max(0, cacheLimit - cacheBytes)
                     : analytics?.freeBytes
+                }
+                warning={
+                  cacheFull
+                    ? t("settings.storage.cache_limit_full_short") ||
+                      "Storage limit reached"
+                    : undefined
                 }
               />
             ) : null}

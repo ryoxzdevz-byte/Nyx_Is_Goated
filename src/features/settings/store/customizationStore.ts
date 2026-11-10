@@ -39,14 +39,14 @@ export const BACKGROUND_TINT_VALUES: BackgroundTint[] = [
 const BACKGROUND_TINT_CSS: Record<Exclude<BackgroundTint, "system">, string> = {
   dark: "#0a0a0b",
   white: "#f4f4f6",
-  red: "radial-gradient(120% 110% at 12% 0%, rgba(255, 107, 129, 0.42), transparent 58%), linear-gradient(180deg, #2a171d, #161013)",
-  orange: "radial-gradient(120% 110% at 12% 0%, rgba(255, 172, 84, 0.40), transparent 58%), linear-gradient(180deg, #2a2115, #161208)",
-  yellow: "radial-gradient(120% 110% at 12% 0%, rgba(255, 216, 102, 0.36), transparent 58%), linear-gradient(180deg, #282517, #15140d)",
-  green: "radial-gradient(120% 110% at 12% 0%, rgba(98, 216, 143, 0.36), transparent 58%), linear-gradient(180deg, #15251c, #0d1611)",
-  blue: "radial-gradient(120% 110% at 12% 0%, rgba(110, 170, 255, 0.40), transparent 58%), linear-gradient(180deg, #141e2e, #0c121c)",
-  cyan: "radial-gradient(120% 110% at 12% 0%, rgba(103, 232, 249, 0.36), transparent 58%), linear-gradient(180deg, #10262a, #0a1719)",
-  purple: "radial-gradient(120% 110% at 12% 0%, rgba(178, 148, 255, 0.42), transparent 58%), linear-gradient(180deg, #1e1832, #120f1e)",
-  pink: "radial-gradient(120% 110% at 12% 0%, rgba(255, 128, 196, 0.40), transparent 58%), linear-gradient(180deg, #2b1727, #17101a)",
+  red: "radial-gradient(125% 115% at 12% 0%, rgba(255, 90, 120, 0.58), transparent 56%), linear-gradient(180deg, #3a1a23, #170e11)",
+  orange: "radial-gradient(125% 115% at 12% 0%, rgba(255, 162, 74, 0.56), transparent 56%), linear-gradient(180deg, #382614, #171007)",
+  yellow: "radial-gradient(125% 115% at 12% 0%, rgba(255, 214, 82, 0.52), transparent 56%), linear-gradient(180deg, #352f15, #161309)",
+  green: "radial-gradient(125% 115% at 12% 0%, rgba(72, 230, 150, 0.52), transparent 56%), linear-gradient(180deg, #163324, #0b1710)",
+  blue: "radial-gradient(125% 115% at 12% 0%, rgba(96, 165, 255, 0.58), transparent 56%), linear-gradient(180deg, #172840, #0a111d)",
+  cyan: "radial-gradient(125% 115% at 12% 0%, rgba(80, 236, 255, 0.54), transparent 56%), linear-gradient(180deg, #11343a, #08181b)",
+  purple: "radial-gradient(125% 115% at 12% 0%, rgba(176, 132, 255, 0.60), transparent 56%), linear-gradient(180deg, #271c46, #120d20)",
+  pink: "radial-gradient(125% 115% at 12% 0%, rgba(255, 112, 196, 0.58), transparent 56%), linear-gradient(180deg, #3a1834, #170e19)",
 };
 
 export function readStoredGlassIntensity(): GlassIntensity {

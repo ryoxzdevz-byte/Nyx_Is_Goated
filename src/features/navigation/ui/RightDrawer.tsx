@@ -344,7 +344,7 @@ function RightDrawer({ onClose }: RightDrawerProps) {
   const { t } = useTranslation();
   const queueScrollRef = useRef<HTMLDivElement>(null);
   const [queueLimit, setQueueLimit] = useState(50);
-  const [isQueueScrolled, setIsQueueScrolled] = useState(false);
+  const [queueFadePx, setQueueFadePx] = useState(0);
 
   useEffect(() => {
     setQueueLimit(50);
@@ -354,14 +354,14 @@ function RightDrawer({ onClose }: RightDrawerProps) {
     const container = queueScrollRef.current;
     if (!container) return;
     container.scrollTo({ top: 0, behavior: "smooth" });
-    setIsQueueScrolled(false);
+    setQueueFadePx(0);
   }, []);
 
   const queueScrollCallbackRef = useCallback((node: HTMLDivElement | null) => {
     queueScrollRef.current = node;
     if (node) {
       node.scrollTop = 0;
-      setIsQueueScrolled(false);
+      setQueueFadePx(0);
     }
   }, []);
 
@@ -427,22 +427,14 @@ function RightDrawer({ onClose }: RightDrawerProps) {
         <div
           ref={queueScrollCallbackRef}
           className="absolute inset-0 overflow-y-auto px-[10px] pt-[6px] pb-[16px]"
-          style={
-            isQueueScrolled
-              ? {
-                  maskImage:
-                    "linear-gradient(to bottom, transparent 0px, black 18px, black 100%)",
-                  WebkitMaskImage:
-                    "linear-gradient(to bottom, transparent 0px, black 18px, black 100%)",
-                  transition:
-                    "mask-image 200ms ease, -webkit-mask-image 200ms ease",
-                }
-              : undefined
-          }
+          style={{
+            maskImage: `linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,1) ${Math.max(1, queueFadePx)}px, rgba(0,0,0,1) 100%)`,
+            WebkitMaskImage: `linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,1) ${Math.max(1, queueFadePx)}px, rgba(0,0,0,1) 100%)`,
+          }}
           onScroll={(e) => {
             const target = e.currentTarget;
-            const next = target.scrollTop > 2;
-            setIsQueueScrolled((prev) => (prev === next ? prev : next));
+            const fade = Math.max(0, Math.min(18, target.scrollTop));
+            setQueueFadePx((prev) => (prev === fade ? prev : fade));
             if (
               target.scrollHeight - target.scrollTop <=
               target.clientHeight * 1.5

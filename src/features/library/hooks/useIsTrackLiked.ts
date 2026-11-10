@@ -1,10 +1,11 @@
 import { useMemo } from "react";
-import { useLikedTracks } from "./useLikedTracks";
+import { isTrackLikedNow, useLikedTracks } from "./useLikedTracks";
 
 export function useIsTrackLiked(trackId: string | undefined): boolean {
   const { data } = useLikedTracks();
   return useMemo(() => {
-    if (!trackId || !data?.tracks) return false;
-    return data.tracks.some((t) => t.id === trackId);
+    if (!trackId) return false;
+    if (isTrackLikedNow(trackId)) return true;
+    return Boolean(data?.tracks?.some((t) => t.id === trackId));
   }, [trackId, data]);
 }

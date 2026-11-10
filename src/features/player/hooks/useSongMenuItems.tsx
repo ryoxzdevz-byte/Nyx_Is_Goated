@@ -74,8 +74,15 @@ export function useSongMenuItems(ctx: SongMenuContext): DropdownMenuItem[] {
 
   const handleLike = useCallback(() => {
     if (!id) return;
-    toggleLike(id);
-  }, [id, toggleLike]);
+    const nextLiked = toggleLike(id);
+    showToast(
+      nextLiked ? t("common.added_to_liked") : t("common.removed_from_liked"),
+      "checkmark",
+      {
+        description: artists ? `${title} — ${artists}` : title,
+      },
+    );
+  }, [id, toggleLike, title, artists, t]);
 
   const handleShare = useCallback(() => {
     if (!id) return;

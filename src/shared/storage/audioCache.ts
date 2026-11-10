@@ -1,6 +1,8 @@
 import { linerDb } from "./linerDb";
 
 export const AUDIO_CACHE_LIMIT_STORAGE_KEY = "liner_audio_cache_limit_bytes";
+export const AUDIO_CACHE_LIMIT_CONFIGURED_STORAGE_KEY =
+  "liner_audio_cache_limit_configured_v1";
 export const DEFAULT_AUDIO_CACHE_LIMIT_BYTES = 0;
 export const MIN_AUDIO_CACHE_LIMIT_BYTES = 250 * 1024 * 1024;
 
@@ -30,7 +32,7 @@ class AudioCache {
     return Math.max(MIN_AUDIO_CACHE_LIMIT_BYTES, num);
   }
 
-  async setLimitBytes(bytes: number): Promise<void> {
+  async setLimitBytes(bytes: number, configured = true): Promise<void> {
     if (typeof window !== "undefined" && window.localStorage) {
       if (bytes === 0) {
         localStorage.setItem(AUDIO_CACHE_LIMIT_STORAGE_KEY, "0");
@@ -38,8 +40,23 @@ class AudioCache {
         const clamped = Math.max(MIN_AUDIO_CACHE_LIMIT_BYTES, bytes);
         localStorage.setItem(AUDIO_CACHE_LIMIT_STORAGE_KEY, String(clamped));
       }
+      if (configured) {
+        localStorage.setItem(AUDIO_CACHE_LIMIT_CONFIGURED_STORAGE_KEY, "1");
+      }
     }
     await this.enforceCacheLimit();
+  }
+
+  isLimitConfigured(): boolean {
+    if (typeof window === "undefined" || !window.localStorage) return true;
+    return (
+      localStorage.getItem(AUDIO_CACHE_LIMIT_CONFIGURED_STORAGE_KEY) === "1"
+    );
+  }
+
+  markLimitConfigured(): void {
+    if (typeof window === "undefined" || !window.localStorage) return;
+    localStorage.setItem(AUDIO_CACHE_LIMIT_CONFIGURED_STORAGE_KEY, "1");
   }
 
   async enforceCacheLimit(customLimit?: number): Promise<number> {

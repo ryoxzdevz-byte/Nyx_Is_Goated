@@ -22,8 +22,15 @@ export function getAudioCacheLimitBytes(): number {
   return audioCache.getLimitBytes();
 }
 
-export async function setAudioCacheLimitBytes(bytes: number): Promise<void> {
-  await audioCache.setLimitBytes(bytes);
+export async function setAudioCacheLimitBytes(
+  bytes: number,
+  configured = true,
+): Promise<void> {
+  await audioCache.setLimitBytes(bytes, configured);
+}
+
+export function isAudioCacheLimitConfigured(): boolean {
+  return audioCache.isLimitConfigured();
 }
 
 const PRESERVED_STORAGE_KEYS = new Set([

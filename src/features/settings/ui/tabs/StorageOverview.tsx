@@ -35,10 +35,12 @@ export function StorageOverview({
   musicBytes,
   cacheBytes,
   freeBytes,
+  warning,
 }: {
   musicBytes: number;
   cacheBytes: number;
   freeBytes?: number;
+  warning?: string;
 }) {
   const { t } = useTranslation();
   const total = musicBytes + cacheBytes;
@@ -51,7 +53,9 @@ export function StorageOverview({
       value={value}
       unit={unit}
       meta={
-        freeBytes !== undefined ? (
+        warning ? (
+          <span className="text-body tabular-nums text-amber-500">{warning}</span>
+        ) : freeBytes !== undefined ? (
           <span
             className={`text-body tabular-nums ${
               lowDisk ? "text-amber-500" : "text-text-tertiary"

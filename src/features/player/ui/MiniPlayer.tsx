@@ -411,7 +411,7 @@ function MiniPlayer({
     : "!bg-[#dfdfe1] dark:!bg-[#292929] !text-text-primary";
 
   const iconButtonClass =
-    "inline-flex h-[30px] w-[30px] items-center justify-center rounded-control text-text-secondary transition-colors duration-150 hover:bg-black/[0.05] dark:hover:bg-white/[0.09] hover:text-text-primary active:scale-[0.96] border-none bg-transparent cursor-pointer";
+    "group inline-flex h-[30px] w-[30px] items-center justify-center rounded-control text-text-secondary transition-[color,background-color,transform,opacity] duration-150 ease-out hover:bg-black/[0.05] dark:hover:bg-white/[0.09] hover:text-text-primary hover:scale-[1.06] active:scale-[0.94] border-none bg-transparent cursor-pointer";
 
   const clearVolumeHoverTimer = useCallback(() => {
     if (volumeHoverCloseTimerRef.current) {
@@ -1000,7 +1000,11 @@ function MiniPlayer({
               }}
               style={{ cursor: "pointer" }}
             >
-              <SkipPrevious size={18} weight="Bold" />
+              <SkipPrevious
+                size={18}
+                weight="Bold"
+                className="transition-transform duration-150 ease-out group-active:-translate-x-[1.5px]"
+              />
             </button>
             <button
               type="button"
@@ -1047,7 +1051,11 @@ function MiniPlayer({
               }}
               style={{ cursor: "pointer" }}
             >
-              <SkipNext size={18} weight="Bold" />
+              <SkipNext
+                size={18}
+                weight="Bold"
+                className="transition-transform duration-150 ease-out group-active:translate-x-[1.5px]"
+              />
             </button>
           </div>
         </div>

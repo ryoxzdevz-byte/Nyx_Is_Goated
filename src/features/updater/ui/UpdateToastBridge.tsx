@@ -35,7 +35,11 @@ export default function UpdateToastBridge() {
           (1024 * 1024)
         ).toFixed(1);
         const totalMb = (downloadProgress.total / (1024 * 1024)).toFixed(1);
-        desc = `${version ? `${version} · ` : ""}${downloadProgress.percent}% (${currentMb} / ${totalMb} MB)`;
+        const speedMb =
+          downloadProgress.bytesPerSecond > 0
+            ? ` · ${(downloadProgress.bytesPerSecond / (1024 * 1024)).toFixed(1)} MB/s`
+            : "";
+        desc = `${version ? `${version} · ` : ""}${downloadProgress.percent}% (${currentMb} / ${totalMb} MB${speedMb})`;
       }
 
       toast(t("updater.downloading_title") || "Downloading update…", "loader", {

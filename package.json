@@ -1,13 +1,12 @@
 {
   "name": "nyx-client",
-  "version": "0.2.22",
-  "author": "Nyx",
-  "license": "Liner-Source-1.0",
-  "private": true,
-  "description": "Nyx - local private build based on Liner",
+  "version": "0.2.23",
   "author": {
     "name": "Nyx local build"
   },
+  "license": "Liner-Source-1.0",
+  "private": true,
+  "description": "Nyx - local private build based on Liner",
   "productName": "Nyx",
   "desktopName": "nyx",
   "main": "dist-electron/main.js",

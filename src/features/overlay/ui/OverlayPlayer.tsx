@@ -360,11 +360,14 @@ export function OverlayPlayer() {
                 e.stopPropagation();
                 sendAction({ type: "focusMainWindow" });
               }}
-              className="flex h-[26px] w-[26px] items-center justify-center rounded-lg border-0 bg-transparent text-white/55 hover:text-white active:scale-90 transition-all outline-none cursor-pointer"
+              className="group flex h-[26px] w-[26px] items-center justify-center rounded-lg border-0 bg-transparent text-white/55 transition-[color,transform,opacity,background-color] duration-150 ease-out hover:scale-110 hover:bg-white/10 hover:text-white active:scale-90 outline-none cursor-pointer"
               aria-label="Restore Nyx"
-              title="Restore Nyx"
             >
-              <MaximizeSquare3 size={15} weight="Bold" />
+              <MaximizeSquare3
+                size={15}
+                weight="Bold"
+                className="transition-transform duration-150 ease-out group-active:scale-[0.96]"
+              />
             </button>
             {!isLocalTrackId(state.track?.id) && (
               <button
@@ -393,22 +396,26 @@ export function OverlayPlayer() {
               </button>
             )}
 
-            <button
-              type="button"
-              tabIndex={-1}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                sendAction({ type: "prev" });
-              }}
-              className="flex h-[26px] w-[26px] items-center justify-center rounded-lg border-0 bg-transparent text-white/60 hover:text-white active:scale-90 transition-all outline-none cursor-pointer"
-              aria-label="Previous"
-            >
-              <SkipPrevious size={16} weight="Bold" />
-            </button>
+          <button
+            type="button"
+            tabIndex={-1}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              sendAction({ type: "prev" });
+            }}
+            className="group flex h-[26px] w-[26px] items-center justify-center rounded-lg border-0 bg-transparent text-white/60 transition-[color,transform,opacity,background-color] duration-150 ease-out hover:scale-110 hover:bg-white/10 hover:text-white active:scale-90 outline-none cursor-pointer"
+            aria-label="Previous"
+          >
+            <SkipPrevious
+              size={16}
+              weight="Bold"
+              className="transition-transform duration-150 ease-out group-active:-translate-x-[1px]"
+            />
+          </button>
 
             <button
               type="button"
@@ -436,22 +443,26 @@ export function OverlayPlayer() {
               </span>
             </button>
 
-            <button
-              type="button"
-              tabIndex={-1}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                sendAction({ type: "next" });
-              }}
-              className="flex h-[26px] w-[26px] items-center justify-center rounded-lg border-0 bg-transparent text-white/60 hover:text-white active:scale-90 transition-all outline-none cursor-pointer"
-              aria-label="Next"
-            >
-              <SkipNext size={16} weight="Bold" />
-            </button>
+          <button
+            type="button"
+            tabIndex={-1}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              sendAction({ type: "next" });
+            }}
+            className="group flex h-[26px] w-[26px] items-center justify-center rounded-lg border-0 bg-transparent text-white/60 transition-[color,transform,opacity,background-color] duration-150 ease-out hover:scale-110 hover:bg-white/10 hover:text-white active:scale-90 outline-none cursor-pointer"
+            aria-label="Next"
+          >
+            <SkipNext
+              size={16}
+              weight="Bold"
+              className="transition-transform duration-150 ease-out group-active:translate-x-[1px]"
+            />
+          </button>
           </div>
         </div>
       </motion.div>

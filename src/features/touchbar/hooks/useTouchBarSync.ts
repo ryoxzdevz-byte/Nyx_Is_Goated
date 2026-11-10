@@ -222,7 +222,7 @@ export function useTouchBarSync() {
             }
             break;
           case "like":
-            if (currentTrack) toggleLike(currentTrack.id);
+            if (currentTrack) void toggleLike(currentTrack.id);
             break;
           case "navigate":
             if (action.payload?.route) {
