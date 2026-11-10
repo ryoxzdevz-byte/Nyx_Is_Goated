@@ -9,16 +9,16 @@ import {
   session,
   nativeImage,
   powerSaveBlocker,
+  net,
 } from "electron";
 import type { Display, Rectangle } from "electron";
 import path from "node:path";
 import fs from "node:fs";
 import os from "node:os";
 import dns from "node:dns";
-import net from "node:net";
+import * as nodeNet from "node:net";
+import * as nodeHttps from "node:https";
 import tls from "node:tls";
-import http from "node:http";
-import https from "node:https";
 import {
   execFile as nodeExecFile,
   spawn as nodeSpawn,
@@ -1681,7 +1681,7 @@ if (!gotTheLock) {
                     ms: Date.now() - start,
                     ...(error ? { error } : {}),
                   });
-                const sock = new net.Socket();
+                const sock = new nodeNet.Socket();
                 sock.setTimeout(5000);
                 sock.once("connect", () => {
                   sock.destroy();
@@ -1798,9 +1798,9 @@ if (!gotTheLock) {
             const start = Date.now();
             const done = (patch: Record<string, unknown>) =>
               resolve({ name, ms: Date.now() - start, ...patch } as any);
-            let req: ReturnType<typeof https.get>;
+            let req: ReturnType<typeof nodeHttps.get>;
             try {
-              req = https.get(
+              req = nodeHttps.get(
                 url,
                 {
                   timeout: 6000,
@@ -1965,7 +1965,7 @@ if (!gotTheLock) {
     const githubJson = <T>(url: string): Promise<T> =>
       new Promise((resolve, reject) => {
         const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
-        const req = https.get(
+        const req = nodeHttps.get(
           url,
           {
             headers: {
@@ -2019,48 +2019,73 @@ if (!gotTheLock) {
       new Promise((resolve, reject) => {
         const run = (target: string, redirects = 0) => {
           if (redirects > 5) return reject(new Error("Too many redirects"));
-          const lib = target.startsWith("https:") ? https : http;
-          const req = lib.get(
-            target,
-            {
-              headers: { "user-agent": `Nyx/${app.getVersion()}` },
-            },
-            (res) => {
-              if (
-                res.statusCode &&
-                res.statusCode >= 300 &&
-                res.statusCode < 400 &&
-                res.headers.location
-              ) {
-                res.resume();
-                return run(res.headers.location, redirects + 1);
+          try {
+            const request = net.request({
+              method: "GET",
+              url: target,
+              redirect: "manual",
+              useSessionCookies: false,
+            });
+            request.setHeader("user-agent", `Nyx/${app.getVersion()}`);
+            request.on("response", (res) => {
+              const status = res.statusCode ?? 0;
+              if (status >= 300 && status < 400 && res.headers.location) {
+                const loc = Array.isArray(res.headers.location)
+                  ? res.headers.location[0]
+                  : res.headers.location;
+                if (loc) return run(new URL(loc, target).toString(), redirects + 1);
               }
-              if ((res.statusCode ?? 0) >= 400) {
-                res.resume();
-                return reject(new Error(`Download failed (${res.statusCode})`));
+              if (status >= 400) {
+                return reject(new Error(`Download failed (${status})`));
               }
-              const total = Number(res.headers["content-length"] || 0);
+              const totalHeader = res.headers["content-length"];
+              const total = Number(
+                Array.isArray(totalHeader) ? totalHeader[0] : totalHeader || 0,
+              );
               let transferred = 0;
+              let lastEmit = 0;
               const started = Date.now();
-              const out = fs.createWriteStream(filePath);
-              res.on("data", (chunk: Buffer) => {
-                transferred += chunk.length;
-                const elapsed = Math.max(1, Date.now() - started) / 1000;
+              const out = fs.createWriteStream(filePath, {
+                highWaterMark: 1024 * 1024,
+              });
+              const emit = (force = false) => {
+                const now = Date.now();
+                if (!force && now - lastEmit < 180) return;
+                lastEmit = now;
+                const elapsed = Math.max(1, now - started) / 1000;
                 onProgress({
                   percent:
-                    total > 0 ? Math.round((transferred / total) * 100) : 0,
+                    total > 0 ? Math.min(100, Math.round((transferred / total) * 100)) : 0,
                   transferred,
                   total,
                   bytesPerSecond: Math.round(transferred / elapsed),
                 });
+              };
+              res.on("data", (chunk: Buffer) => {
+                transferred += chunk.length;
+                out.write(chunk);
+                emit();
               });
-              res.pipe(out);
-              out.on("finish", () => out.close(() => resolve()));
-              out.on("error", reject);
-              res.on("error", reject);
-            },
-          );
-          req.on("error", reject);
+              res.on("end", () => {
+                emit(true);
+                out.end(() => resolve());
+              });
+              res.on("error", (err: unknown) => {
+                try {
+                  out.destroy();
+                } catch {}
+                reject(err);
+              });
+              out.on("error", (err) => {
+                try { (res as any).destroy?.(); } catch {}
+                reject(err);
+              });
+            });
+            request.on("error", reject);
+            request.end();
+          } catch (err) {
+            reject(err as Error);
+          }
         };
         run(url);
       });
@@ -2332,3 +2357,13 @@ app.on("before-quit", (event) => {
   void beforeQuitFlush.finally(() => app.quit());
 });
 app.on("will-quit", () => shutdown.begin());
+
+
+
+
+
+
+
+
+
+

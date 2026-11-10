@@ -827,18 +827,18 @@ function NotificationCard({
         gridArea: "1 / 1",
         zIndex,
         transformOrigin: "bottom center",
-        maxWidth: "min(920px, calc(100vw - 24px))",
+        maxWidth: "min(560px, calc(100vw - 24px))",
         minWidth:
           index === 0
             ? resolvedAction
-              ? "min(420px, calc(100vw - 24px))"
-              : "min(320px, calc(100vw - 24px))"
+              ? "min(360px, calc(100vw - 24px))"
+              : "min(280px, calc(100vw - 24px))"
             : undefined,
         width:
           index === 0
             ? resolvedAction
-              ? "min(920px, calc(100vw - 24px))"
-              : "min(420px, calc(100vw - 24px))"
+              ? "max-content"
+              : "fit-content"
             : index > 1 && activeCardWidth
               ? `${activeCardWidth}px`
               : undefined,
@@ -855,7 +855,7 @@ function NotificationCard({
       </span>
       <div className="flex min-w-0 flex-1 flex-col justify-center overflow-hidden">
         <div className="flex min-w-0 items-center gap-[6px]">
-          <span className="block min-w-0 max-w-[min(400px,42vw)] shrink-0 truncate text-text-primary text-body font-[600] leading-tight">
+          <span className="block min-w-0 max-w-[min(280px,34vw)] shrink-0 truncate text-text-primary text-body font-[600] leading-tight">
             {item.message}
           </span>
           {item.description && (
@@ -864,10 +864,10 @@ function NotificationCard({
                 aria-hidden
                 className="shrink-0 text-text-tertiary text-[12.5px] leading-tight translate-y-[1px]"
               >
-                �
+                ·
               </span>
               <span
-                className="block min-w-0 flex-1 truncate text-text-tertiary text-[12.5px] tabular-nums leading-tight translate-y-[1px]"
+                className="block min-w-0 max-w-[min(260px,32vw)] truncate text-text-tertiary text-[12.5px] tabular-nums leading-tight translate-y-[1px]"
                 title={item.description}
               >
                 {item.description}

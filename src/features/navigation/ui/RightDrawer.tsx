@@ -425,12 +425,16 @@ function RightDrawer({ onClose }: RightDrawerProps) {
 
       <div className="flex-1 overflow-hidden relative z-10">
         <div
+          className="pointer-events-none absolute inset-x-0 top-0 z-[11] h-[18px] transition-opacity duration-200 ease-out"
+          style={{
+            opacity: queueFadePx / 18,
+            background:
+              "linear-gradient(to bottom, rgba(24,24,28,0.96), rgba(24,24,28,0))",
+          }}
+        />
+        <div
           ref={queueScrollCallbackRef}
           className="absolute inset-0 overflow-y-auto px-[10px] pt-[6px] pb-[16px]"
-          style={{
-            maskImage: `linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,1) ${Math.max(1, queueFadePx)}px, rgba(0,0,0,1) 100%)`,
-            WebkitMaskImage: `linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,1) ${Math.max(1, queueFadePx)}px, rgba(0,0,0,1) 100%)`,
-          }}
           onScroll={(e) => {
             const target = e.currentTarget;
             const fade = Math.max(0, Math.min(18, target.scrollTop));

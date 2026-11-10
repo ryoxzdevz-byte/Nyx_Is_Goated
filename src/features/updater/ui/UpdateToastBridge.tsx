@@ -30,16 +30,17 @@ export default function UpdateToastBridge() {
       const version = updateInfo?.version ? `v${updateInfo.version}` : "";
       let desc = version;
       if (downloadProgress && downloadProgress.total > 0) {
-        const currentMb = (
-          downloadProgress.transferred /
-          (1024 * 1024)
-        ).toFixed(1);
+        const currentMb = (downloadProgress.transferred / (1024 * 1024)).toFixed(1);
         const totalMb = (downloadProgress.total / (1024 * 1024)).toFixed(1);
         const speedMb =
           downloadProgress.bytesPerSecond > 0
-            ? ` · ${(downloadProgress.bytesPerSecond / (1024 * 1024)).toFixed(1)} MB/s`
+            ? `${(downloadProgress.bytesPerSecond / (1024 * 1024)).toFixed(1)} MB/s`
             : "";
-        desc = `${version ? `${version} · ` : ""}${downloadProgress.percent}% (${currentMb} / ${totalMb} MB${speedMb})`;
+        desc = [version, `${downloadProgress.percent}%`, `${currentMb}/${totalMb} MB`, speedMb]
+          .filter(Boolean)
+          .join(" • ");
+      } else if (downloadProgress && downloadProgress.percent > 0) {
+        desc = [version, `${downloadProgress.percent}%`].filter(Boolean).join(" • ");
       }
 
       toast(t("updater.downloading_title") || "Downloading update…", "loader", {
@@ -52,15 +53,13 @@ export default function UpdateToastBridge() {
     }
 
     if (status === "downloaded") {
-      toast(t("updater.downloaded_title") || "Update downloaded", "checkmark", {
+      const version = updateInfo?.version ? `v${updateInfo.version}` : "";
+      toast(t("updater.downloaded_title") || "Update ready", "checkmark", {
         id: TOAST_ID,
-        description:
-          t("updater.downloaded_desc", {
-            version: updateInfo?.version || "",
-          }) || "Restart Nyx to complete installation.",
+        description: version ? `${version} ready to install` : t("updater.downloaded_desc", { version: "" }) || "Ready to install.",
         duration: 999999,
         action: {
-          label: t("updater.restart") || t("updater.install_button") || "Restart",
+          label: t("updater.restart") || t("updater.install_button") || "Install",
           onClick: () => {
             void installUpdate();
           },
