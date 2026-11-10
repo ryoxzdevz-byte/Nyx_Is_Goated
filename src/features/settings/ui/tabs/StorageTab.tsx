@@ -329,6 +329,35 @@ export function StorageTab({ searchQuery }: { searchQuery?: string }) {
               />
             ) : null}
 
+            {!searchQuery?.trim() && !cacheLimitConfigured ? (
+              <SettingSection label={t("settings.storage.cache_limit")}>
+                <div className="flex flex-col gap-[12px]">
+                  <p className="m-0 text-body text-text-secondary leading-[1.45]">
+                    {t("settings.storage.cache_limit_choose") ||
+                      "Choose how much space Nyx can use for cached music."}
+                  </p>
+                  <PresetPills
+                    ariaLabel={t("settings.storage.cache_limit")}
+                    size="md"
+                    fill={false}
+                    value={cacheLimit}
+                    onChange={(value) => void handleLimitChange(value)}
+                    options={CACHE_LIMIT_OPTIONS.map((bytes) => ({
+                      value: bytes,
+                      label:
+                        bytes === 0
+                          ? t("settings.storage.max_storage") ||
+                            t("settings.storage.no_limit")
+                          : `${bytes / GB} GB`,
+                    }))}
+                  />
+                  <p className="m-0 text-[12px] leading-[1.4] text-text-tertiary">
+                    {t("settings.storage.cache_row_desc")}
+                  </p>
+                </div>
+              </SettingSection>
+            ) : null}
+
             <StorageDownloadsSection
               songBytes={songBytes}
               liked={musicCategories.find((c) => c.id === "liked")}
