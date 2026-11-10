@@ -2017,24 +2017,17 @@ if (!gotTheLock) {
       }) => void,
     ): Promise<void> =>
       new Promise((resolve, reject) => {
-        const run = (target: string, redirects = 0) => {
-          if (redirects > 5) return reject(new Error("Too many redirects"));
+        const run = (target: string) => {
           try {
             const request = net.request({
               method: "GET",
               url: target,
-              redirect: "manual",
+              redirect: "follow",
               useSessionCookies: false,
             });
             request.setHeader("user-agent", `Nyx/${app.getVersion()}`);
             request.on("response", (res) => {
               const status = res.statusCode ?? 0;
-              if (status >= 300 && status < 400 && res.headers.location) {
-                const loc = Array.isArray(res.headers.location)
-                  ? res.headers.location[0]
-                  : res.headers.location;
-                if (loc) return run(new URL(loc, target).toString(), redirects + 1);
-              }
               if (status >= 400) {
                 return reject(new Error(`Download failed (${status})`));
               }
