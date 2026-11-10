@@ -203,6 +203,8 @@
     "whatEveryonesOn": "In ascolto adesso",
     "mostListened": "I più ascoltati di sempre",
     "jumpBackIn": "Riprendi da dove eri rimasto",
+    "latest": "Novità",
+    "latestSubtitle": "Nuove uscite e uscite recenti dagli artisti che ascolti",
     "popularAlbums": "Album più popolari",
     "mostSaved": "I più salvati",
     "popularArtists": "Artisti di tendenza",
@@ -656,6 +658,7 @@
       "cache_limit": "Limite della cache",
       "cache_limit_desc": "I file e i contenuti più vecchi vengono rimossi automaticamente quando la cache è piena",
       "no_limit": "Nessun limite",
+      "max_storage": "Spazio max.",
       "recommended": "Consigl.",
       "open_folder": "Apri cartella della cache",
       "open_folder_description": "Mostra la cartella in cui vengono raccolti la cache temporanea e i contenuti multimediali",
@@ -809,6 +812,23 @@
     },
     "connection": {
       "open_folder": "Apri la posizione di salvataggio"
+    },
+    "appearance": {
+      "background_tint": {
+        "title": "Colore di sfondo",
+        "description": "Usato quando lo sfondo sfocato è disattivato. Scegli uno sfondo colorato tenue; Sistema mantiene il tema predefinito.",
+        "system": "Sistema",
+        "dark": "Scuro",
+        "white": "Bianco",
+        "red": "Rosso",
+        "orange": "Arancione",
+        "yellow": "Giallo",
+        "green": "Verde",
+        "blue": "Azzurro",
+        "cyan": "Ciano",
+        "purple": "Viola chiaro",
+        "pink": "Rosa"
+      }
     }
   },
   "toast": {

@@ -40,7 +40,7 @@ export function SegmentBar({
   const empty = total <= 0;
 
   return (
-    <div className={cn("flex h-[8px] gap-[3px]", className)}>
+    <div className={cn("flex h-[8px] gap-[3px] rounded-full bg-bg-elevated", className)}>
       {empty ? (
         <div className="h-full flex-1 rounded-full bg-fill" />
       ) : (

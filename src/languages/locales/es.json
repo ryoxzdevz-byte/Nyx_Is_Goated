@@ -205,6 +205,8 @@
     "whatEveryonesOn": "Escuchando ahora mismo",
     "mostListened": "Más escuchado de todos los tiempos",
     "jumpBackIn": "Vuelve a escuchar",
+    "latest": "Novedades",
+    "latestSubtitle": "Nuevos lanzamientos y estrenos recientes de artistas que escuchas",
     "popularAlbums": "Álbumes destacados",
     "mostSaved": "Lo más guardado",
     "popularArtists": "Artistas en tendencia",
@@ -654,6 +656,7 @@
       "cache_limit": "Límite de tamaño de caché",
       "cache_limit_desc": "Los archivos antiguos se eliminan automáticamente cuando se alcanza el límite",
       "no_limit": "Sin límite",
+      "max_storage": "Almacenamiento máx.",
       "recommended": "Recom.",
       "open_folder": "Abrir carpeta de caché",
       "open_folder_description": "Abre la carpeta donde se almacenan la caché temporal y los archivos multimedia",
@@ -863,6 +866,23 @@
       "scope_main_app": "App principal",
       "scope_overlay": "Superposición",
       "reset_section": "Restablecer sección"
+    },
+    "appearance": {
+      "background_tint": {
+        "title": "Color de fondo",
+        "description": "Se usa cuando el fondo desenfocado está desactivado. Elige un fondo de color suave; Sistema mantiene el tema predeterminado.",
+        "system": "Sistema",
+        "dark": "Oscuro",
+        "white": "Blanco",
+        "red": "Rojo",
+        "orange": "Naranja",
+        "yellow": "Amarillo",
+        "green": "Verde",
+        "blue": "Azul claro",
+        "cyan": "Cian",
+        "purple": "Morado claro",
+        "pink": "Rosa"
+      }
     }
   },
   "toast": {

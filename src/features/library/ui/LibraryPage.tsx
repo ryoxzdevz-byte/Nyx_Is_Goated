@@ -13,7 +13,6 @@ import {
   usePlaylistsList,
   useExternalItems,
   useLikedTrackCount,
-  useLikedTracks,
   hydrateLikedTracks,
   useYoutubeLibraryItems,
 } from "../hooks";
@@ -506,9 +505,6 @@ function OfflineLibraryPage() {
   const source = useOfflineModeStore((state) => state.source);
   const checking = useOfflineModeStore((state) => state.checking);
   const { tracks: savedLikes } = useSavedTracks();
-  const { data: likedData, isLoading: likedLoading } = useLikedTracks({
-    enabled: false,
-  });
   const downloadedPlaylists = useDownloadedPlaylistsStore(
     (state) => state.playlists,
   );
@@ -570,10 +566,10 @@ function OfflineLibraryPage() {
         <div className="px-[12px] pt-[14px] pb-[20px]">
           <div className="grid grid-cols-[repeat(auto-fill,minmax(165px,1fr))] gap-[24px] pb-[24px]">
             <OfflineMixCard />
-            {likedData.tracks.length > 0 || likedLoading ? (
+            {savedLikes.length > 0 ? (
               <LikesPlaylistCard
-                count={likedData.tracks.length}
-                isLoading={likedLoading}
+                count={savedLikes.length}
+                isLoading={false}
                 onClick={() => navigate("/library/playlist?id=likes")}
               />
             ) : null}

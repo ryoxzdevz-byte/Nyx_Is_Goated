@@ -207,6 +207,8 @@
     "whatEveryonesOn": "Słuchane teraz",
     "mostListened": "Najczęściej słuchane wszech czasów",
     "jumpBackIn": "Wróć do słuchania",
+    "latest": "Nowości",
+    "latestSubtitle": "Nowe i ostatnie wydania od artystów, których słuchasz",
     "popularAlbums": "Najlepsze albumy",
     "mostSaved": "Najczęściej zapisywane",
     "popularArtists": "Popularni wykonawcy",
@@ -660,6 +662,7 @@
       "cache_limit": "Limit pamięci podręcznej",
       "cache_limit_desc": "Po zapełnieniu najstarsze pliki i multimedia są usuwane automatycznie",
       "no_limit": "Bez limitu",
+      "max_storage": "Maks. pamięć",
       "recommended": "Zalec.",
       "open_folder": "Otwórz folder pamięci podręcznej",
       "open_folder_description": "Pokaż folder, w którym zapisywane są pliki tymczasowe i multimedia",
@@ -813,6 +816,23 @@
     },
     "connection": {
       "open_folder": "Otwórz lokalizację zapisu"
+    },
+    "appearance": {
+      "background_tint": {
+        "title": "Kolor tła",
+        "description": "Używane, gdy rozmyte tło jest wyłączone. Wybierz delikatne kolorowe tło; System zachowuje domyślny motyw.",
+        "system": "System",
+        "dark": "Ciemny",
+        "white": "Biały",
+        "red": "Czerwony",
+        "orange": "Pomarańczowy",
+        "yellow": "Żółty",
+        "green": "Zielony",
+        "blue": "Jasnoniebieski",
+        "cyan": "Turkusowy",
+        "purple": "Jasnofioletowy",
+        "pink": "Różowy"
+      }
     }
   },
   "toast": {

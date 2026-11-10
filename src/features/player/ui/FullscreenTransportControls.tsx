@@ -13,7 +13,7 @@ import { useTranslation } from "@/languages";
 import { cn } from "@/shared/lib";
 
 const iconButtonClass =
-  "inline-flex h-[36px] w-[36px] items-center justify-center text-white opacity-80 transition-all duration-150 ease-out hover:opacity-100 active:scale-[0.94] shrink-0 border-none bg-transparent cursor-pointer";
+  "inline-flex h-[36px] w-[36px] items-center justify-center text-white opacity-80 transition-[transform,opacity] duration-150 ease-out hover:scale-[1.08] hover:opacity-100 active:scale-[0.88] shrink-0 border-none bg-transparent cursor-pointer";
 
 interface PlayPauseIconProps {
   status: string;
@@ -58,18 +58,27 @@ export function FullscreenTransportControls() {
         className={cn(
           iconButtonClass,
           player.shuffle ? "!opacity-100" : "!opacity-60",
+          "group",
         )}
       >
-        <Shuffle size={24} weight="Outline" />
+        <Shuffle
+          size={24}
+          weight="Outline"
+          className="transition-transform duration-200 ease-out group-active:rotate-[18deg]"
+        />
       </button>
 
       <button
         type="button"
         aria-label="Previous track"
         onClick={() => void playerEngine.skipPrevious()}
-        className={iconButtonClass}
+        className={cn(iconButtonClass, "group")}
       >
-        <SkipPrevious size={22} weight="Bold" />
+        <SkipPrevious
+          size={22}
+          weight="Bold"
+          className="transition-transform duration-150 ease-out group-active:-translate-x-[2px]"
+        />
       </button>
 
       <button
@@ -85,9 +94,13 @@ export function FullscreenTransportControls() {
         type="button"
         aria-label="Next track"
         onClick={() => void playerEngine.skipNext()}
-        className={iconButtonClass}
+        className={cn(iconButtonClass, "group")}
       >
-        <SkipNext size={22} weight="Bold" />
+        <SkipNext
+          size={22}
+          weight="Bold"
+          className="transition-transform duration-150 ease-out group-active:translate-x-[2px]"
+        />
       </button>
 
       <button
@@ -104,12 +117,13 @@ export function FullscreenTransportControls() {
         className={cn(
           iconButtonClass,
           player.repeat !== "off" ? "!opacity-100" : "!opacity-60",
+          "group",
         )}
       >
         {player.repeat === "one" ? (
-          <RepeatOne size={24} />
+          <RepeatOne size={24} className="transition-transform duration-200 ease-out group-active:-rotate-12" />
         ) : (
-          <Repeat size={24} />
+          <Repeat size={24} className="transition-transform duration-200 ease-out group-active:-rotate-12" />
         )}
       </button>
     </div>

@@ -21,6 +21,7 @@ import http from "node:http";
 import https from "node:https";
 import {
   execFile as nodeExecFile,
+  spawn as nodeSpawn,
   type ChildProcess,
 } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -131,6 +132,7 @@ process.env.VITE_PUBLIC = process.env.VITE_DEV_SERVER_URL
 let mainWindow: BrowserWindow | null = null;
 let touchBarManager: TouchBarManager | null = null;
 let overlayManager: OverlayManager | null = null;
+let minimizeTransitionActive = false;
 let thumbar: ThumbarController | null = null;
 let discordRpcManager: DiscordRpcManager | null = null;
 let poTokenService: PoTokenService | null = null;
@@ -265,8 +267,8 @@ function flushPendingDeeplink() {
 
 const DEFAULT_WINDOW_WIDTH = 1200;
 const DEFAULT_WINDOW_HEIGHT = 780;
-const MIN_WINDOW_WIDTH = 1100;
-const MIN_WINDOW_HEIGHT = 705;
+const MIN_WINDOW_WIDTH = 825;
+const MIN_WINDOW_HEIGHT = 529;
 
 function createWindow() {
   const windowState = getWindowStateStore();
@@ -654,6 +656,9 @@ if (!gotTheLock) {
     handleTrusted("window:minimize", () => {
       // cannot minimize a native fullscreen window or under hyprland tiling wm
       if (!mainWindow || mainWindow.isFullScreen() || isHyprland) return;
+      // a second minimize while the window is already on its way into the
+      // overlay would animate from the off-screen minimized rect
+      if (mainWindow.isMinimized() || minimizeTransitionActive) return;
       overlayManager?.suppressAutoShow(1800);
       // windows 11 + add-on: the window flies into the overlay pill it is about to become
       if (
@@ -662,10 +667,15 @@ if (!gotTheLock) {
         overlayManager.isReadyForTransition()
       ) {
         const overlay = overlayManager;
-        void nativeSnap.toOverlay(
-          (beforeShow) => overlay.openForTransition(beforeShow),
-          () => mainWindow?.minimize(),
-        );
+        minimizeTransitionActive = true;
+        void nativeSnap
+          .toOverlay(
+            (beforeShow) => overlay.openForTransition(beforeShow),
+            () => mainWindow?.minimize(),
+          )
+          .finally(() => {
+            minimizeTransitionActive = false;
+          });
         return;
       }
       mainWindow.minimize();
@@ -2140,9 +2150,16 @@ if (!gotTheLock) {
         };
       } catch (error) {
         latestUpdateAsset = null;
+        const message = String((error as Error)?.message || error);
+        const unreachable =
+          /fetch failed|network|enotfound|eai_again|etimedout|econnrefused|econnreset|socket|offline|getaddrinfo|timeout/i.test(
+            message,
+          );
         return {
           available: false,
-          error: String((error as Error)?.message || error),
+          error: unreachable
+            ? "Unable to access the servers. Check your connection and try again."
+            : message,
         };
       }
     });
@@ -2195,26 +2212,29 @@ if (!gotTheLock) {
     });
 
     handleTrusted("updater:quit-and-install", async () => {
+      if (process.platform !== "win32")
+        return { success: false, error: "Installer updates are only supported on Windows." };
       if (!nyxDownloadedInstaller || !fs.existsSync(nyxDownloadedInstaller))
-        return false;
+        return { success: false, error: "Downloaded installer was not found. Download the update again." };
       try {
         await flushRendererPlayerSession(1200).catch(() => {});
         shutdown.begin();
         const exe = nyxDownloadedInstaller;
         const installDir = path.dirname(process.execPath);
         const args =
-          process.platform === "win32" && installDir && !installDir.includes("\n")
-            ? [`/D=${installDir}`]
-            : [];
-        const child = nodeExecFile(
-          exe,
-          args,
-          { windowsHide: false, cwd: path.dirname(exe) },
-          (error) => {
-            if (error)
-              console.error("[updater] failed to launch installer", error);
-          },
-        );
+          installDir && !installDir.includes("\n") ? [`/D=${installDir}`] : [];
+        const child = nodeSpawn(exe, args, {
+          windowsHide: false,
+          cwd: path.dirname(exe),
+          detached: true,
+          stdio: "ignore",
+        });
+        child.on("error", (error) => {
+          console.error("[updater] failed to launch installer", error);
+        });
+        if (child.pid == null) {
+          return { success: false, error: "Nyx could not start the installer. Try running the downloaded setup manually." };
+        }
         child.unref?.();
         nyxDownloadedInstaller = null;
         setTimeout(() => {
@@ -2226,11 +2246,11 @@ if (!gotTheLock) {
               app.exit(0);
             } catch {}
           }, 1500);
-        }, 600);
-        return true;
+        }, 250);
+        return { success: true };
       } catch (error) {
         console.error("[updater] quit-and-install failed", error);
-        return false;
+        return { success: false, error: String((error as Error)?.message || error) };
       }
     });
 

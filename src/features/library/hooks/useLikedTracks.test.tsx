@@ -3,7 +3,11 @@ import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createRoot, Root } from "react-dom/client";
 import { act } from "react";
-import { useLikedTracks, applyOptimisticLike } from "./useLikedTracks";
+import {
+  useLikedTracks,
+  applyOptimisticLike,
+  isTrackLikedNow,
+} from "./useLikedTracks";
 import { api } from "@/shared/api";
 
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
@@ -69,11 +73,12 @@ describe("useLikedTracks", () => {
     expect(hookResult?.isLoading).toBe(false);
     expect(hookResult?.data.tracks).toHaveLength(1);
 
-    // Apply optimistic like
+    // Apply optimistic like: the track is liked even before its metadata loads
     act(() => {
       applyOptimisticLike("track-2");
     });
-    expect(hookResult?.data.tracks).toHaveLength(2);
+    expect(isTrackLikedNow("track-2")).toBe(true);
+    expect(hookResult?.data.tracks).toHaveLength(1);
     expect(hookResult?.isLoading).toBe(false);
 
     // Dispatch library:changed event to simulate background update after liking

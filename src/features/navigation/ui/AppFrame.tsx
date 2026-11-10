@@ -726,7 +726,7 @@ export default function AppFrame({ children }: AppFrameProps) {
   return (
     <div
       ref={appFrameRef}
-      className={`nyx-smooth app-shell-enter relative flex flex-col h-full w-full overflow-hidden p-1.5 gap-1.5 ${
+      className={`nyx-smooth app-shell-enter app-frame-root relative flex flex-col h-full w-full overflow-hidden p-1.5 gap-1.5 ${
         isFullscreenPlayer ? "bg-black" : "bg-bg-canvas"
       } ${isEdgeToEdge ? "rounded-none" : "rounded-item"}`}
       style={isEdgeToEdge ? undefined : { clipPath: "inset(0 round 12px)" }}
@@ -735,7 +735,9 @@ export default function AppFrame({ children }: AppFrameProps) {
         if (e.currentTarget.scrollTop !== 0) e.currentTarget.scrollTop = 0;
       }}
     >
-      <DynamicBlurBackground isDark={isDark} force={coverGlow} />
+      <div className="nyx-app-backdrop absolute inset-0 z-0">
+        <DynamicBlurBackground isDark={isDark} force={coverGlow} />
+      </div>
 
       <AnimatePresence>
         {!isFullscreenPlayer && (
@@ -807,10 +809,15 @@ export default function AppFrame({ children }: AppFrameProps) {
                   <motion.aside
                     key="right-drawer"
                     ref={queueDrawerRef}
-                    initial={{ x: RIGHT_DRAWER_WIDTH }}
-                    animate={{ x: 0 }}
-                    exit={{ x: RIGHT_DRAWER_WIDTH }}
-                    transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                    initial={{ x: RIGHT_DRAWER_WIDTH, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    exit={{ x: RIGHT_DRAWER_WIDTH, opacity: 0 }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 430,
+                      damping: 40,
+                      mass: 0.8,
+                    }}
                     className="pointer-events-auto absolute top-(--page-inset-top) bottom-(--floating-inset-bottom) right-0 z-[50]"
                     style={{ width: RIGHT_DRAWER_WIDTH }}
                   >

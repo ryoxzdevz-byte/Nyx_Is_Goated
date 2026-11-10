@@ -4,6 +4,7 @@ import { initGlobalErrorHandlers } from "@/shared/utils/globalErrorHandlers";
 import { hydrateScreenCache } from "@/shared/cache/screenCache";
 import { applyStoredTheme } from "@/shared/utils/storedTheme";
 import {
+  applyBackgroundTint,
   applyGlassIntensity,
   applyWindowMaterialPreference,
 } from "@/features/settings/store/customizationStore";
@@ -16,6 +17,7 @@ if (!isOverlay) {
   applyStoredTheme();
   applyGlassIntensity();
   applyWindowMaterialPreference();
+  applyBackgroundTint();
 }
 
 async function loadRoot(): Promise<React.ReactElement> {

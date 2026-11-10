@@ -1,15 +1,20 @@
 import { useState, useEffect } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useTheme } from "next-themes";
 import { useTranslation, LOCALE_OPTIONS } from "@/languages";
 import { MenuSelect, ToggleSwitch } from "@/shared/ui";
 import { revealThemeChange } from "@/shared/lib";
 import {
+  applyBackgroundTint,
   applyGlassIntensity,
   applyWindowMaterialPreference,
+  readStoredBackgroundTint,
   readStoredGlassIntensity,
   readStoredWindowMaterial,
+  storeBackgroundTint,
   storeGlassIntensity,
   storeWindowMaterial,
+  type BackgroundTint,
   type GlassIntensity,
   type WindowMaterial,
 } from "../../store/customizationStore";
@@ -29,6 +34,9 @@ export function AppearanceTab({ searchQuery }: { searchQuery?: string }) {
   const [savedGlass, setSavedGlass] = useState<GlassIntensity>(appliedGlass);
   const [windowMaterial, setWindowMaterial] = useState<WindowMaterial>(() =>
     readStoredWindowMaterial(),
+  );
+  const [backgroundTint, setBackgroundTint] = useState<BackgroundTint>(() =>
+    readStoredBackgroundTint(),
   );
   const [restarting, setRestarting] = useState(false);
   const visualMode = useVisualModeStore((s) => s.mode);
@@ -69,6 +77,12 @@ export function AppearanceTab({ searchQuery }: { searchQuery?: string }) {
     setWindowMaterial(value);
     storeWindowMaterial(value);
     applyWindowMaterialPreference(value);
+  };
+
+  const changeBackgroundTint = (value: BackgroundTint) => {
+    setBackgroundTint(value);
+    storeBackgroundTint(value);
+    applyBackgroundTint(value);
   };
 
   const restartToApplyGlass = async () => {
@@ -166,6 +180,45 @@ export function AppearanceTab({ searchQuery }: { searchQuery?: string }) {
       />
 
       <SettingRow
+        title={t("settings.appearance.background_tint.title") || "Background colour"}
+        description={
+          t("settings.appearance.background_tint.description") ||
+          "Used when the blurred background is off. Pick a soft colourful backdrop; System keeps the default theme."
+        }
+        searchQuery={searchQuery}
+        control={
+          mounted ? (
+            <MenuSelect
+              value={backgroundTint}
+              onChange={(v) => changeBackgroundTint(v as BackgroundTint)}
+              options={[
+                "system",
+                "dark",
+                "white",
+                "red",
+                "orange",
+                "yellow",
+                "green",
+                "blue",
+                "cyan",
+                "purple",
+                "pink",
+              ].map((value) => ({
+                value,
+                label:
+                  t(`settings.appearance.background_tint.${value}`) ||
+                  value.charAt(0).toUpperCase() + value.slice(1),
+              }))}
+              className="min-w-[130px]"
+              aria-label="Background colour"
+            />
+          ) : (
+            <span />
+          )
+        }
+      />
+
+      <SettingRow
         title="Window blur material (Windows)"
         description="Controls the Electron window material behind Nyx. Auto/Acrylic usually give the most visible blur on Windows."
         searchQuery={searchQuery}
@@ -211,27 +264,38 @@ export function AppearanceTab({ searchQuery }: { searchQuery?: string }) {
         }
       />
 
-      {glassRestartPending ? (
-        <SettingRow
-          title={t("settings.appearance.strong_glass.restart_title")}
-          description={t("settings.appearance.strong_glass.restart_desc")}
-          titleKey="settings.appearance.strong_glass.restart_title"
-          descKey="settings.appearance.strong_glass.restart_desc"
-          searchQuery={searchQuery}
-          control={
-            <button
-              type="button"
-              onClick={() => void restartToApplyGlass()}
-              disabled={restarting}
-              className="h-[32px] rounded-[10px] border-0 bg-fill px-[12px] text-label font-[500] text-text-primary transition-colors hover:bg-fill-hover disabled:opacity-60"
-            >
-              {restarting
-                ? t("settings.appearance.strong_glass.restarting")
-                : t("settings.appearance.strong_glass.restart")}
-            </button>
-          }
-        />
-      ) : null}
+      <AnimatePresence initial={false}>
+        {glassRestartPending ? (
+          <motion.div
+            key="glass-restart"
+            initial={{ opacity: 0, height: 0, y: -6 }}
+            animate={{ opacity: 1, height: "auto", y: 0 }}
+            exit={{ opacity: 0, height: 0, y: -4 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            className="overflow-hidden"
+          >
+            <SettingRow
+              title={t("settings.appearance.strong_glass.restart_title")}
+              description={t("settings.appearance.strong_glass.restart_desc")}
+              titleKey="settings.appearance.strong_glass.restart_title"
+              descKey="settings.appearance.strong_glass.restart_desc"
+              searchQuery={searchQuery}
+              control={
+                <button
+                  type="button"
+                  onClick={() => void restartToApplyGlass()}
+                  disabled={restarting}
+                  className="h-[32px] rounded-[10px] border-0 bg-fill px-[12px] text-label font-[500] text-text-primary transition-[background-color,opacity,transform] hover:bg-fill-hover active:scale-[0.98] disabled:opacity-60"
+                >
+                  {restarting
+                    ? t("settings.appearance.strong_glass.restarting")
+                    : t("settings.appearance.strong_glass.restart")}
+                </button>
+              }
+            />
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       {electron?.setRememberWindowBounds ? (
         <SettingRow

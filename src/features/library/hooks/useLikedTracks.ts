@@ -32,25 +32,9 @@ function buildView(isLoading: boolean): {
   const error = loadFailed;
   if (optimisticOverrides.size === 0) return { data: cache, isLoading, error };
 
-  let tracks = cache.tracks.filter(
+  const tracks = cache.tracks.filter(
     (t) => optimisticOverrides.get(t.id) !== false,
   );
-  for (const [id, liked] of optimisticOverrides) {
-    if (liked && !tracks.some((t) => t.id === id)) {
-      tracks = [
-        {
-          id,
-          title: "",
-          artists: "",
-          artistId: undefined,
-          coverUrl: "",
-          durationMs: 0,
-          playCount: 0,
-        } as Track,
-        ...tracks,
-      ];
-    }
-  }
   return { data: { tracks, total: tracks.length }, isLoading, error };
 }
 
@@ -70,8 +54,65 @@ function snapshot() {
 
 const SERVER_SNAPSHOT = { data: EMPTY, isLoading: true, error: false };
 const LIKED_CACHE_KEY = "liner_liked_tracks_cache_v1";
+const PENDING_LIKES_KEY = "nyx_pending_likes_v1";
 
 let cacheOwner: string | null | undefined;
+let pendingLikes: Record<string, boolean> = {};
+let pendingOwner: string | null = null;
+let flushingPending = false;
+
+function pendingKey(owner: string | null) {
+  return `${PENDING_LIKES_KEY}:${owner ?? "anonymous"}`;
+}
+
+function readPendingLikes(owner: string | null): Record<string, boolean> {
+  try {
+    const raw = localStorage.getItem(pendingKey(owner));
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object") return {};
+    const result: Record<string, boolean> = {};
+    for (const [id, value] of Object.entries(
+      parsed as Record<string, unknown>,
+    )) {
+      if (typeof value === "boolean") result[id] = value;
+    }
+    return result;
+  } catch {
+    return {};
+  }
+}
+
+function writePendingLikes(owner: string | null, likes: Record<string, boolean>) {
+  try {
+    if (Object.keys(likes).length === 0) {
+      localStorage.removeItem(pendingKey(owner));
+    } else {
+      localStorage.setItem(pendingKey(owner), JSON.stringify(likes));
+    }
+  } catch {}
+}
+
+function setPendingLike(trackId: string, liked: boolean) {
+  pendingLikes = { ...pendingLikes, [trackId]: liked };
+  writePendingLikes(pendingOwner, pendingLikes);
+}
+
+function clearPendingLike(trackId: string) {
+  if (!(trackId in pendingLikes)) return;
+  const next = { ...pendingLikes };
+  delete next[trackId];
+  pendingLikes = next;
+  writePendingLikes(pendingOwner, pendingLikes);
+}
+
+function isNetworkError(error: unknown): boolean {
+  if (typeof navigator !== "undefined" && !navigator.onLine) return true;
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  return /fetch failed|network|enotfound|eai_again|etimedout|econnrefused|econnreset|socket|offline|getaddrinfo|timeout|failed to fetch/i.test(
+    message,
+  );
+}
 
 function likedCacheKey(owner: string | null) {
   return `${LIKED_CACHE_KEY}:${owner ?? "anonymous"}`;
@@ -100,6 +141,11 @@ function hydrateLikedCache(owner: string | null) {
   loaded = false;
   fetchedFromServer = false;
   loadFailed = false;
+  pendingOwner = owner;
+  pendingLikes = readPendingLikes(owner);
+  for (const [id, liked] of Object.entries(pendingLikes)) {
+    optimisticOverrides.set(id, liked);
+  }
   const tracks = readLikedCache(owner);
   cache = tracks.length > 0 ? { tracks, total: tracks.length } : EMPTY;
   emit(false);
@@ -151,6 +197,7 @@ function load(force = false): Promise<void> {
     fetchedFromServer = true;
     loadFailed = false;
     dropConfirmedOverrides(startEpoch);
+    void flushPendingLikes();
   })()
     .catch(() => {
       if ((getAuthSession()?.user?.id ?? null) !== owner) return;
@@ -172,6 +219,7 @@ function load(force = false): Promise<void> {
 function dropConfirmedOverrides(startEpoch: number) {
   for (const id of optimisticOverrides.keys()) {
     if (syncingLikes.has(id)) continue;
+    if (id in pendingLikes) continue;
     if ((likeSettledEpoch.get(id) ?? 0) > startEpoch) continue;
     optimisticOverrides.delete(id);
     likeSettledEpoch.delete(id);
@@ -196,6 +244,7 @@ function settleLikeWaiters(trackId: string, error?: unknown) {
 async function syncTrackLike(trackId: string, confirmed: boolean) {
   syncingLikes.add(trackId);
   let serverLiked = confirmed;
+  let wantedLike = confirmed;
   let sent = false;
   let failure: unknown;
   try {
@@ -206,9 +255,20 @@ async function syncTrackLike(trackId: string, confirmed: boolean) {
       if (wanted) await api.likeTrack(trackId);
       else await api.unlikeTrack(trackId);
       serverLiked = wanted;
+      wantedLike = wanted;
     }
   } catch (error) {
     failure = error ?? new Error("like sync failed");
+  }
+  if (failure !== undefined) {
+    if (isNetworkError(failure)) {
+      serverLiked = wantedLike;
+      setPendingLike(trackId, wantedLike);
+    } else {
+      clearPendingLike(trackId);
+    }
+  } else if (sent) {
+    clearPendingLike(trackId);
   }
   desiredLikes.delete(trackId);
   syncingLikes.delete(trackId);
@@ -218,7 +278,7 @@ async function syncTrackLike(trackId: string, confirmed: boolean) {
   emit(false);
   writeLikedCache(getAuthSession()?.user?.id ?? null, view.data.tracks);
   settleLikeWaiters(trackId, failure);
-  if (sent) notifyLibraryChanged();
+  if (sent && failure === undefined) notifyLibraryChanged();
 }
 
 export function setTrackLiked(trackId: string, liked: boolean): Promise<void> {
@@ -245,6 +305,40 @@ export function toggleTrackLike(trackId: string): {
 
 export function reloadLikedTracks(): Promise<void> {
   return load(true);
+}
+
+export async function flushPendingLikes(): Promise<void> {
+  if (flushingPending || typeof navigator === "undefined" || !navigator.onLine) {
+    return;
+  }
+  const session = getAuthSession();
+  const owner = session?.user?.id ?? null;
+  if (!session?.accessToken || pendingOwner !== owner) return;
+  const entries = Object.entries(pendingLikes);
+  if (entries.length === 0) return;
+
+  flushingPending = true;
+  let changed = false;
+  try {
+    for (const [id, liked] of entries) {
+      if (syncingLikes.has(id)) continue;
+      try {
+        if (liked) await api.likeTrack(id);
+        else await api.unlikeTrack(id);
+        clearPendingLike(id);
+        changed = true;
+      } catch (error) {
+        if (isNetworkError(error)) break;
+        clearPendingLike(id);
+      }
+    }
+  } finally {
+    flushingPending = false;
+  }
+  if (changed) {
+    notifyLibraryChanged();
+    void load(true);
+  }
 }
 
 export function applyOptimisticLike(trackId: string): () => void {
@@ -285,6 +379,9 @@ if (typeof window !== "undefined") {
   };
   window.addEventListener("library:changed", handleRefresh);
   window.addEventListener("auth:changed", handleRefresh);
+  window.addEventListener("online", () => {
+    void flushPendingLikes();
+  });
 }
 
 export const loadLikedTracks = load;

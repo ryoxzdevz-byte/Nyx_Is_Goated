@@ -202,6 +202,8 @@
     "whatEveryonesOn": "Sedang didengarkan sekarang",
     "mostListened": "Paling banyak didengar sepanjang masa",
     "jumpBackIn": "Lanjutkan lagi",
+    "latest": "Terbaru",
+    "latestSubtitle": "Rilis baru dan terkini dari artis yang kamu dengarkan",
     "popularAlbums": "Album Teratas",
     "mostSaved": "Paling banyak disimpan",
     "popularArtists": "Artis Tren",
@@ -731,6 +733,7 @@
       "cache_limit": "Batas ukuran cache",
       "cache_limit_desc": "File dan media yang lama dihapus otomatis saat penuh",
       "no_limit": "Tanpa batas",
+      "max_storage": "Penyimpanan maks.",
       "recommended": "Disarankan",
       "open_folder": "Buka Folder Cache",
       "open_folder_description": "Tampilkan folder tempat cache sementara dan media dikumpulkan",
@@ -884,6 +887,23 @@
     },
     "connection": {
       "open_folder": "Buka lokasi penyimpanan"
+    },
+    "appearance": {
+      "background_tint": {
+        "title": "Warna latar",
+        "description": "Digunakan saat latar belakang buram dimatikan. Pilih latar berwarna lembut; Sistem mempertahankan tema default.",
+        "system": "Sistem",
+        "dark": "Gelap",
+        "white": "Putih",
+        "red": "Merah",
+        "orange": "Oranye",
+        "yellow": "Kuning",
+        "green": "Hijau",
+        "blue": "Biru muda",
+        "cyan": "Sian",
+        "purple": "Ungu muda",
+        "pink": "Merah muda"
+      }
     }
   },
   "toast": {

@@ -206,6 +206,8 @@
     "whatEveryonesOn": "Listening right now",
     "mostListened": "Most listened of all time",
     "jumpBackIn": "Jump back in",
+    "latest": "Latest",
+    "latestSubtitle": "New and recent releases from artists you listen to",
     "popularAlbums": "Top Albums",
     "mostSaved": "Most saved",
     "popularArtists": "Trending Artists",
@@ -876,6 +878,7 @@
       "cache_limit": "Maximum cache size",
       "cache_limit_desc": "When full, the songs you haven't played for the longest are removed first. Your music isn't affected.",
       "no_limit": "No limit",
+      "max_storage": "Max storage",
       "recommended": "Rec.",
       "open_folder": "Open Cache Folder",
       "open_folder_description": "Reveal the folder where temporary cache and media are collected",
@@ -1113,6 +1116,21 @@
         "restart_desc": "Restart Nyx to apply the transparent glass theme.",
         "restart": "Restart Nyx",
         "restarting": "Restarting…"
+      },
+      "background_tint": {
+        "title": "Background colour",
+        "description": "Used when the blurred background is off. Pick a soft colourful backdrop; System keeps the default theme.",
+        "system": "System",
+        "dark": "Dark",
+        "white": "White",
+        "red": "Red",
+        "orange": "Orange",
+        "yellow": "Yellow",
+        "green": "Green",
+        "blue": "Light blue",
+        "cyan": "Cyan",
+        "purple": "Light purple",
+        "pink": "Pink"
       }
     }
   },
@@ -1258,6 +1276,7 @@
     "downloaded_title": "Update downloaded",
     "downloaded_desc": "Restart Nyx to install version {version}.",
     "install_button": "Install",
+    "restart": "Restart Nyx",
     "error_title": "Update failed"
   },
   "track_search": {

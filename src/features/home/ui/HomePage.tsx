@@ -7,6 +7,7 @@ import { useListeningNow } from "../hooks/useListeningNow";
 import ListeningNowSection from "./ListeningNowSection";
 import { useRecentlyPlayed } from "../hooks/useRecentlyPlayed";
 import { useDailyMixes } from "../hooks/useDailyMixes";
+import { useLatestForYou } from "../hooks/useLatestForYou";
 import { useMostSaved, usePopularAlbums } from "../hooks/useExploreCollections";
 import { useTranslation } from "@/languages";
 import Button from "@/shared/ui/Button";
@@ -16,6 +17,7 @@ import {
   AlbumFill,
   BookmarkFill,
   FireFill,
+  SparklesFill,
   TrophyFill,
   TimeFill,
 } from "@mingcute/react";
@@ -36,6 +38,7 @@ function HomeFeed({ onRetry }: { onRetry: () => void }) {
   const { items: popularAlbums, isLoading: albumsLoading } = usePopularAlbums();
   const { items: mostSaved, isLoading: savedLoading } = useMostSaved();
   const { data: dailyMixes, isLoading: mixesLoading } = useDailyMixes();
+  const { items: latestForYou, isLoading: latestLoading } = useLatestForYou(20);
   const hasMixes = dailyMixes.length > 0;
   const firstAlbum = popularAlbums[0];
   const firstAlbumCover =
@@ -55,12 +58,15 @@ function HomeFeed({ onRetry }: { onRetry: () => void }) {
     allTimeLoading ||
     recentLoading ||
     albumsLoading ||
-    savedLoading;
+    savedLoading ||
+    mixesLoading;
 
   const isReady = !isDataLoading;
   const nothingLoaded =
-    !mixesLoading &&
+    isReady &&
+    !latestLoading &&
     !hasMixes &&
+    latestForYou.length === 0 &&
     popularAlbums.length === 0 &&
     listeningNow.length === 0 &&
     !recentlyPlayed?.length &&
@@ -114,12 +120,24 @@ function HomeFeed({ onRetry }: { onRetry: () => void }) {
               )
             )}
 
+            {latestForYou.length > 0 && (
+              <PopularTracksSection
+                title={t("home.latest")}
+                subtitle={t("home.latestSubtitle")}
+                icon={<SparklesFill />}
+                items={latestForYou}
+                headingMarginTop={hasMixesSlot ? "mt-[22px]" : "mt-0"}
+              />
+            )}
+
             {popularAlbums.length > 0 && (
               <PopularTracksSection
                 title={t("home.popularAlbums")}
                 icon={<AlbumFill />}
                 items={popularAlbums}
-                headingMarginTop={hasMixesSlot ? "mt-[22px]" : "mt-0"}
+                headingMarginTop={
+                  hasMixesSlot || latestForYou.length > 0 ? "mt-[22px]" : "mt-0"
+                }
               />
             )}
 
@@ -129,7 +147,9 @@ function HomeFeed({ onRetry }: { onRetry: () => void }) {
                 icon={<FireFill />}
                 tracks={listeningNow}
                 headingMarginTop={
-                  hasMixesSlot || popularAlbums.length > 0
+                  hasMixesSlot ||
+                  latestForYou.length > 0 ||
+                  popularAlbums.length > 0
                     ? "mt-[22px]"
                     : "mt-0"
                 }

@@ -6,6 +6,7 @@ import Dialog from "@/shared/ui/Dialog";
 import { cn } from "@/shared/lib";
 import { useOfflineModeStore } from "../store/offlineModeStore";
 import {
+  dismissCurrentIssue,
   enterOfflineForIssue,
   retryConnection,
 } from "../engine/offlineController";
@@ -67,7 +68,6 @@ export default function ConnectionIssueModal() {
   const { t, locale } = useTranslation();
   const issue = useOfflineModeStore((state) => state.issue);
   const country = useOfflineModeStore((state) => state.country);
-  const dismiss = useOfflineModeStore((state) => state.dismissIssue);
   const [retrying, setRetrying] = useState(false);
   const [shown, setShown] = useState<ConnectionIssue>("offline");
 
@@ -91,7 +91,7 @@ export default function ConnectionIssueModal() {
   return (
     <Dialog
       open={issue !== null}
-      onOpenChange={(next) => (next ? undefined : dismiss())}
+      onOpenChange={(next) => (next ? undefined : dismissCurrentIssue())}
       maxWidth={480}
       zIndex={260}
     >
@@ -130,7 +130,7 @@ export default function ConnectionIssueModal() {
           </DialogButton>
           <DialogButton
             className="!min-w-0 !flex-auto !px-[10px] !bg-fill-subtle !text-text-secondary"
-            onClick={dismiss}
+            onClick={dismissCurrentIssue}
           >
             {t("offline.dont_show_again")}
           </DialogButton>

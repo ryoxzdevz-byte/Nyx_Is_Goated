@@ -214,6 +214,7 @@ const QueueList = memo(function QueueList({
         return (
           <div
             key={rowKeys[index]}
+            aria-current={index === 0 ? "true" : undefined}
             style={{
               position: "absolute",
               top: `${index * QUEUE_ITEM_HEIGHT}px`,
@@ -230,8 +231,18 @@ const QueueList = memo(function QueueList({
               opacity: isThisDragged || hidden ? 0 : 1,
               zIndex: 1,
             }}
-            className="px-0 py-[2px]"
+            className={`px-0 py-[2px] ${
+              index === 0
+                ? "rounded-item bg-white/[0.055] ring-1 ring-inset ring-white/[0.06]"
+                : ""
+            }`}
           >
+            {index === 0 && (
+              <span
+                aria-hidden
+                className="pointer-events-none absolute left-[1px] top-1/2 z-[2] h-[22px] w-[3px] -translate-y-1/2 rounded-full bg-emerald-400/90"
+              />
+            )}
             <SongCardWithMenu
               id={item.id}
               title={item.title}

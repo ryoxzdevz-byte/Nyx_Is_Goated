@@ -80,7 +80,14 @@ export function VolumeColumn({ onDraggingChange }: VolumeColumnProps) {
     apply(next);
   };
 
-  const toggleMute = () => apply(level === 0 ? restoreLevelRef.current : 0);
+  const toggleMute = () => {
+    if (level === 0) {
+      apply(restoreLevelRef.current);
+      return;
+    }
+    restoreLevelRef.current = clampLevel(level);
+    apply(0);
+  };
 
   const label = (
     <span className="text-[11px] font-[700] tabular-nums">{percent}%</span>

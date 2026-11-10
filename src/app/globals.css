@@ -250,6 +250,14 @@
   -webkit-backdrop-filter: none !important;
 }
 
+:root[data-bg-tint]:not([data-bg-tint="system"]) .app-frame-root {
+  background: var(--nyx-bg-tint) !important;
+}
+
+:root[data-bg-tint]:not([data-bg-tint="system"]) .nyx-app-backdrop {
+  display: none !important;
+}
+
 .nyx-smooth * {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;

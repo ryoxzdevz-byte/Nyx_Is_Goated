@@ -1,7 +1,8 @@
 {
   "name": "nyx-client",
-  "version": "0.2.21",
-  "type": "module",
+  "version": "0.2.22",
+  "author": "Nyx",
+  "license": "Liner-Source-1.0",
   "private": true,
   "description": "Nyx - local private build based on Liner",
   "author": {
@@ -76,7 +77,8 @@
     "nsis": {
       "artifactName": "Nyx-Setup-${version}.${ext}",
       "allowToChangeInstallationDirectory": true,
-      "oneClick": false
+      "oneClick": false,
+      "runAfterFinish": true
     },
     "mac": {
       "icon": "build/icon-mac.png",

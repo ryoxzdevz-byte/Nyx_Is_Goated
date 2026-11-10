@@ -203,6 +203,8 @@
     "whatEveryonesOn": "Wird gerade gehört",
     "mostListened": "Die meistgehörte Musik aller Zeiten",
     "jumpBackIn": "Weiter geht’s",
+    "latest": "Neuheiten",
+    "latestSubtitle": "Neue und aktuelle Veröffentlichungen von Künstlern, die du hörst",
     "popularAlbums": "Top-Alben",
     "mostSaved": "Am häufigsten gespeichert",
     "popularArtists": "Künstler im Trend",
@@ -601,6 +603,7 @@
       "cache_limit": "Größenlimit für den Cache",
       "cache_limit_desc": "Ältere Dateien und Medien werden bei vollem Cache automatisch entfernt",
       "no_limit": "Kein Limit",
+      "max_storage": "Max. Speicher",
       "recommended": "Empf.",
       "open_folder": "Cache-Ordner öffnen",
       "open_folder_description": "Zeigt den Ordner, in dem temporärer Cache und Medien gesammelt werden",
@@ -754,6 +757,23 @@
     },
     "connection": {
       "open_folder": "Speicherort öffnen"
+    },
+    "appearance": {
+      "background_tint": {
+        "title": "Hintergrundfarbe",
+        "description": "Wird verwendet, wenn der unscharfe Hintergrund aus ist. Wähle einen sanften farbigen Hintergrund; System behält das Standarddesign.",
+        "system": "System",
+        "dark": "Dunkel",
+        "white": "Weiß",
+        "red": "Rot",
+        "orange": "Orange",
+        "yellow": "Gelb",
+        "green": "Grün",
+        "blue": "Hellblau",
+        "cyan": "Türkis",
+        "purple": "Hellviolett",
+        "pink": "Rosa"
+      }
     }
   },
   "toast": {

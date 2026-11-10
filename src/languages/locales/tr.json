@@ -203,6 +203,8 @@
     "whatEveryonesOn": "Şu anda dinleniyor",
     "mostListened": "Tüm zamanların en çok dinlenenleri",
     "jumpBackIn": "Kaldığın yerden devam et",
+    "latest": "Yeni",
+    "latestSubtitle": "Dinlediğin sanatçılardan yeni ve son çıkan yayınlar",
     "popularAlbums": "En İyi Albümler",
     "mostSaved": "En çok kaydedilenler",
     "popularArtists": "Trend Sanatçılar",
@@ -656,6 +658,7 @@
       "cache_limit": "Önbellek boyutu sınırı",
       "cache_limit_desc": "Dolduğunda eski dosyalar ve medya otomatik olarak silinir",
       "no_limit": "Sınır yok",
+      "max_storage": "Maks. depolama",
       "recommended": "Önerilen",
       "open_folder": "Önbellek Klasörünü Aç",
       "open_folder_description": "Geçici önbelleğin ve medyanın toplandığı klasörü göster",
@@ -809,6 +812,23 @@
     },
     "connection": {
       "open_folder": "Kaydedilen konumu aç"
+    },
+    "appearance": {
+      "background_tint": {
+        "title": "Arka plan rengi",
+        "description": "Bulanık arka plan kapalıyken kullanılır. Yumuşak renkli bir arka plan seçin; Sistem varsayılan temayı korur.",
+        "system": "Sistem",
+        "dark": "Koyu",
+        "white": "Beyaz",
+        "red": "Kırmızı",
+        "orange": "Turuncu",
+        "yellow": "Sarı",
+        "green": "Yeşil",
+        "blue": "Açık mavi",
+        "cyan": "Camgöbeği",
+        "purple": "Açık mor",
+        "pink": "Pembe"
+      }
     }
   },
   "toast": {

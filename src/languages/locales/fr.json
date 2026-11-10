@@ -211,6 +211,8 @@
     "whatEveryonesOn": "En écoute en ce moment",
     "mostListened": "Les plus écoutés de tous les temps",
     "jumpBackIn": "Reprendre l'écoute",
+    "latest": "Nouveautés",
+    "latestSubtitle": "Nouvelles sorties et sorties récentes des artistes que vous écoutez",
     "popularAlbums": "Top albums",
     "mostSaved": "Les plus enregistrés",
     "popularArtists": "Artistes tendance",
@@ -760,6 +762,7 @@
       "cache_limit": "Taille maximale du cache",
       "cache_limit_desc": "Les fichiers et médias les plus anciens sont supprimés automatiquement quand le cache est plein",
       "no_limit": "Aucune limite",
+      "max_storage": "Stockage max.",
       "recommended": "Rec.",
       "open_folder": "Ouvrir le dossier du cache",
       "open_folder_description": "Affiche le dossier où sont stockés le cache temporaire et les médias",
@@ -983,6 +986,23 @@
         "waiting": "En attente de Discord",
         "disabled": "Désactivé",
         "via_arrpc": "Connecté via arRPC"
+      }
+    },
+    "appearance": {
+      "background_tint": {
+        "title": "Couleur d’arrière-plan",
+        "description": "Utilisé lorsque l’arrière-plan flou est désactivé. Choisissez un fond coloré doux ; Système conserve le thème par défaut.",
+        "system": "Système",
+        "dark": "Sombre",
+        "white": "Blanc",
+        "red": "Rouge",
+        "orange": "Orange",
+        "yellow": "Jaune",
+        "green": "Vert",
+        "blue": "Bleu clair",
+        "cyan": "Cyan",
+        "purple": "Violet clair",
+        "pink": "Rose"
       }
     }
   },

@@ -21,7 +21,7 @@ import {
 export type OverlayPosition = "top-left" | "top-center" | "top-right";
 
 const OVERLAY_TITLE = "Nyx Overlay";
-const OVERLAY_MARGIN = 4;
+const OVERLAY_MARGIN = 0;
 const TOGGLE_ACTION = "toggle-overlay";
 const LIKE_ACTION = "like-track";
 const COMPOSITOR_SETTLE_MS = 300;

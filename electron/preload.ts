@@ -150,7 +150,7 @@ export interface LinerElectronApi {
     error?: string;
   }>;
   downloadUpdate: () => Promise<{ success: boolean; error?: string }>;
-  quitAndInstall: () => Promise<boolean>;
+  quitAndInstall: () => Promise<boolean | { success: boolean; error?: string }>;
   relaunchApp: () => Promise<boolean>;
   getAudioOutputDevices: () => Promise<
     Array<{ deviceId: string; label: string }>

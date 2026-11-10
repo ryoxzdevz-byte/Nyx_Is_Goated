@@ -270,11 +270,14 @@ function LibraryPlaylistContent() {
   const viewData = (() => {
     if (isLikesMode) {
       if (!likesData) return null;
-      const tracks: Track[] = (likesData.tracks ?? []).map((track) => {
+      const tracks: Track[] = (likesData.tracks ?? []).flatMap((track) => {
         const record = savedTrackRecord(track.id);
-        return record
-          ? { ...savedRecordToTrack(record), addedAt: track.addedAt }
-          : { ...track, playCount: 0 };
+        if (offline && !record) return [];
+        return [
+          record
+            ? { ...savedRecordToTrack(record), addedAt: track.addedAt }
+            : { ...track, playCount: 0 },
+        ];
       });
       if (tracks.length === 0) return null;
       return {
@@ -774,6 +777,7 @@ function LibraryPlaylistContent() {
                 data-no-window-drag
               >
                 <EntityHero
+                  actionsClassName="!flex-nowrap"
                   cover={
                     <PlaylistHeroCover
                       urls={viewData.coverUrls}
@@ -945,7 +949,7 @@ function LibraryPlaylistContent() {
                         className={`${HERO_BUTTON_CLASS} px-[22px]`}
                       >
                         <PlayFill size={16} />
-                        <span>{t("common.play_all")}</span>
+                        <span>{t("common.play")}</span>
                       </Button>
                       <Button
                         variant="secondary"
@@ -985,7 +989,7 @@ function LibraryPlaylistContent() {
                         totalCount={currentTracks.length}
                         placeholder={t("track_search.placeholder_playlist")}
                         onSubmit={handleSearchSubmit}
-                        className={HERO_GLASS_CLASS}
+                        className={`${HERO_GLASS_CLASS} !w-[clamp(132px,15vw,190px)] min-w-0`}
                       />
                       <Button
                         variant="secondary"

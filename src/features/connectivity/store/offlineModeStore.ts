@@ -12,6 +12,7 @@ import {
 } from "../lib/classify";
 
 export const OFFLINE_MODE_KEY = "liner_offline_mode";
+export const OFFLINE_DISMISSED_KEY = "nyx_offline_dismissed_v1";
 export const OFFLINE_UNAVAILABLE_MESSAGE = "Not saved on this device";
 
 export type OfflineSource = "auto" | "manual";
@@ -40,6 +41,7 @@ interface OfflineModeState {
   openIssue: (issue: ConnectionIssue) => boolean;
   closeIssue: () => void;
   dismissIssue: () => void;
+  resetDismissed: () => void;
 }
 
 function persistManual(on: boolean): void {
@@ -57,6 +59,31 @@ export function readManualOfflineMode(): boolean {
   }
 }
 
+function readDismissedIssues(): IssueGroup[] {
+  try {
+    const raw = localStorage.getItem(OFFLINE_DISMISSED_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (group): group is IssueGroup =>
+        group === "offline" || group === "server" || group === "youtube",
+    );
+  } catch {
+    return [];
+  }
+}
+
+function persistDismissedIssues(groups: IssueGroup[]): void {
+  try {
+    if (groups.length) {
+      localStorage.setItem(OFFLINE_DISMISSED_KEY, JSON.stringify(groups));
+    } else {
+      localStorage.removeItem(OFFLINE_DISMISSED_KEY);
+    }
+  } catch {}
+}
+
 let inFlight: Promise<ConnectionVerdict> | null = null;
 
 export const useOfflineModeStore = create<OfflineModeState>((set, get) => ({
@@ -69,7 +96,7 @@ export const useOfflineModeStore = create<OfflineModeState>((set, get) => ({
   checking: false,
   checkedAt: null,
   issue: null,
-  dismissed: [],
+  dismissed: readDismissedIssues(),
 
   enter: (source, reason = null) => {
     persistManual(source === "manual");
@@ -125,10 +152,14 @@ export const useOfflineModeStore = create<OfflineModeState>((set, get) => ({
     const { issue, dismissed } = get();
     if (!issue) return;
     const group = issueGroup(issue);
-    set({
-      issue: null,
-      dismissed: dismissed.includes(group) ? dismissed : [...dismissed, group],
-    });
+    const next = dismissed.includes(group) ? dismissed : [...dismissed, group];
+    persistDismissedIssues(next);
+    set({ issue: null, dismissed: next });
+  },
+
+  resetDismissed: () => {
+    persistDismissedIssues([]);
+    set({ dismissed: [] });
   },
 }));
 

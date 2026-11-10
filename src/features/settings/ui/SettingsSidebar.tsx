@@ -40,22 +40,22 @@ export function SettingsSidebar<T extends string>({
     window.open(url, "_blank", "noopener,noreferrer");
 
   return (
-    <aside className="flex min-h-0 w-[240px] shrink-0 flex-col font-sans">
-      <div className="px-[12px] pt-[12px] pb-[12px]">
+    <aside className="flex min-h-0 w-[248px] shrink-0 flex-col border-r border-border-alpha-14/70 bg-bg-elevated/35 font-sans">
+      <div className="px-[12px] pt-[12px] pb-[10px]">
         <TextInput
           size="sm"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder={t("settings.search_placeholder")}
           aria-label={t("settings.search_placeholder")}
-          className="!gap-[8px] !rounded-item !border-transparent !bg-fill"
+          className="!h-[34px] !gap-[8px] !rounded-[11px] !border-transparent !bg-fill !px-[10px]"
           icon={<Search2Line size={14} className="text-text-tertiary" />}
           rightSlot={
             searchQuery ? (
               <button
                 type="button"
                 onClick={() => onSearchChange("")}
-                className="flex cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-text-tertiary hover:text-text-primary"
+                className="flex cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-[2px] text-text-tertiary transition-colors hover:text-text-primary"
               >
                 <CloseCircleFill size={14} />
               </button>
@@ -70,7 +70,7 @@ export function SettingsSidebar<T extends string>({
         style={style}
         role="tablist"
         aria-label={t("settings.title")}
-        className="flex min-h-0 flex-1 flex-col gap-[14px] overflow-y-auto px-[10px] pt-[2px] pb-[10px]"
+        className="flex min-h-0 flex-1 flex-col gap-[12px] overflow-y-auto px-[10px] pt-[2px] pb-[10px]"
       >
         {groups.length === 0 ? (
           <p className="m-0 px-[8px] text-caption text-text-tertiary">

@@ -101,10 +101,10 @@ const CLEAR_COPY: Record<
 };
 
 const FADE = {
-  initial: { opacity: 0, scale: 0.985 },
-  animate: { opacity: 1, scale: 1 },
-  exit: { opacity: 0, scale: 0.985 },
-  transition: { duration: 0.32, ease: SMOOTH_EASE },
+  initial: { opacity: 0, y: 8 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -6 },
+  transition: { duration: 0.22, ease: SMOOTH_EASE },
 };
 
 export function StorageTab({ searchQuery }: { searchQuery?: string }) {
@@ -241,7 +241,7 @@ export function StorageTab({ searchQuery }: { searchQuery?: string }) {
 
   return (
     <div className="flex-1 flex flex-col relative w-full h-full min-h-[460px]">
-      <AnimatePresence mode="popLayout" initial={false}>
+      <AnimatePresence mode="wait" initial={false}>
         {clearing ? (
           <motion.div
             key="clearing"
@@ -301,7 +301,11 @@ export function StorageTab({ searchQuery }: { searchQuery?: string }) {
               <StorageOverview
                 musicBytes={musicBytes}
                 cacheBytes={cacheBytes}
-                freeBytes={analytics?.freeBytes}
+                freeBytes={
+                  cacheLimit > 0
+                    ? Math.max(0, cacheLimit - cacheBytes)
+                    : analytics?.freeBytes
+                }
               />
             ) : null}
 
@@ -361,7 +365,8 @@ export function StorageTab({ searchQuery }: { searchQuery?: string }) {
                       value: bytes,
                       label:
                         bytes === 0
-                          ? t("settings.storage.no_limit")
+                          ? t("settings.storage.max_storage") ||
+                            t("settings.storage.no_limit")
                           : `${bytes / GB} GB`,
                     }))}
                   />

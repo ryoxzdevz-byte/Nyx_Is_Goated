@@ -46,6 +46,23 @@ import { OFFLINE_UNAVAILABLE_MESSAGE } from "@/features/connectivity/store/offli
 import { noteYoutubeTrouble } from "@/features/connectivity/engine/offlineController";
 
 const MAX_CONSECUTIVE_AUTO_SKIPS = 3;
+
+function candidateHasLyrics(
+  candidate: { lyrics?: { content?: string | null } } | null | undefined,
+): boolean {
+  return Boolean(candidate?.lyrics?.content?.trim());
+}
+
+function shouldPreferCandidate(
+  candidate: LyricsCandidate,
+  current: LyricsCandidate | null,
+): boolean {
+  if (!current) return true;
+  const candidateWords = candidateHasLyrics(candidate);
+  const currentWords = candidateHasLyrics(current);
+  if (candidateWords !== currentWords) return candidateWords;
+  return isBetterLyricsCandidate(candidate, current);
+}
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
 export { usePlayerStore, type PlayerStatus, type RepeatMode, type PlayerState };
@@ -1463,10 +1480,7 @@ class PlayerEngine {
               quality: candidate.quality.total,
               candidate,
             });
-            if (
-              !bestCandidate ||
-              isBetterLyricsCandidate(candidate, bestCandidate)
-            ) {
+            if (shouldPreferCandidate(candidate, bestCandidate)) {
               bestCandidate = candidate;
             }
           } else if (event.type === "done") {
@@ -1623,6 +1637,14 @@ class PlayerEngine {
           },
         ],
       });
+      if (!candidateHasLyrics(cached.candidate)) {
+        const fallback = (cached.availableProviders || []).find((option) =>
+          candidateHasLyrics(option.candidate),
+        );
+        if (fallback) {
+          useLyricsStore.getState().selectProvider(fallback.provider);
+        }
+      }
 
       const lastChecked =
         (cached as any).lastCheckedAt || (cached as any).timestamp || 0;
@@ -1633,7 +1655,9 @@ class PlayerEngine {
       );
       const isStale = Date.now() - lastChecked >= SEVEN_DAYS_MS;
       const needsRefresh =
-        isStale || isProvisionalLyricsCandidate(cached.candidate);
+        isStale ||
+        !candidateHasLyrics(cached.candidate) ||
+        isProvisionalLyricsCandidate(cached.candidate);
       if (!needsRefresh || (cached as any).userLocked) {
         return;
       }
@@ -1679,6 +1703,14 @@ class PlayerEngine {
             activeProvider: freshCached.candidate.provider,
             availableProviders: freshCached.availableProviders || [],
           });
+          if (!candidateHasLyrics(freshCached.candidate)) {
+            const fallback = (freshCached.availableProviders || []).find(
+              (option) => candidateHasLyrics(option.candidate),
+            );
+            if (fallback) {
+              useLyricsStore.getState().selectProvider(fallback.provider);
+            }
+          }
           return;
         }
       } catch {}
@@ -1715,10 +1747,7 @@ class PlayerEngine {
             lyricsCache.setProvider(trackId, candidate);
           }
 
-          if (
-            !bestCandidate ||
-            isBetterLyricsCandidate(candidate, bestCandidate)
-          ) {
+          if (shouldPreferCandidate(candidate, bestCandidate)) {
             bestCandidate = candidate;
 
             const parsed = parseRawLyrics(

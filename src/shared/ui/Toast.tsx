@@ -740,24 +740,18 @@ function NotificationCard({
   useLayoutEffect(() => {
     if (!isTop || !cardRef.current) return;
     const el = cardRef.current;
-    if (el.offsetWidth > 0 || el.offsetHeight > 0) {
-      onMeasureActive(el.offsetWidth, el.offsetHeight);
-    }
+    const measure = () => {
+      if (!cardRef.current) return;
+      const w = cardRef.current.offsetWidth;
+      const h = cardRef.current.offsetHeight;
+      if (w > 0 || h > 0) onMeasureActive(w, h);
+    };
+    measure();
     if (typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(() => {
-      if (
-        cardRef.current &&
-        (cardRef.current.offsetWidth > 0 || cardRef.current.offsetHeight > 0)
-      ) {
-        onMeasureActive(
-          cardRef.current.offsetWidth,
-          cardRef.current.offsetHeight,
-        );
-      }
-    });
+    const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [isTop, onMeasureActive]);
+  }, [isTop, onMeasureActive, item.description]);
 
   const dismiss = useCallback(() => {
     item.onDismiss?.();
@@ -782,7 +776,6 @@ function NotificationCard({
   return (
     <motion.div
       ref={cardRef}
-      layout
       initial={
         index === 0
           ? { opacity: 0, y: -20 + shiftY, scale: 0.95 }
@@ -835,10 +828,21 @@ function NotificationCard({
         zIndex,
         transformOrigin: "bottom center",
         maxWidth: "min(920px, calc(100vw - 24px))",
-        minWidth: index === 0 ? "min(360px, calc(100vw - 24px))" : undefined,
-        minHeight: "38px",
+        minWidth:
+          index === 0
+            ? resolvedAction
+              ? "min(420px, calc(100vw - 24px))"
+              : "min(320px, calc(100vw - 24px))"
+            : undefined,
         width:
-          index > 1 && activeCardWidth ? `${activeCardWidth}px` : undefined,
+          index === 0
+            ? resolvedAction
+              ? "min(920px, calc(100vw - 24px))"
+              : "min(420px, calc(100vw - 24px))"
+            : index > 1 && activeCardWidth
+              ? `${activeCardWidth}px`
+              : undefined,
+        minHeight: "38px",
         height:
           index > 1 && activeCardHeight ? `${activeCardHeight}px` : undefined,
       }}
@@ -851,7 +855,7 @@ function NotificationCard({
       </span>
       <div className="flex min-w-0 flex-1 flex-col justify-center overflow-hidden">
         <div className="flex min-w-0 items-center gap-[6px]">
-          <span className="block min-w-0 max-w-[min(440px,46vw)] shrink truncate text-text-primary text-body font-[600] leading-tight">
+          <span className="block min-w-0 max-w-[min(400px,42vw)] shrink-0 truncate text-text-primary text-body font-[600] leading-tight">
             {item.message}
           </span>
           {item.description && (
@@ -860,10 +864,10 @@ function NotificationCard({
                 aria-hidden
                 className="shrink-0 text-text-tertiary text-[12.5px] leading-tight translate-y-[1px]"
               >
-                ·
+                �
               </span>
               <span
-                className="block min-w-0 max-w-[min(440px,44vw)] truncate text-text-tertiary text-[12.5px] leading-tight translate-y-[1px]"
+                className="block min-w-0 flex-1 truncate text-text-tertiary text-[12.5px] tabular-nums leading-tight translate-y-[1px]"
                 title={item.description}
               >
                 {item.description}

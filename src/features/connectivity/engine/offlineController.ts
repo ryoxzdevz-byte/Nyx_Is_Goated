@@ -206,6 +206,24 @@ export function enterOfflineForIssue(): void {
   enterOfflineMode("auto", true, issue ? issueGroup(issue) : null);
 }
 
+export function dismissCurrentIssue(): void {
+  const { issue, dismissIssue } = useOfflineModeStore.getState();
+  const group = issue ? issueGroup(issue) : null;
+  dismissIssue();
+  // "Don't show again" should still move the app into offline mode when the
+  // connection itself is gone, so the user lands on saved content.
+  if (group === "offline") enterOfflineMode("auto", false, "offline");
+}
+
+function handleDetectedOffline(): void {
+  const { dismissed, openIssue } = useOfflineModeStore.getState();
+  if (dismissed.includes("offline")) {
+    enterOfflineMode("auto", false, "offline");
+    return;
+  }
+  openIssue("offline");
+}
+
 function stopIssuePoll(): void {
   if (issuePollTimer) clearInterval(issuePollTimer);
   issuePollTimer = null;
@@ -247,9 +265,10 @@ export function initOfflineMode(): void {
   });
 
   window.addEventListener("offline", () => {
-    useOfflineModeStore.getState().openIssue("offline");
+    handleDetectedOffline();
   });
   window.addEventListener("online", () => {
+    useOfflineModeStore.getState().resetDismissed();
     const { offline, source, issue } = useOfflineModeStore.getState();
     if (issue === "offline") {
       setTimeout(() => void retryConnection(), ONLINE_EVENT_SETTLE_MS);
@@ -266,7 +285,7 @@ export function initOfflineMode(): void {
     return;
   }
   if (!navigator.onLine) {
-    useOfflineModeStore.getState().openIssue("offline");
+    handleDetectedOffline();
     return;
   }
   setTimeout(() => {

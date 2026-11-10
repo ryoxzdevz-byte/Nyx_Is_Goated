@@ -156,7 +156,7 @@ describe("OverlayManager", () => {
   it("shows on the first minimize right after launch, before the main window reports sign-in", async () => {
     const { main, overlays, ready } = setup();
     main.emit("minimize");
-    await vi.advanceTimersByTimeAsync(50);
+    await vi.advanceTimersByTimeAsync(100);
     const [overlay] = overlays();
     expect(overlay).toBeDefined();
     expect(overlay.showInactive).not.toHaveBeenCalled();

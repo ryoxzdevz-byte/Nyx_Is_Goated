@@ -56,7 +56,7 @@ export default function UpdateToastBridge() {
           }) || "Restart Nyx to complete installation.",
         duration: 999999,
         action: {
-          label: t("updater.install_button") || "Install",
+          label: t("updater.restart") || t("updater.install_button") || "Restart",
           onClick: () => {
             void installUpdate();
           },

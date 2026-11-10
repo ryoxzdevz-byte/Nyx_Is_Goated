@@ -145,7 +145,20 @@ export const useUpdaterStore = create<UpdaterState>((set, get) => ({
       return;
     }
     try {
-      await electron.quitAndInstall();
+      const result = await electron.quitAndInstall();
+      if (result === false) {
+        set({
+          status: "error",
+          error: "Nyx could not start the installer. Download the update again.",
+        });
+        return;
+      }
+      if (typeof result === "object" && result && result.success === false) {
+        set({
+          status: "error",
+          error: result.error || "Installation failed.",
+        });
+      }
     } catch (err: any) {
       if (get().isTestMode) {
         get().reset();

@@ -9,7 +9,7 @@ export interface SettingsNavIconProps {
 }
 
 const itemClass =
-  "group relative flex h-[30px] w-full cursor-pointer items-center gap-[10px] rounded-control border-0 bg-transparent px-[9px] text-left text-body font-[500] leading-none transition-colors";
+  "group relative flex h-[32px] w-full cursor-pointer items-center gap-[10px] rounded-[11px] border-0 bg-transparent px-[10px] text-left text-body font-[500] leading-none transition-[color,background-color,transform] duration-150 active:scale-[0.985]";
 
 export function NavItem({
   icon: Icon,
@@ -34,34 +34,39 @@ export function NavItem({
         itemClass,
         active
           ? "text-text-primary"
-          : "text-text-secondary hover:text-text-primary",
+          : "text-text-secondary hover:bg-fill-subtle hover:text-text-primary",
       )}
     >
       {active ? (
         <motion.span
           layoutId="settings-nav-active"
-          transition={{ type: "spring", stiffness: 520, damping: 40 }}
-          className="absolute inset-0 rounded-control bg-fill-hover"
+          transition={{ type: "spring", stiffness: 460, damping: 34, mass: 0.72 }}
+          className="absolute inset-0 rounded-[11px] bg-fill-hover"
         />
-      ) : null}
+      ) : (
+        <span className="absolute inset-0 rounded-[11px] bg-transparent transition-colors duration-150 group-hover:bg-fill-subtle" />
+      )}
       <Icon
         size={17}
         weight="Bold"
         className={cn(
-          "relative shrink-0 transition-colors",
+          "relative shrink-0 transition-[color,opacity,transform] duration-150",
           active
             ? "text-text-primary"
             : "text-text-tertiary group-hover:text-text-secondary",
         )}
       />
       <span className="relative truncate">{label}</span>
+      {active ? (
+        <span className="relative ml-auto h-[14px] w-[3px] rounded-full bg-text-primary/30" />
+      ) : null}
     </button>
   );
 }
 
 export function GroupLabel({ children }: { children: ReactNode }) {
   return (
-    <p className="m-0 px-[9px] pb-[4px] text-caption font-[500] leading-[16px] text-text-tertiary">
+    <p className="m-0 px-[10px] pb-[5px] pt-[1px] text-[11px] font-[600] uppercase tracking-[0.05em] leading-[14px] text-text-tertiary/90">
       {children}
     </p>
   );
