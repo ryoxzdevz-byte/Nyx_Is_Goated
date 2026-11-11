@@ -42,7 +42,28 @@ export interface ArtistPageData {
 
 async function loadArtistPage(artistId: string): Promise<ArtistPageData> {
   const artist = await api.getArtist(artistId);
-  const tracks = artist.tracks.map(toClientTrack);
+  const baseTracks = artist.tracks.map(toClientTrack);
+  const releaseIds = Array.from(
+    new Set([...artist.albums, ...artist.singles].map((r) => r.id).filter(Boolean)),
+  ).slice(0, 24);
+  const releaseTracks = releaseIds.length
+    ? (
+        await Promise.all(
+          releaseIds.map((id) =>
+            api
+              .getAlbum(id)
+              .then((album) => (album.tracks || []).map(toClientTrack))
+              .catch(() => [] as Track[]),
+          ),
+        )
+      ).flat()
+    : [];
+  const seen = new Set<string>();
+  const tracks = [...baseTracks, ...releaseTracks].filter((track) => {
+    if (!track?.id || seen.has(track.id)) return false;
+    seen.add(track.id);
+    return true;
+  });
   const formatted: ArtistPageData = {
     title: artist.name,
     monthlyListeners: artist.monthlyListeners,
@@ -59,7 +80,7 @@ async function loadArtistPage(artistId: string): Promise<ArtistPageData> {
     geniusUsername: artist.geniusUsername,
     totalTracks: tracks.length,
     tracks,
-    popularSongs: tracks.slice(0, 5),
+    popularSongs: baseTracks.slice(0, 5),
     albums: artist.albums.map((album) => ({
       id: album.id,
       title: album.title,

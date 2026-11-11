@@ -55,7 +55,7 @@ export function WindowAnimationContainer({
 
   return (
     <div
-      className="h-full w-full transform-gpu"
+      className="h-full w-full transform-gpu overflow-hidden"
       style={{
         transform,
         opacity,

@@ -7,16 +7,12 @@ import { revealThemeChange } from "@/shared/lib";
 import {
   applyBackgroundTint,
   applyGlassIntensity,
-  applyWindowMaterialPreference,
   readStoredBackgroundTint,
   readStoredGlassIntensity,
-  readStoredWindowMaterial,
   storeBackgroundTint,
   storeGlassIntensity,
-  storeWindowMaterial,
   type BackgroundTint,
   type GlassIntensity,
-  type WindowMaterial,
 } from "../../store/customizationStore";
 import { useVisualModeStore } from "@/features/player/store/visualModeStore";
 import { SettingBlock, SettingRow, SettingSection, SegmentedControl } from "../controls";
@@ -32,9 +28,6 @@ export function AppearanceTab({ searchQuery }: { searchQuery?: string }) {
     readStoredGlassIntensity(),
   );
   const [savedGlass, setSavedGlass] = useState<GlassIntensity>(appliedGlass);
-  const [windowMaterial, setWindowMaterial] = useState<WindowMaterial>(() =>
-    readStoredWindowMaterial(),
-  );
   const [backgroundTint, setBackgroundTint] = useState<BackgroundTint>(() =>
     readStoredBackgroundTint(),
   );
@@ -73,12 +66,6 @@ export function AppearanceTab({ searchQuery }: { searchQuery?: string }) {
     applyGlassIntensity(value);
   };
 
-  const changeWindowMaterial = (value: WindowMaterial) => {
-    setWindowMaterial(value);
-    storeWindowMaterial(value);
-    applyWindowMaterialPreference(value);
-  };
-
   const changeBackgroundTint = (value: BackgroundTint) => {
     setBackgroundTint(value);
     storeBackgroundTint(value);
@@ -88,7 +75,6 @@ export function AppearanceTab({ searchQuery }: { searchQuery?: string }) {
   const restartToApplyGlass = async () => {
     setRestarting(true);
     applyGlassIntensity(savedGlass);
-    applyWindowMaterialPreference(windowMaterial);
     try {
       if (electron?.relaunchApp) await electron.relaunchApp();
       else window.location.reload();
@@ -218,29 +204,7 @@ export function AppearanceTab({ searchQuery }: { searchQuery?: string }) {
         }
       />
 
-      <SettingRow
-        title="Window blur material (Windows)"
-        description="Controls the Electron window material behind Nyx. Auto/Acrylic usually give the most visible blur on Windows."
-        searchQuery={searchQuery}
-        control={
-          mounted ? (
-            <MenuSelect
-              value={windowMaterial}
-              onChange={(v) => changeWindowMaterial(v as WindowMaterial)}
-              options={[
-                { value: "auto", label: "Auto" },
-                { value: "acrylic", label: "Acrylic" },
-                { value: "mica", label: "Mica" },
-                { value: "none", label: "None" },
-              ]}
-              className="min-w-[130px]"
-              aria-label="Window blur material"
-            />
-          ) : (
-            <span />
-          )
-        }
-      />
+
 
       <SettingRow
         title="Performance mode"

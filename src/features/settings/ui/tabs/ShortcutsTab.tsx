@@ -1010,7 +1010,7 @@ export function ShortcutsTab({
       </div>
 
       {isSearching ? null : (
-        <div className="mt-[18px]">
+        <div className="mt-[8px]">
           <SettingSection
             label={t("settings.shortcuts.volume_section") || "Volume hotkeys"}
           >

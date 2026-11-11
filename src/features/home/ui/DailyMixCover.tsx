@@ -40,9 +40,10 @@ function DailyMixCover({
 
   return (
     <div
-      className={`relative isolate aspect-square w-full overflow-hidden rounded-control select-none ${
-        coverUrl && imageLoaded ? "" : "bg-border-alpha-14"
+      className={`relative isolate aspect-square w-full overflow-hidden rounded-control select-none ring-1 ring-inset ring-white/[0.05] ${
+        coverUrl && imageLoaded ? "bg-[#0b0b0c]" : "bg-border-alpha-14"
       }`}
+      style={{ WebkitMaskImage: "-webkit-radial-gradient(white, black)" }}
     >
       {coverUrl && (
         <CoverImage

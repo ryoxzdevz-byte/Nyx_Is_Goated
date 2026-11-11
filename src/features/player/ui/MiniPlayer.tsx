@@ -719,60 +719,71 @@ function MiniPlayer({
                 className="h-[38px] w-[38px] object-cover rounded-control"
               />
             </div>
-            <div className="flex min-w-0 flex-col pointer-events-none">
-              <p
-                className="m-0 truncate text-[16px] font-[400] text-text-primary flex items-center gap-[6px] pointer-events-none"
-                style={{
-                  lineHeight: "18px",
-                  letterSpacing: "0",
-                }}
-              >
-                <span
-                  role="button"
-                  tabIndex={0}
-                  aria-label="Open player"
-                  className="min-w-0 truncate cursor-pointer pointer-events-auto prevent-seek"
-                  onClick={onFullscreenOpen}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      onFullscreenOpen?.();
-                    }
-                  }}
+            <div className="min-w-0 flex-1 overflow-hidden pointer-events-none">
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={currentTrack?.id || "none"}
+                  initial={{ opacity: 0, x: 14 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -14 }}
+                  transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+                  className="flex min-w-0 flex-col"
                 >
-                  {trackTitle}
-                </span>
-              </p>
-              <p
-                className="m-0 mt-[4px] flex min-w-0 items-center gap-[5px] text-body font-[300] text-text-tertiary pointer-events-none"
-                style={{
-                  lineHeight: "15px",
-                }}
-              >
-                {currentTrack?.explicit && (
-                  <span className="inline-flex h-[14px] w-[14px] shrink-0 -translate-y-px items-center justify-center rounded-[3.5px] bg-fill-strong text-[8px] font-[600] leading-none text-text-secondary">
-                    <span className="translate-y-[0.5px] [text-box:trim-both_cap_alphabetic]">
-                      E
+                  <p
+                    className="m-0 truncate text-[16px] font-[400] text-text-primary flex items-center gap-[6px] pointer-events-none"
+                    style={{
+                      lineHeight: "18px",
+                      letterSpacing: "0",
+                    }}
+                  >
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      aria-label="Open player"
+                      className="min-w-0 truncate cursor-pointer pointer-events-auto prevent-seek"
+                      onClick={onFullscreenOpen}
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          onFullscreenOpen?.();
+                        }
+                      }}
+                    >
+                      {trackTitle}
                     </span>
-                  </span>
-                )}
-                {!isLocal && (
-                  <ArtistAvatar
-                    artistId={currentTrack?.artistId}
-                    artistList={currentTrack?.artistList}
-                    size={15}
-                    className="-translate-y-px"
-                  />
-                )}
-                <ArtistLink
-                  name={trackArtists}
-                  artistId={currentTrack?.artistId}
-                  artistList={currentTrack?.artistList}
-                  plain={isLocal}
-                  className="text-text-tertiary pointer-events-auto"
-                />
-              </p>
+                  </p>
+                  <p
+                    className="m-0 mt-[4px] flex min-w-0 items-center gap-[5px] text-body font-[300] text-text-tertiary pointer-events-none"
+                    style={{
+                      lineHeight: "15px",
+                    }}
+                  >
+                    {currentTrack?.explicit && (
+                      <span className="inline-flex h-[14px] w-[14px] shrink-0 -translate-y-px items-center justify-center rounded-[3.5px] bg-fill-strong text-[8px] font-[600] leading-none text-text-secondary">
+                        <span className="translate-y-[0.5px] [text-box:trim-both_cap_alphabetic]">
+                          E
+                        </span>
+                      </span>
+                    )}
+                    {!isLocal && (
+                      <ArtistAvatar
+                        artistId={currentTrack?.artistId}
+                        artistList={currentTrack?.artistList}
+                        size={15}
+                        className="-translate-y-px"
+                      />
+                    )}
+                    <ArtistLink
+                      name={trackArtists}
+                      artistId={currentTrack?.artistId}
+                      artistList={currentTrack?.artistList}
+                      plain={isLocal}
+                      className="text-text-tertiary pointer-events-auto"
+                    />
+                  </p>
+                </motion.div>
+              </AnimatePresence>
             </div>
             {!isLocal && (
               <button

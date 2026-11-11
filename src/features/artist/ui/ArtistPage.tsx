@@ -371,7 +371,7 @@ function ArtistContent() {
                   <section id="artist-tracks-section">
                     <div className="flex items-center justify-between mb-[16px]">
                       <h2 className={sectionTitleClass}>
-                        {t("artist.popular_songs")}
+                        {showAllTracks ? t("artist.all_songs", { defaultValue: "All songs" }) : t("artist.popular_songs")}
                       </h2>
                       {data.tracks.length > 5 && (
                         <button
@@ -381,30 +381,12 @@ function ArtistContent() {
                         >
                           {showAllTracks
                             ? t("artist.show_less")
-                            : t("artist.show_all")}
+                            : t("artist.show_all_songs", { defaultValue: "Show all songs" })}
                         </button>
                       )}
                     </div>
                     <div className="flex flex-col -mt-[14px] -mx-[8px]">
-                      {data.tracks.slice(0, 5).map(renderTrack)}
-
-                      <AnimatePresence initial={false}>
-                        {showAllTracks && (
-                          <motion.div
-                            key="expanded-tracks"
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: "auto" }}
-                            exit={{ opacity: 0, height: 0 }}
-                            transition={{
-                              duration: 0.28,
-                              ease: [0.25, 1, 0.5, 1],
-                            }}
-                            className="overflow-hidden flex flex-col"
-                          >
-                            {data.tracks.slice(5).map(renderTrack)}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                      {(showAllTracks ? data.tracks : data.tracks.slice(0, 5)).map(renderTrack)}
 
                       {data.tracks.length === 0 && (
                         <p className="text-text-secondary px-[8px] py-[14px]">

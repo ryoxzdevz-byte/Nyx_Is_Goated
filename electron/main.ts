@@ -292,8 +292,8 @@ function createWindow() {
       ? { titleBarStyle: "hidden" as const }
       : { frame: false }),
     transparent: true,
-    ...(process.platform === "win32" ? { backgroundMaterial: "acrylic" as const } : {}),
     backgroundColor: "#00000000",
+    ...(process.platform === "win32" ? { backgroundMaterial: "acrylic" as const } : {}),
     hasShadow: false,
     fullscreenable: true,
     webPreferences: {

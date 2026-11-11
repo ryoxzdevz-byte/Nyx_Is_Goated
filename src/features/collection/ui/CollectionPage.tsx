@@ -23,6 +23,7 @@ import { LuShuffle } from "react-icons/lu";
 import Button from "@/shared/ui/Button";
 import SongCardWithMenu from "@/features/player/ui/SongCardWithMenu";
 import CoverImage from "@/features/covers/ui/CoverImage";
+import ArtistLink from "@/features/artist/ui/ArtistLink";
 import { preloadCoverArt } from "@/features/covers/lib/coverArt";
 import { DailyMixCover } from "@/features/home";
 import { playerEngine } from "@/features/player";
@@ -355,7 +356,9 @@ function CollectionContent() {
                         ))}
                       </p>
                     ) : data.author ? (
-                      <p className={HERO_SUBTITLE_CLASS}>{data.author}</p>
+                      <p className={HERO_SUBTITLE_CLASS}>
+                        <ArtistLink name={data.author} className="text-text-secondary" />
+                      </p>
                     ) : data.description ? (
                       <HeroSubtitle text={data.description} />
                     ) : undefined

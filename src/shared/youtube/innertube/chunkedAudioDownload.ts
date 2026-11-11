@@ -7,9 +7,9 @@ export interface AudioDownloadOptions {
   concurrency?: number;
 }
 
-const DEFAULT_CHUNK_SIZE = 1024 * 1024;
-const DEFAULT_CONCURRENCY = 4;
-const MAX_CHUNK_ATTEMPTS = 2;
+const DEFAULT_CHUNK_SIZE = 4 * 1024 * 1024;
+const DEFAULT_CONCURRENCY = 8;
+const MAX_CHUNK_ATTEMPTS = 3;
 
 export function isGoogleVideoUrl(url: string): boolean {
   try {

@@ -117,6 +117,16 @@ export const useDiscordSettingsStore = create<DiscordSettingsState>()(
             DEFAULT_DISCORD_SETTINGS.showDownloadButton,
           );
         }
+        notifyElectron({
+          enabled: state.enabled,
+          statusDisplayType: state.statusDisplayType,
+          showArtwork: state.showArtwork,
+          showArtistSmallImage: state.showArtistSmallImage,
+          showTime: state.showTime,
+          showPaused: state.showPaused,
+          showButton: state.showButton,
+          showDownloadButton: state.showDownloadButton,
+        });
       },
     },
   ),

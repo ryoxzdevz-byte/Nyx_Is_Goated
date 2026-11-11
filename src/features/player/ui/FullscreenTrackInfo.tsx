@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useLocation } from "react-router-dom";
 import { useIsTrackLiked, useToggleTrackLike } from "@/features/library/hooks";
 import { ArtistAvatar, ArtistLink } from "@/features/artist";
@@ -31,44 +32,55 @@ export function FullscreenTrackInfo({ onClose }: FullscreenTrackInfoProps) {
 
   return (
     <div className="flex w-full items-center gap-[12px]">
-      <div className="flex min-w-0 flex-1 flex-col gap-[4px]">
-        <ScrollableText
-          text={track?.title || ""}
-          className="font-montserrat m-0 text-[20px] font-[600] leading-[1.2] tracking-[-0.01em] text-white"
-        />
-        <p className="font-montserrat m-0 flex min-w-0 items-center gap-[6px] text-label font-[500] text-white/70 leading-snug">
-          {track?.explicit && (
-            <span
-              aria-label="Explicit"
-              className="inline-flex h-[18px] w-[18px] shrink-0 -translate-y-px items-center justify-center rounded-[5px] bg-white/70 text-black/80"
-            >
-              <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden>
-                <path
-                  d="M2.2 1H7.8V2.4H3.8V4.3H7.2V5.7H3.8V7.6H7.8V9H2.2Z"
-                  fill="currentColor"
-                />
-              </svg>
-            </span>
-          )}
-          {!isLocal && (
-            <ArtistAvatar
-              artistId={track?.artistId}
-              artistList={track?.artistList}
-              size={18}
-              className="-translate-y-px"
+      <div className="min-w-0 flex-1 overflow-hidden">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={track?.id || "none"}
+            initial={{ opacity: 0, x: 18 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -18 }}
+            transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+            className="flex min-w-0 flex-col gap-[4px]"
+          >
+            <ScrollableText
+              text={track?.title || ""}
+              className="font-montserrat m-0 text-[20px] font-[600] leading-[1.2] tracking-[-0.01em] text-white"
             />
-          )}
-          <ArtistLink
-            name={track?.artists || ""}
-            artistId={track?.artistId}
-            artistList={track?.artistList}
-            plain={isLocal}
-            onNavigate={() => {
-              if (location.pathname !== "/player") onClose?.();
-            }}
-            className="truncate text-white/70"
-          />
-        </p>
+            <p className="font-montserrat m-0 flex min-w-0 items-center gap-[6px] text-label font-[500] text-white/70 leading-snug">
+              {track?.explicit && (
+                <span
+                  aria-label="Explicit"
+                  className="inline-flex h-[18px] w-[18px] shrink-0 -translate-y-px items-center justify-center rounded-[5px] bg-white/70 text-black/80"
+                >
+                  <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden>
+                    <path
+                      d="M2.2 1H7.8V2.4H3.8V4.3H7.2V5.7H3.8V7.6H7.8V9H2.2Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                </span>
+              )}
+              {!isLocal && (
+                <ArtistAvatar
+                  artistId={track?.artistId}
+                  artistList={track?.artistList}
+                  size={18}
+                  className="-translate-y-px"
+                />
+              )}
+              <ArtistLink
+                name={track?.artists || ""}
+                artistId={track?.artistId}
+                artistList={track?.artistList}
+                plain={isLocal}
+                onNavigate={() => {
+                  if (location.pathname !== "/player") onClose?.();
+                }}
+                className="truncate text-white/70"
+              />
+            </p>
+          </motion.div>
+        </AnimatePresence>
       </div>
 
       {!isLocal && (

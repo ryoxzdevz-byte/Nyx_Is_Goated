@@ -68,11 +68,10 @@ export function storeGlassIntensity(value: GlassIntensity) {
 export function readStoredWindowMaterial(): WindowMaterial {
   try {
     const v = localStorage.getItem(WINDOW_MATERIAL_STORAGE_KEY);
-    if (v === "acrylic" || v === "mica" || v === "none" || v === "auto")
-      return v;
-    return "auto";
+    if (v === "acrylic" || v === "mica" || v === "none") return v;
+    return "acrylic";
   } catch {
-    return "auto";
+    return "acrylic";
   }
 }
 

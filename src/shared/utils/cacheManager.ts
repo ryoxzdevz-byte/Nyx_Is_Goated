@@ -575,11 +575,14 @@ export function formatStorageBytes(bytes: number): string {
   if (bytes <= 0 || !Number.isFinite(bytes)) return "0 B";
   if (bytes < 1024) return `${bytes} B`;
   const kb = bytes / 1024;
-  if (kb < 1024) return `${kb.toFixed(1)} KB`;
+  if (kb < 1024) return `${kb.toFixed(kb >= 100 ? 0 : 1)} KB`;
   const mb = kb / 1024;
-  if (mb < 1024) return `${mb.toFixed(1)} MB`;
+  if (mb < 1000) return `${mb.toFixed(mb >= 100 ? 0 : 1)} MB`;
   const gb = mb / 1024;
-  return `${gb.toFixed(2)} GB`;
+  if (gb < 10) return `${gb.toFixed(1)} GB`;
+  if (gb < 1000) return `${gb.toFixed(gb >= 100 ? 0 : 1)} GB`;
+  const tb = gb / 1024;
+  return `${tb.toFixed(tb >= 10 ? 1 : 2)} TB`;
 }
 
 const CACHE_ANALYTICS_STORAGE_KEY = "liner_cached_storage_analytics";

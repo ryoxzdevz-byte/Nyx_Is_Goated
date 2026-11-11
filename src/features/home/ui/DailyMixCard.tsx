@@ -1,6 +1,7 @@
 import { memo, useState } from "react";
 import { ScrollableText } from "@/shared/ui";
 import DropdownMenu from "@/shared/ui/DropdownMenu";
+import ArtistLink from "@/features/artist/ui/ArtistLink";
 import type { DailyMix } from "../hooks/useDailyMixes";
 import { useDailyMixActions } from "../hooks/useDailyMixActions";
 import DailyMixCover from "./DailyMixCover";
@@ -23,12 +24,8 @@ function DailyMixCard({ mix, index }: DailyMixCardProps) {
     handleClick,
   } = useDailyMixActions(mix);
 
-  const subtitleText =
-    (mix.clusterArtists && mix.clusterArtists.length > 0
-      ? mix.clusterArtists.join(", ")
-      : mix.description) || "";
-
   const mixNumber = mix.title.match(/\d+/)?.[0] ?? String((index ?? 0) + 1);
+  const hasArtists = mix.clusterArtists && mix.clusterArtists.length > 0;
 
   return (
     <div
@@ -49,12 +46,18 @@ function DailyMixCard({ mix, index }: DailyMixCardProps) {
         <span className="truncate text-label font-[500] text-text-primary">
           {mix.title}
         </span>
-        <ScrollableText
-          text={subtitleText}
-          isParentHovered={isCardHovered}
-          className="text-body text-text-tertiary"
-          fadeColorClass="from-bg-primary"
-        />
+        {hasArtists ? (
+          <div className="min-w-0 text-body text-text-tertiary" onClick={(e) => e.stopPropagation()}>
+            <ArtistLink name={mix.clusterArtists.join(", ")} className="truncate text-body text-text-tertiary" />
+          </div>
+        ) : (
+          <ScrollableText
+            text={mix.description || ""}
+            isParentHovered={isCardHovered}
+            className="text-body text-text-tertiary"
+            fadeColorClass="from-bg-primary"
+          />
+        )}
       </div>
 
       {menuItems.length > 0 && (
