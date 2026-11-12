@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import type { CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslation } from "@/languages";
@@ -590,9 +591,19 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   const handleMeasureActive = useCallback((w: number, h: number) => {
     if (w < 120) return;
-    if (w > 0) setActiveCardWidth((prev) => (prev && Math.abs(prev - w) < 2 ? prev : w));
-    if (h > 0) setActiveCardHeight((prev) => (prev && Math.abs(prev - h) < 2 ? prev : h));
+    if (w > 0)
+      setActiveCardWidth((prev) => (prev && Math.abs(prev - w) < 2 ? prev : w));
+    if (h > 0)
+      setActiveCardHeight((prev) =>
+        prev && Math.abs(prev - h) < 2 ? prev : h,
+      );
   }, []);
+
+  useLayoutEffect(() => {
+    if (toasts.length > 0) return;
+    setActiveCardWidth(null);
+    setActiveCardHeight(null);
+  }, [toasts.length]);
 
   const [deckHovered, setDeckHovered] = useState(false);
 
@@ -601,9 +612,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const topDuration = topToast?.duration ?? 0;
 
   useEffect(() => {
-    setActiveCardWidth(null);
+    if (!topId) return;
     setActiveCardHeight(null);
-  }, [topId, topToast?.message]);
+  }, [topId]);
 
   const bottomToast = toasts.length > 0 ? toasts[toasts.length - 1] : null;
   const bottomId = bottomToast?.id;
@@ -689,10 +700,15 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       >
         <motion.div
           layout
-          transition={{ type: "spring", stiffness: 480, damping: 38 }}
+          animate={{
+            width: activeCardWidth ?? "auto",
+            height: activeCardHeight ?? "auto",
+          }}
+          transition={{ type: "spring", stiffness: 380, damping: 34, mass: 0.9 }}
           className="relative grid grid-cols-1 grid-rows-1 items-start justify-items-center"
+          style={{ alignContent: "start" }}
         >
-          <AnimatePresence mode="popLayout">
+          <AnimatePresence initial={false}>
             {visibleToasts.map((item, index) => (
               <NotificationCard
                 key={item.id}
@@ -751,7 +767,7 @@ function NotificationCard({
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [isTop, onMeasureActive, item.description]);
+  }, [isTop, onMeasureActive, item.message, item.description, item.action]);
 
   const dismiss = useCallback(() => {
     item.onDismiss?.();
@@ -773,9 +789,27 @@ function NotificationCard({
   const zIndex = 30 - index * 10;
   const resolvedAction = item.action ?? item.button;
 
+  const cardStyle: CSSProperties & {
+    "--toast-w"?: string;
+    "--toast-h"?: string;
+  } = {
+    gridArea: "1 / 1",
+    zIndex,
+    transformOrigin: "bottom center",
+    maxWidth: "min(520px, calc(100vw - 24px))",
+    minHeight: "38px",
+  };
+  if (index === 0) {
+    cardStyle.width = "max-content";
+  } else {
+    if (activeCardWidth) cardStyle["--toast-w"] = `${activeCardWidth}px`;
+    if (activeCardHeight) cardStyle["--toast-h"] = `${activeCardHeight}px`;
+  }
+
   return (
     <motion.div
       ref={cardRef}
+      layout
       initial={
         index === 0
           ? { opacity: 0, y: -20 + shiftY, scale: 0.95 }
@@ -787,9 +821,9 @@ function NotificationCard({
         scale,
         transition: {
           type: "spring",
-          stiffness: 480,
-          damping: 38,
-          mass: 0.8,
+          stiffness: 420,
+          damping: 34,
+          mass: 0.85,
         },
       }}
       exit={{
@@ -816,28 +850,14 @@ function NotificationCard({
       onMouseEnter={() => onDeckHover?.(true)}
       onMouseLeave={() => onDeckHover?.(false)}
       data-no-window-drag
-      className={`relative flex items-center gap-[8px] rounded-item bg-bg-elevated pl-[12px] ${
+      className={`relative flex overflow-hidden items-center gap-[8px] rounded-item bg-bg-elevated pl-[12px] ${
         resolvedAction ? "pr-[5px]" : "pr-[12px]"
       } py-[5px] min-h-[38px] box-border ${
         index === 0
           ? "pointer-events-auto cursor-grab active:cursor-grabbing"
           : "pointer-events-none select-none"
-      }`}
-      style={{
-        gridArea: "1 / 1",
-        zIndex,
-        transformOrigin: "bottom center",
-        maxWidth: "min(520px, calc(100vw - 24px))",
-        width:
-          index === 0
-            ? "max-content"
-            : index > 1 && activeCardWidth
-              ? `${activeCardWidth}px`
-              : undefined,
-        minHeight: "38px",
-        height:
-          index > 1 && activeCardHeight ? `${activeCardHeight}px` : undefined,
-      }}
+      } ${index > 0 ? "w-[var(--toast-w)] h-[var(--toast-h)]" : ""}`}
+      style={cardStyle}
     >
       <span
         className="flex shrink-0 items-center justify-center text-text-tertiary"

@@ -58,7 +58,7 @@ export function EntityHero({
   return (
     <section
       className={cn(
-        "flex w-full min-w-0 flex-col items-start gap-[16px] sm:flex-row sm:gap-[22px] sm:items-center",
+        "flex w-full min-w-0 items-center gap-[16px] sm:gap-[22px]",
       )}
       data-no-window-drag
     >
@@ -73,7 +73,7 @@ export function EntityHero({
 
       <div
         className={cn(
-          "flex min-w-0 flex-1 flex-col pt-[2px] sm:min-h-[168px] sm:justify-center",
+          "flex min-w-0 flex-1 flex-col justify-center sm:min-h-[168px]",
           contentClassName,
         )}
       >
@@ -84,14 +84,18 @@ export function EntityHero({
         {(actions || trailingActions) && (
           <div
             className={cn(
-              "mt-[26px] flex flex-wrap items-center justify-between gap-[12px]",
+              "mt-[18px] flex flex-wrap items-center gap-[10px] sm:mt-[26px] sm:justify-between sm:gap-[12px]",
               actionsClassName,
             )}
           >
-            <div className="flex min-w-0 items-center gap-[8px]">{actions}</div>
-            <div className="flex min-w-0 items-center justify-end gap-[12px]">
-              {trailingActions}
+            <div className="flex min-w-0 flex-wrap items-center gap-[8px]">
+              {actions}
             </div>
+            {trailingActions ? (
+              <div className="flex min-w-0 flex-wrap items-center gap-[12px] sm:justify-end">
+                {trailingActions}
+              </div>
+            ) : null}
           </div>
         )}
       </div>

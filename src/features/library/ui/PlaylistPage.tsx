@@ -810,7 +810,6 @@ function LibraryPlaylistContent() {
                 data-no-window-drag
               >
                 <EntityHero
-                  actionsClassName="!flex-wrap gap-y-[10px]"
                   cover={
                     <PlaylistHeroCover
                       urls={viewData.coverUrls}
