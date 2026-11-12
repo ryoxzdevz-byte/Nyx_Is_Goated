@@ -187,6 +187,23 @@ describe("OverlayManager", () => {
     expect(overlay.isVisible()).toBe(true);
   });
 
+  it("animates the overlay out before hiding the window", async () => {
+    const { manager, overlays, ready } = setup();
+    await vi.advanceTimersByTimeAsync(600);
+    const [overlay] = overlays();
+    ready(overlay);
+    manager.showOverlay();
+    overlay.webContents.send.mockClear();
+    manager.closeOverlay();
+    expect(overlay.isVisible()).toBe(true);
+    expect(overlay.webContents.send).toHaveBeenCalledWith(
+      "overlay:visibility",
+      false,
+    );
+    await vi.advanceTimersByTimeAsync(100);
+    expect(overlay.isVisible()).toBe(false);
+  });
+
   it("closing before the overlay is ready cancels the show", async () => {
     const { manager, overlays, ready } = setup();
     manager.showOverlay();

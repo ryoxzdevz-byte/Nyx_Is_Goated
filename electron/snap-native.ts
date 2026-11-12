@@ -635,6 +635,10 @@ export class NativeSnapPreview {
         } catch {}
       }
       restore();
+      // Electron's show/restore can drop the DWM cloak while the window is
+      // still minimized; re-apply it before the transform starts so only the
+      // live thumbnail is visible during the transition.
+      this.addon.cloak(hwnd, true);
       if (setTransitionsDisabled) {
         setTimeout(
           () => setTransitionsDisabled(hwnd, false),

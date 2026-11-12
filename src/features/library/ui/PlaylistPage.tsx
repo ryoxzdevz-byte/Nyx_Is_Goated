@@ -529,6 +529,11 @@ function LibraryPlaylistContent() {
       playlistTitle: viewData.title,
       seedTrackId: currentTracks[0]?.id,
       existingTrackIds: currentTracks.map((track) => track.id),
+      existingItems: currentTracks.flatMap((track) =>
+        track.playlistItemId
+          ? [{ track, itemId: track.playlistItemId }]
+          : [],
+      ),
     });
   }, [currentTracks, decodedId, isLikesMode, offline, viewData]);
 
@@ -918,7 +923,8 @@ function LibraryPlaylistContent() {
                     ) : undefined
                   }
                   meta={
-                    <div className="flex items-center flex-wrap gap-[6px]">
+                    <div className="flex w-full flex-wrap items-center justify-between gap-[10px]">
+                      <div className="flex items-center flex-wrap gap-[6px]">
                       <div className={HERO_CHIP_CLASS}>
                         <MusicLine
                           size={13}
@@ -966,9 +972,138 @@ function LibraryPlaylistContent() {
                           </span>
                         </div>
                       ) : null}
+                      </div>
+                      <div className="ml-auto flex flex-wrap items-center justify-end gap-[10px]">
+                        <div className="flex items-center gap-[8px]">
+                          <TrackSearchField
+                            search={search}
+                            totalCount={currentTracks.length}
+                            placeholder={t("track_search.placeholder_playlist")}
+                            onSubmit={handleSearchSubmit}
+                            className={`${HERO_GLASS_CLASS} !w-[clamp(132px,15vw,190px)] min-w-0`}
+                          />
+                          <Button
+                            variant="secondary"
+                            onClick={handleAddToQueue}
+                            disabled={currentTracks.length === 0}
+                            className={`${HERO_BUTTON_CLASS} ${HERO_GLASS_BUTTON_CLASS} px-[22px] ${
+                              !isLikesMode ? "[&>*]:-translate-x-px" : ""
+                            }`}
+                            title={t("common.add_to_queue")}
+                          >
+                            <AnimatePresence mode="wait">
+                              {addedToQueue ? (
+                                <motion.span
+                                  key="check"
+                                  initial={{ opacity: 0, scale: 0.5 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  exit={{ opacity: 0, scale: 0.5 }}
+                                  transition={{ duration: 0.08 }}
+                                  className="flex items-center justify-center text-emerald-400 shrink-0"
+                                >
+                                  <CheckLine size={16} />
+                                </motion.span>
+                              ) : (
+                                <motion.span
+                                  key="add"
+                                  initial={{ opacity: 0, scale: 0.5 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  exit={{ opacity: 0, scale: 0.5 }}
+                                  transition={{ duration: 0.08 }}
+                                  className="flex items-center justify-center shrink-0"
+                                >
+                                  <AddLine size={16} />
+                                </motion.span>
+                              )}
+                            </AnimatePresence>
+                            <span className="truncate">
+                              {t("common.add_to_queue")}
+                            </span>
+                          </Button>
+                        </div>
+                        <div className="flex items-center gap-[8px]">
+                          <TrackSortMenu
+                            sort={sort}
+                            disabled={currentTracks.length < 2}
+                          />
+                          {!isLikesMode && (
+                            <DropdownMenu
+                              trigger={
+                                <Button
+                                  variant="secondary"
+                                  className={`${HERO_BUTTON_CLASS} ${HERO_GLASS_BUTTON_CLASS} !w-[52px] !p-0 text-text-primary`}
+                                  title={t("common.more")}
+                                >
+                                  <More1Fill size={20} />
+                                </Button>
+                              }
+                              items={[
+                                ...(!offline
+                                  ? [
+                                      {
+                                        id: "rename",
+                                        icon: <LuPencil size={15} />,
+                                        label: t("common.rename"),
+                                        onClick: () => setIsEditingTitle(true),
+                                      },
+                                      {
+                                        id: "edit-description",
+                                        icon: <LuText size={15} />,
+                                        label: t("common.edit_description"),
+                                        onClick: () =>
+                                          setIsEditingDescription(true),
+                                      },
+                                      {
+                                        id: "share",
+                                        icon: <ShareForwardLine size={15} />,
+                                        label: t("common.share"),
+                                        onClick: handleShare,
+                                      },
+                                      {
+                                        id: "duplicate",
+                                        icon: <LuCopy size={15} />,
+                                        label: t("common.duplicate"),
+                                        onClick: () => void handleDuplicate(),
+                                      },
+                                      {
+                                        id: "delete",
+                                        icon: <LuTrash2 size={15} />,
+                                        label: t("common.delete"),
+                                        danger: true,
+                                        onClick: () => {
+                                          if (!decodedId) return;
+                                          useModalStore
+                                            .getState()
+                                            .openRemoveFromLibrary({
+                                              id: decodedId,
+                                              title: viewData.title,
+                                              coverUrl: viewData.coverUrl,
+                                              type: "playlist",
+                                              isOwned: true,
+                                            });
+                                        },
+                                      },
+                                    ]
+                                  : []),
+                                ...(downloadedPlaylist
+                                  ? [
+                                      {
+                                        id: "remove-download",
+                                        icon: <LuTrash2 size={15} />,
+                                        label: t("playlist.remove_download"),
+                                        danger: true,
+                                        onClick: handleRemoveDownload,
+                                      },
+                                    ]
+                                  : []),
+                              ]}
+                            />
+                          )}
+                        </div>
                     </div>
-                  }
-                  actions={
+                  </div>
+                }
+                actions={
                     <div className="flex flex-wrap items-center gap-[10px]">
                       <div className="flex items-center gap-[8px]">
                         <Button
@@ -1020,136 +1155,6 @@ function LibraryPlaylistContent() {
                           <span>{t("playlist.download")}</span>
                         </Button>
                       ) : null}
-                    </div>
-                  }
-                  trailingActions={
-                    <div className="flex flex-wrap items-center justify-end gap-[10px]">
-                      <div className="flex items-center gap-[8px]">
-                        <TrackSearchField
-                          search={search}
-                          totalCount={currentTracks.length}
-                          placeholder={t("track_search.placeholder_playlist")}
-                          onSubmit={handleSearchSubmit}
-                          className={`${HERO_GLASS_CLASS} !w-[clamp(132px,15vw,190px)] min-w-0`}
-                        />
-                        <Button
-                          variant="secondary"
-                          onClick={handleAddToQueue}
-                          disabled={currentTracks.length === 0}
-                          className={`${HERO_BUTTON_CLASS} ${HERO_GLASS_BUTTON_CLASS} px-[22px] ${
-                            !isLikesMode ? "[&>*]:-translate-x-px" : ""
-                          }`}
-                          title={t("common.add_to_queue")}
-                        >
-                          <AnimatePresence mode="wait">
-                            {addedToQueue ? (
-                              <motion.span
-                                key="check"
-                                initial={{ opacity: 0, scale: 0.5 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.5 }}
-                                transition={{ duration: 0.08 }}
-                                className="flex items-center justify-center text-emerald-400 shrink-0"
-                              >
-                                <CheckLine size={16} />
-                              </motion.span>
-                            ) : (
-                              <motion.span
-                                key="add"
-                                initial={{ opacity: 0, scale: 0.5 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.5 }}
-                                transition={{ duration: 0.08 }}
-                                className="flex items-center justify-center shrink-0"
-                              >
-                                <AddLine size={16} />
-                              </motion.span>
-                            )}
-                          </AnimatePresence>
-                          <span className="truncate">
-                            {t("common.add_to_queue")}
-                          </span>
-                        </Button>
-                      </div>
-                      <div className="flex items-center gap-[8px]">
-                        <TrackSortMenu
-                          sort={sort}
-                          disabled={currentTracks.length < 2}
-                        />
-                        {!isLikesMode && (
-                          <DropdownMenu
-                            trigger={
-                              <Button
-                                variant="secondary"
-                                className={`${HERO_BUTTON_CLASS} ${HERO_GLASS_BUTTON_CLASS} !w-[52px] !p-0 text-text-primary`}
-                                title={t("common.more")}
-                              >
-                                <More1Fill size={20} />
-                              </Button>
-                            }
-                            items={[
-                              ...(!offline
-                                ? [
-                                    {
-                                      id: "rename",
-                                      icon: <LuPencil size={15} />,
-                                      label: t("common.rename"),
-                                      onClick: () => setIsEditingTitle(true),
-                                    },
-                                    {
-                                      id: "edit-description",
-                                      icon: <LuText size={15} />,
-                                      label: t("common.edit_description"),
-                                      onClick: () =>
-                                        setIsEditingDescription(true),
-                                    },
-                                    {
-                                      id: "share",
-                                      icon: <ShareForwardLine size={15} />,
-                                      label: t("common.share"),
-                                      onClick: handleShare,
-                                    },
-                                    {
-                                      id: "duplicate",
-                                      icon: <LuCopy size={15} />,
-                                      label: t("common.duplicate"),
-                                      onClick: () => void handleDuplicate(),
-                                    },
-                                    {
-                                      id: "delete",
-                                      icon: <LuTrash2 size={15} />,
-                                      label: t("common.delete"),
-                                      danger: true,
-                                      onClick: () => {
-                                        if (!decodedId) return;
-                                        useModalStore
-                                          .getState()
-                                          .openRemoveFromLibrary({
-                                            id: decodedId,
-                                            title: viewData.title,
-                                            coverUrl: viewData.coverUrl,
-                                            type: "playlist",
-                                            isOwned: true,
-                                          });
-                                      },
-                                    },
-                                  ]
-                                : []),
-                              ...(downloadedPlaylist
-                                ? [
-                                    {
-                                      id: "remove-download",
-                                      icon: <LuTrash2 size={15} />,
-                                      label: t("playlist.remove_download"),
-                                      danger: true,
-                                      onClick: handleRemoveDownload,
-                                    },
-                                  ]
-                                : []),
-                            ]}
-                          />
-                        )}
-                      </div>
                     </div>
                   }
                 />

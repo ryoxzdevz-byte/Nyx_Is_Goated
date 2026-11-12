@@ -25,6 +25,7 @@ const OVERLAY_MARGIN = 0;
 const TOGGLE_ACTION = "toggle-overlay";
 const LIKE_ACTION = "like-track";
 const COMPOSITOR_SETTLE_MS = 300;
+const CLOSE_ANIMATION_MS = 90;
 const SEEK_STEP_MS = 5_000;
 const SHORTCUT_STATUS_CHANNEL = "shortcuts:status";
 
@@ -295,10 +296,9 @@ export class OverlayManager {
     const win = this.mainWindow;
     const restore = () => {
       if (win.isDestroyed()) return;
-      if (win.isMinimized()) {
-        win.restore();
-      }
-      win.show();
+      const minimized = win.isMinimized();
+      if (minimized) win.restore();
+      else if (!win.isVisible()) win.show();
       win.focus();
     };
     if (this.focusMainHandler && win.isMinimized())
@@ -1240,7 +1240,7 @@ export class OverlayManager {
     return true;
   }
 
-  public closeOverlay() {
+  public closeOverlay(animate = true) {
     this.wasAutoOpened = false;
     this.pendingShow = false;
     this.wantVisible = false;
@@ -1255,7 +1255,17 @@ export class OverlayManager {
     }
 
     if (this.overlayWindow && !this.overlayWindow.isDestroyed()) {
-      this.overlayWindow.hide();
+      const win = this.overlayWindow;
+      if (animate && this.contentReady && win.isVisible()) {
+        win.webContents.send("overlay:visibility", false);
+        this.closeTimeout = setTimeout(() => {
+          this.closeTimeout = null;
+          if (!win.isDestroyed()) win.hide();
+          this.scheduleIdleDestroy();
+        }, CLOSE_ANIMATION_MS);
+        return;
+      }
+      win.hide();
     }
     this.scheduleIdleDestroy();
   }

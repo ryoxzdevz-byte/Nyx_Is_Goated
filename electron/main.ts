@@ -702,7 +702,7 @@ if (!gotTheLock) {
       if (nativeSnap && overlay) {
         overlay.holdForTransition();
         void nativeSnap.fromOverlay(overlay.getWindow(), restore, () =>
-          overlay.closeOverlay(),
+          overlay.closeOverlay(false),
         );
         return;
       }

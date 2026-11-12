@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { ImportReview } from "@/shared/api";
+import type { Track } from "@/shared/types";
 
 export interface LibraryItemDetail {
   id: string;
@@ -33,6 +34,7 @@ export interface AddSongsTarget {
   playlistTitle: string;
   seedTrackId?: string;
   existingTrackIds: string[];
+  existingItems?: { track: Track; itemId: string }[];
 }
 
 export interface RemoveLibraryDetail {

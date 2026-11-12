@@ -15,7 +15,11 @@ import TextInput from "@/shared/ui/TextInput";
 import Dialog from "@/shared/ui/Dialog";
 import CoverImage from "@/features/covers/ui/CoverImage";
 import { useSearchTracks } from "@/features/search/hooks";
-import { useAddPlaylistTracks } from "../../hooks";
+import { playerEngine } from "@/features/player";
+import {
+  useAddPlaylistTracks,
+  useRemovePlaylistTracks,
+} from "../../hooks";
 import { useModalStore } from "../../store/modalStore";
 
 const ROW_EASE = [0.22, 1, 0.36, 1] as const;
@@ -47,12 +51,15 @@ export default function AddSongsToPlaylistModal() {
   const target = useModalStore((state) => state.addSongsTarget);
   const close = useModalStore((state) => state.closeAddSongs);
   const addTrack = useAddPlaylistTracks();
+  const removeTrack = useRemovePlaylistTracks();
 
   const [query, setQuery] = useState("");
   const [recommended, setRecommended] = useState<Track[]>([]);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
-  const [addedIds, setAddedIds] = useState<Set<string>>(() => new Set());
-  const [addingId, setAddingId] = useState<string | null>(null);
+  const [selectedItems, setSelectedItems] = useState<
+    Map<string, string | null>
+  >(() => new Map());
+  const [pendingId, setPendingId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const trimmedQuery = query.trim();
@@ -61,19 +68,26 @@ export default function AddSongsToPlaylistModal() {
     debounceMs: 180,
   });
 
-  const existingIds = useMemo(
-    () => new Set(target?.existingTrackIds ?? []),
-    [target?.existingTrackIds],
+  const existingTracks = useMemo(
+    () => (target?.existingItems ?? []).map((item) => item.track),
+    [target?.existingItems],
   );
 
   useEffect(() => {
     if (!open) return;
     setQuery("");
     setRecommended([]);
-    setAddedIds(new Set());
+    const next = new Map<string, string | null>();
+    for (const item of target?.existingItems ?? []) {
+      next.set(item.track.id, item.itemId);
+    }
+    for (const trackId of target?.existingTrackIds ?? []) {
+      if (!next.has(trackId)) next.set(trackId, null);
+    }
+    setSelectedItems(next);
     const frame = requestAnimationFrame(() => inputRef.current?.focus());
     return () => cancelAnimationFrame(frame);
-  }, [open, target?.playlistId]);
+  }, [open, target?.playlistId, target?.existingItems, target?.existingTrackIds]);
 
   useEffect(() => {
     if (!open || !target) return;
@@ -104,11 +118,7 @@ export default function AddSongsToPlaylistModal() {
       }
 
       if (!active) return;
-      setRecommended(
-        dedupeTracks(next)
-          .filter((track) => !existingIds.has(track.id))
-          .slice(0, 30),
-      );
+      setRecommended(dedupeTracks([...existingTracks, ...next]).slice(0, 30));
       setRecommendationsLoading(false);
     };
 
@@ -116,31 +126,60 @@ export default function AddSongsToPlaylistModal() {
     return () => {
       active = false;
     };
-  }, [open, target, existingIds]);
+  }, [open, target, existingTracks]);
 
   const tracks = useMemo(() => {
     const source =
       trimmedQuery.length >= 2 ? search.tracks : recommended;
-    return dedupeTracks(source)
-      .filter((track) => !existingIds.has(track.id))
-      .slice(0, 30);
-  }, [existingIds, recommended, search.tracks, trimmedQuery.length]);
+    return dedupeTracks(source).slice(0, 30);
+  }, [recommended, search.tracks, trimmedQuery.length]);
 
   const loading =
     trimmedQuery.length >= 2 ? search.loading : recommendationsLoading;
 
-  const handleAdd = useCallback(
+  const handleToggle = useCallback(
     async (track: Track) => {
-      if (!target || addingId || addedIds.has(track.id)) return;
-      setAddingId(track.id);
+      if (!target || pendingId) return;
+      const selected = selectedItems.has(track.id);
+      setPendingId(track.id);
+
+      if (selected) {
+        const itemId = selectedItems.get(track.id);
+        if (!itemId) {
+          setPendingId(null);
+          return;
+        }
+        try {
+          await removeTrack.mutateAsync({
+            playlistId: target.playlistId,
+            itemId,
+          });
+          setSelectedItems((prev) => {
+            const next = new Map(prev);
+            next.delete(track.id);
+            return next;
+          });
+          toast(t("common.removed_from_playlist"), "checkmark", {
+            description: track.title,
+          });
+        } catch {
+          toast(t("common.failed_remove_track"), "error", {
+            description: track.title,
+          });
+        } finally {
+          setPendingId(null);
+        }
+        return;
+      }
+
       try {
-        await addTrack.mutateAsync({
+        const item = await addTrack.mutateAsync({
           playlistId: target.playlistId,
           trackId: track.id,
         });
-        setAddedIds((prev) => {
-          const next = new Set(prev);
-          next.add(track.id);
+        setSelectedItems((prev) => {
+          const next = new Map(prev);
+          next.set(track.id, item.id);
           return next;
         });
         toast(t("common.added_to_playlist"), "checkmark", {
@@ -148,9 +187,9 @@ export default function AddSongsToPlaylistModal() {
         });
       } catch (error) {
         if (error instanceof ApiError && error.status === 409) {
-          setAddedIds((prev) => {
-            const next = new Set(prev);
-            next.add(track.id);
+          setSelectedItems((prev) => {
+            const next = new Map(prev);
+            next.set(track.id, null);
             return next;
           });
         } else {
@@ -159,11 +198,20 @@ export default function AddSongsToPlaylistModal() {
           });
         }
       } finally {
-        setAddingId(null);
+        setPendingId(null);
       }
     },
-    [addTrack, addedIds, addingId, t, target, toast],
+    [addTrack, pendingId, removeTrack, selectedItems, t, target, toast],
   );
+
+  const handlePreview = useCallback((track: Track) => {
+    void playerEngine.playTrack(
+      track,
+      [track],
+      `${track.title} Radio`,
+      track.coverUrl,
+    );
+  }, []);
 
   return (
     <Dialog
@@ -223,13 +271,12 @@ export default function AddSongsToPlaylistModal() {
           <AnimatePresence initial={false} mode="popLayout">
             {fakeLoadingRows(loading, tracks.length, reduceMotion)}
             {tracks.map((track, index) => {
-              const added = addedIds.has(track.id);
-              const pending = addingId === track.id;
+              const selected = selectedItems.has(track.id);
+              const pending = pendingId === track.id;
               const duration = formatDuration(track.durationMs);
               return (
-                <motion.button
+                <motion.div
                   key={track.id}
-                  type="button"
                   layout="position"
                   initial={
                     reduceMotion ? false : { opacity: 0, y: 6, scale: 0.99 }
@@ -245,36 +292,37 @@ export default function AddSongsToPlaylistModal() {
                           delay: Math.min(index, 8) * 0.012,
                         }
                   }
-                  disabled={pending || added}
-                  onClick={() => void handleAdd(track)}
-                  className={`flex w-full items-center gap-[12px] rounded-control p-[8px] text-left transition-colors ${
-                    added
-                      ? "cursor-default"
-                      : "cursor-pointer hover:bg-bg-elevated active:bg-border-alpha-14"
-                  } disabled:cursor-default`}
+                  className="flex w-full items-center gap-[12px] rounded-control p-[8px] transition-colors hover:bg-bg-elevated"
                 >
-                  <div className="relative flex h-[44px] w-[44px] shrink-0 items-center justify-center overflow-hidden rounded-lg bg-bg-elevated">
-                    {track.coverUrl ? (
-                      <CoverImage
-                        src={track.coverUrl}
-                        alt={track.title}
-                        fill
-                        sizes="44px"
-                        className="object-cover"
-                      />
-                    ) : (
-                      <MusicLine size={20} className="text-text-tertiary" />
-                    )}
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handlePreview(track)}
+                    className="flex min-w-0 flex-1 cursor-pointer items-center gap-[12px] border-none bg-transparent p-0 text-left"
+                    title={t("common.play")}
+                  >
+                    <div className="relative flex h-[44px] w-[44px] shrink-0 items-center justify-center overflow-hidden rounded-lg bg-bg-elevated">
+                      {track.coverUrl ? (
+                        <CoverImage
+                          src={track.coverUrl}
+                          alt={track.title}
+                          fill
+                          sizes="44px"
+                          className="object-cover"
+                        />
+                      ) : (
+                        <MusicLine size={20} className="text-text-tertiary" />
+                      )}
+                    </div>
 
-                  <div className="flex min-w-0 flex-1 flex-col gap-[1px]">
-                    <span className="truncate text-body font-[500] text-text-primary">
-                      {track.title}
-                    </span>
-                    <span className="truncate text-caption text-text-tertiary">
-                      {track.artists}
-                    </span>
-                  </div>
+                    <div className="flex min-w-0 flex-1 flex-col gap-[1px]">
+                      <span className="truncate text-body font-[500] text-text-primary">
+                        {track.title}
+                      </span>
+                      <span className="truncate text-caption text-text-tertiary">
+                        {track.artists}
+                      </span>
+                    </div>
+                  </button>
 
                   {duration ? (
                     <span className="shrink-0 text-caption tabular-nums text-text-tertiary">
@@ -282,16 +330,30 @@ export default function AddSongsToPlaylistModal() {
                     </span>
                   ) : null}
 
-                  <span
-                    className={`flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full transition-colors ${
-                      added
-                        ? "text-emerald-400"
+                  <button
+                    type="button"
+                    disabled={pending}
+                    aria-pressed={selected}
+                    aria-label={
+                      selected
+                        ? t("common.remove_from_playlist")
+                        : t("common.add_to_playlist")
+                    }
+                    title={
+                      selected
+                        ? t("common.remove_from_playlist")
+                        : t("common.add_to_playlist")
+                    }
+                    onClick={() => void handleToggle(track)}
+                    className={`flex h-[30px] w-[30px] shrink-0 cursor-pointer items-center justify-center rounded-full border-none bg-transparent transition-colors disabled:cursor-default ${
+                      selected
+                        ? "text-emerald-400 hover:text-red-400"
                         : "text-text-tertiary hover:text-text-primary"
                     }`}
                   >
                     {pending ? (
                       <span className="h-[14px] w-[14px] animate-spin rounded-full border-[2px] border-text-tertiary border-t-text-primary" />
-                    ) : added ? (
+                    ) : selected ? (
                       <motion.span
                         initial={reduceMotion ? false : { scale: 0.5 }}
                         animate={{ scale: 1 }}
@@ -302,8 +364,8 @@ export default function AddSongsToPlaylistModal() {
                     ) : (
                       <AddLine size={18} />
                     )}
-                  </span>
-                </motion.button>
+                  </button>
+                </motion.div>
               );
             })}
           </AnimatePresence>

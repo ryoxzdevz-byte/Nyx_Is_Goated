@@ -68,10 +68,33 @@ async function loadMostSaved(): Promise<PopularItem[]> {
   );
 }
 
+async function loadPopularPlaylists(): Promise<PopularItem[]> {
+  const response = await api.getMostSaved("playlist", 20);
+  return response.items
+    .filter((entry) => entry.type === "playlist")
+    .map(
+      (entry): PopularItem => ({
+        type: "playlist",
+        item: {
+          id: entry.id,
+          title: entry.title,
+          owner: entry.subtitle,
+          coverUrl: entry.coverUrl ?? "",
+          totalTracks: 0,
+        },
+        playCount: entry.saves,
+      }),
+    );
+}
+
 export function usePopularAlbums() {
   return useCachedItems("popular-albums", loadPopularAlbums);
 }
 
 export function useMostSaved() {
   return useCachedItems("most-saved", loadMostSaved);
+}
+
+export function usePopularPlaylists() {
+  return useCachedItems("popular-playlists", loadPopularPlaylists);
 }
