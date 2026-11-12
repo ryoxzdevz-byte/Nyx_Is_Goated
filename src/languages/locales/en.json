@@ -565,6 +565,11 @@
     "sec": "sec",
     "empty_title": "This playlist is empty",
     "empty_subtitle": "Search for songs to add",
+    "add_songs": "Add songs",
+    "add_songs_to": "Add songs to {playlist}",
+    "search_songs": "Search songs",
+    "search_results": "Results",
+    "recommended": "Recommended for this playlist",
     "likes_empty": "No liked songs yet",
     "likes_load_failed": "Couldn't load your liked songs",
     "load_failed": "Couldn't load this playlist",
@@ -1022,7 +1027,8 @@
         "title": "Output device",
         "description": "Choose which speaker or audio device Nyx plays to (system devices, Bluetooth speakers, paired Alexa-as-speaker, etc.).",
         "default": "System default",
-        "device": "Device"
+        "device": "Device",
+        "pair_bluetooth": "Pair a Bluetooth speaker"
       },
       "download_current_song": {
         "title": "Download current song",

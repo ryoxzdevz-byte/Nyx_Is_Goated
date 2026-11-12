@@ -453,7 +453,12 @@
     "min": "min",
     "sec": "s",
     "empty_title": "Questa playlist è vuota",
-    "empty_subtitle": "Cerca dei brani da aggiungere"
+    "empty_subtitle": "Cerca dei brani da aggiungere",
+    "add_songs": "Aggiungi brani",
+    "add_songs_to": "Aggiungi brani a {playlist}",
+    "search_songs": "Cerca brani",
+    "search_results": "Risultati",
+    "recommended": "Consigliati per questa playlist"
   },
   "search": {
     "placeholder": "Cerca brani, artisti, album...",
@@ -730,6 +735,13 @@
       "pause_on_device_change": {
         "title": "Pausa al cambio di dispositivo",
         "description": "Metti automaticamente in pausa la riproduzione quando cambia il dispositivo di uscita audio."
+      },
+      "output_device": {
+        "title": "Dispositivo di uscita",
+        "description": "Scegli lo speaker o il dispositivo audio su cui riproduce Nyx (dispositivi di sistema, speaker Bluetooth, Alexa associata come speaker, ecc.).",
+        "default": "Predefinito di sistema",
+        "device": "Dispositivo",
+        "pair_bluetooth": "Associa uno speaker Bluetooth"
       },
       "download_current_song": {
         "title": "Scarica il brano corrente",

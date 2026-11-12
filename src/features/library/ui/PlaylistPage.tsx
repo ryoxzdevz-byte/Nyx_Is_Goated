@@ -522,6 +522,16 @@ function LibraryPlaylistContent() {
     });
   }, [decodedId, viewData?.title, toast, t]);
 
+  const handleAddSongs = useCallback(() => {
+    if (!decodedId || !viewData || isLikesMode || offline) return;
+    useModalStore.getState().openAddSongs({
+      playlistId: decodedId,
+      playlistTitle: viewData.title,
+      seedTrackId: currentTracks[0]?.id,
+      existingTrackIds: currentTracks.map((track) => track.id),
+    });
+  }, [currentTracks, decodedId, isLikesMode, offline, viewData]);
+
   const handleDuplicate = useCallback(async () => {
     if (!decodedId) return;
     try {
@@ -980,6 +990,16 @@ function LibraryPlaylistContent() {
                           <LuShuffle size={18} />
                         </Button>
                       </div>
+                      {canEditPlaylist ? (
+                        <Button
+                          variant="secondary"
+                          onClick={handleAddSongs}
+                          className={`${HERO_BUTTON_CLASS} ${HERO_GLASS_BUTTON_CLASS} px-[16px]`}
+                        >
+                          <AddLine size={16} className="shrink-0" />
+                          <span>{t("playlist.add_songs")}</span>
+                        </Button>
+                      ) : null}
                       {!isLikesMode ? (
                         <Button
                           variant="secondary"

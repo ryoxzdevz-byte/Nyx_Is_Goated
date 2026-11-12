@@ -55,6 +55,7 @@ import { useTranslation } from "@/languages";
 import { useTheme } from "next-themes";
 import {
   AddToPlaylistModal,
+  AddSongsToPlaylistModal,
   AddToLibraryModal,
   RemoveFromPlaylistModal,
   RemoveFromLibraryModal,
@@ -92,6 +93,7 @@ const AppOverlays = memo(function AppOverlays() {
   return (
     <>
       <AddToPlaylistModal />
+      <AddSongsToPlaylistModal />
       <AddToLibraryModal />
       <RemoveFromPlaylistModal />
       <RemoveFromLibraryModal />
@@ -307,6 +309,25 @@ export default function AppFrame({ children }: AppFrameProps) {
 
   useDisableButtonFocus();
   useWindowPresence();
+
+  useEffect(() => {
+    let timer: number | undefined;
+    const root = document.documentElement;
+    const handleResize = () => {
+      root.setAttribute("data-window-resizing", "true");
+      if (timer !== undefined) window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        root.removeAttribute("data-window-resizing");
+        timer = undefined;
+      }, 180);
+    };
+    window.addEventListener("resize", handleResize, { passive: true });
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      if (timer !== undefined) window.clearTimeout(timer);
+      root.removeAttribute("data-window-resizing");
+    };
+  }, []);
 
   useGlobalShortcuts({
     searchOpen,

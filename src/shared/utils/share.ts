@@ -1,9 +1,9 @@
-// base url of the share-link redirector (local testing: http://localhost:1193)
+// base url of the legacy share-link redirector (kept for connectivity checks)
 export const SHARE_BASE_URL = "https://link.tryliner.fun";
 
 export type ShareEntityType = "artist" | "album" | "playlist" | "track";
 
-// builds a public share link, the redirector bounces it to the liner:// deeplink
+// build a direct Nyx deeplink so shared entities open in Nyx, not Liner
 export function buildShareUrl(type: ShareEntityType, id: string): string {
-  return `${SHARE_BASE_URL}/${type}?id=${encodeURIComponent(id)}`;
+  return `nyx://${type}?id=${encodeURIComponent(id)}`;
 }

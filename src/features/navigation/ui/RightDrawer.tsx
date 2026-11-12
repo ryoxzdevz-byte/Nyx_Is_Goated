@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, memo, useCallback, useMemo } from "react";
-import { useReducedMotion } from "framer-motion";
+import { motion, useAnimation, useReducedMotion } from "framer-motion";
 import { Back2Line, CloseLine } from "@mingcute/react";
 import {
   usePlayerState,
@@ -345,6 +345,8 @@ function RightDrawer({ onClose }: RightDrawerProps) {
   const queueScrollRef = useRef<HTMLDivElement>(null);
   const [queueLimit, setQueueLimit] = useState(50);
   const [queueFadePx, setQueueFadePx] = useState(0);
+  const reduceMotion = useReducedMotion();
+  const queueControls = useAnimation();
 
   useEffect(() => {
     setQueueLimit(50);
@@ -372,30 +374,25 @@ function RightDrawer({ onClose }: RightDrawerProps) {
   useEffect(() => {
     const currentId = player.currentTrack?.id ?? null;
     if (currentId !== null && currentId !== prevQueueTrackIdRef.current) {
-      const container = queueScrollRef.current;
-      const target = queueScrollRef.current
-        ?.firstElementChild as HTMLElement | null;
-      if (container && target) {
-        target.style.transition =
-          "opacity 180ms ease, transform 220ms cubic-bezier(0.16,1,0.3,1)";
-        target.style.opacity = "0.72";
-        target.style.transform = "translateY(4px)";
-        container.scrollTo({ top: 0, behavior: "smooth" });
-        requestAnimationFrame(() =>
-          requestAnimationFrame(() => {
-            target.style.opacity = "";
-            target.style.transform = "";
-            window.setTimeout(() => {
-              target.style.transition = "";
-            }, 240);
-          }),
-        );
-      } else {
-        scrollQueueToCurrent();
+      if (!reduceMotion) {
+        void queueControls.start({
+          opacity: [0.55, 1],
+          y: [10, 0],
+          transition: {
+            duration: 0.3,
+            ease: [0.16, 1, 0.3, 1],
+          },
+        });
       }
+      scrollQueueToCurrent();
     }
     prevQueueTrackIdRef.current = currentId;
-  }, [player.currentTrack?.id, scrollQueueToCurrent]);
+  }, [
+    player.currentTrack?.id,
+    queueControls,
+    reduceMotion,
+    scrollQueueToCurrent,
+  ]);
 
   return (
     <div className="relative flex flex-col h-full w-full overflow-hidden rounded-[14px] select-none bg-bg-glass backdrop-blur-[48px]">
@@ -448,14 +445,20 @@ function RightDrawer({ onClose }: RightDrawerProps) {
           }}
         >
           {player.queue.length > 0 ? (
-            <QueueList
-              queue={player.queue}
-              queueLimit={queueLimit}
-              currentIndex={player.currentIndex}
-              playbackContext={player.playbackContext}
-              playbackContextCover={player.playbackContextCover}
-              scrollContainerRef={queueScrollRef}
-            />
+            <motion.div
+              initial={false}
+              animate={queueControls}
+              style={{ transformOrigin: "top center" }}
+            >
+              <QueueList
+                queue={player.queue}
+                queueLimit={queueLimit}
+                currentIndex={player.currentIndex}
+                playbackContext={player.playbackContext}
+                playbackContextCover={player.playbackContextCover}
+                scrollContainerRef={queueScrollRef}
+              />
+            </motion.div>
           ) : (
             <div className="h-full flex items-center justify-center text-text-tertiary text-label">
               {t("player.queue_empty")}

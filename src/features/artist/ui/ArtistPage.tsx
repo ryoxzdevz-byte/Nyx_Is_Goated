@@ -22,7 +22,7 @@ import ScrollableRow from "@/shared/ui/ScrollableRow";
 import CoverImage from "@/features/covers/ui/CoverImage";
 import { preloadCoverArt } from "@/features/covers/lib/coverArt";
 import { playerEngine } from "@/features/player";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type { Track } from "@/shared/types";
 import {
   useToast,
@@ -225,23 +225,43 @@ function ArtistContent() {
   const iconButtonClass = `${HERO_BUTTON_CLASS} ${HERO_GLASS_BUTTON_CLASS} !w-[52px] !p-0 text-text-primary`;
   const sectionTitleClass = "text-[22px] font-[500] text-text-primary m-0";
 
-  const renderTrack = (track: Track) =>
+  const reduceMotion = useReducedMotion();
+  const renderTrack = (track: Track, index: number) =>
     data && (
-      <SongCardWithMenu
+      <motion.div
         key={track.id}
-        id={track.id}
-        title={track.title}
-        artists={track.artists}
-        artistId={track.artistId}
-        artistList={track.artistList}
-        coverUrl={track.coverUrl || data.coverUrl}
-        duration={formatDuration(track.durationMs)}
-        durationMs={track.durationMs}
-        explicit={track.explicit}
-        onPlay={() =>
-          playerEngine.playTrack(track, data.tracks, data.title, data.coverUrl)
+        initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={
+          reduceMotion
+            ? { duration: 0 }
+            : {
+                duration: 0.24,
+                ease: [0.22, 1, 0.36, 1],
+                delay: Math.min(index, 8) * 0.018,
+              }
         }
-      />
+      >
+        <SongCardWithMenu
+          id={track.id}
+          title={track.title}
+          artists={track.artists}
+          artistId={track.artistId}
+          artistList={track.artistList}
+          coverUrl={track.coverUrl || data.coverUrl}
+          duration={formatDuration(track.durationMs)}
+          durationMs={track.durationMs}
+          explicit={track.explicit}
+          onPlay={() =>
+            playerEngine.playTrack(
+              track,
+              data.tracks,
+              data.title,
+              data.coverUrl,
+            )
+          }
+        />
+      </motion.div>
     );
 
   return (

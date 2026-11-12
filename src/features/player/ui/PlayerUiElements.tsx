@@ -23,9 +23,20 @@ function useFullscreenColumnScale(): number {
     }
     const update = () =>
       setScale(fullscreenColumnScale(window.innerWidth, window.innerHeight));
+    let frame = 0;
+    const scheduleUpdate = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        update();
+      });
+    };
     update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
+    window.addEventListener("resize", scheduleUpdate);
+    return () => {
+      window.removeEventListener("resize", scheduleUpdate);
+      if (frame) cancelAnimationFrame(frame);
+    };
   }, [isEdgeToEdge]);
 
   return scale;

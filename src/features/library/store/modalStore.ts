@@ -28,6 +28,13 @@ export interface TrackDetail {
   playlists?: PlaylistOption[];
 }
 
+export interface AddSongsTarget {
+  playlistId: string;
+  playlistTitle: string;
+  seedTrackId?: string;
+  existingTrackIds: string[];
+}
+
 export interface RemoveLibraryDetail {
   id: string;
   title: string;
@@ -59,6 +66,12 @@ interface ModalState {
   addToPlaylistTrack: TrackDetail | null;
   openAddToPlaylist: (track: TrackDetail) => void;
   closeAddToPlaylist: () => void;
+
+  // Add songs to playlist
+  addSongsOpen: boolean;
+  addSongsTarget: AddSongsTarget | null;
+  openAddSongs: (target: AddSongsTarget) => void;
+  closeAddSongs: () => void;
 
   // Create playlist
   createPlaylistOpen: boolean;
@@ -127,6 +140,12 @@ export const useModalStore = create<ModalState>((set) => ({
     set({ addToPlaylistOpen: true, addToPlaylistTrack: track }),
   closeAddToPlaylist: () =>
     set({ addToPlaylistOpen: false, addToPlaylistTrack: null }),
+
+  addSongsOpen: false,
+  addSongsTarget: null,
+  openAddSongs: (target) =>
+    set({ addSongsOpen: true, addSongsTarget: target }),
+  closeAddSongs: () => set({ addSongsOpen: false, addSongsTarget: null }),
 
   createPlaylistOpen: false,
   createPlaylistInitialUrl: "",

@@ -100,7 +100,7 @@ describe("useSongMenuItems", () => {
     });
 
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
-      "https://link.tryliner.fun/track?id=track-123",
+      "nyx://track?id=track-123",
     );
     expect(showToast).toHaveBeenCalledWith("Link copied", "checkmark", {
       description: "Tarde o temprano — Nsqk",
@@ -128,7 +128,7 @@ describe("useSongMenuItems", () => {
     });
 
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
-      "https://link.tryliner.fun/track?id=track-456",
+      "nyx://track?id=track-456",
     );
   });
 
@@ -152,7 +152,7 @@ describe("useSongMenuItems", () => {
     });
 
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
-      "https://link.tryliner.fun/album?id=album-789",
+      "nyx://album?id=album-789",
     );
   });
 

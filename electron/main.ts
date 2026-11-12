@@ -190,6 +190,46 @@ function scheduleResizeSync() {
   resizeSyncTimer.unref?.();
 }
 
+// acrylic/mica forces DWM to recompute the backdrop for every resize frame,
+// which makes edge dragging feel heavy. Suspend it for the duration of the
+// resize stream and restore the user's preferred material once it settles.
+type BackgroundMaterial = "acrylic" | "mica" | "none";
+let requestedBackgroundMaterial: BackgroundMaterial = "acrylic";
+let resizeMaterialSuspended = false;
+let resizeMaterialRestoreTimer: NodeJS.Timeout | null = null;
+
+function applyBackgroundMaterial(material: BackgroundMaterial) {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  try {
+    (mainWindow as any).setBackgroundMaterial?.(material);
+  } catch (error) {
+    console.warn("[window] setBackgroundMaterial failed", error);
+  }
+}
+
+function suspendBackgroundMaterialForResize() {
+  if (process.platform !== "win32" || resizeMaterialSuspended) return;
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (resizeMaterialRestoreTimer) {
+    clearTimeout(resizeMaterialRestoreTimer);
+    resizeMaterialRestoreTimer = null;
+  }
+  resizeMaterialSuspended = true;
+  applyBackgroundMaterial("none");
+}
+
+function scheduleBackgroundMaterialRestore(delay = 140) {
+  if (!resizeMaterialSuspended) return;
+  if (resizeMaterialRestoreTimer) clearTimeout(resizeMaterialRestoreTimer);
+  resizeMaterialRestoreTimer = setTimeout(() => {
+    resizeMaterialRestoreTimer = null;
+    if (!resizeMaterialSuspended) return;
+    resizeMaterialSuspended = false;
+    applyBackgroundMaterial(requestedBackgroundMaterial);
+  }, delay);
+  resizeMaterialRestoreTimer.unref?.();
+}
+
 // maximize / restore: on windows 11 with the native add-on, a vsync-paced morph of a
 // live thumbnail (see NativeSnapPreview.morph); otherwise instant
 function maximizeWindow() {
@@ -349,8 +389,10 @@ function createWindow() {
   mainWindow.on("unmaximize", onMaximizeStateChanged);
   mainWindow.on("enter-full-screen", onMaximizeStateChanged);
   mainWindow.on("leave-full-screen", onMaximizeStateChanged);
+  mainWindow.on("will-resize", suspendBackgroundMaterialForResize);
   // transparent windows "maximize" by filling the work area, so catch it on resize too
   mainWindow.on("resize", scheduleResizeSync);
+  mainWindow.on("resize", () => scheduleBackgroundMaterialRestore(160));
 
   const fitMinimumToDisplay = () => {
     if (!mainWindow || mainWindow.isDestroyed()) return;
@@ -391,6 +433,7 @@ function createWindow() {
   mainWindow.on("resized", () => {
     keepInsideWorkArea();
     syncResizable();
+    scheduleBackgroundMaterialRestore(40);
   });
   mainWindow.on("moved", fitMinimumToDisplay);
   screen.on("display-metrics-changed", fitMinimumToDisplay);
@@ -739,13 +782,10 @@ if (!gotTheLock) {
         requested === "auto" && process.platform === "win32"
           ? "acrylic"
           : requested;
-      try {
-        (mainWindow as any).setBackgroundMaterial?.(value);
-        return true;
-      } catch (error) {
-        console.warn("[window] setBackgroundMaterial failed", error);
-        return false;
-      }
+      requestedBackgroundMaterial = value as BackgroundMaterial;
+      if (resizeMaterialSuspended) return true;
+      applyBackgroundMaterial(requestedBackgroundMaterial);
+      return true;
     });
 
     handleTrusted("window:is-maximized", () => {
@@ -1015,6 +1055,17 @@ if (!gotTheLock) {
     handleTrusted("shell:open-downloads", () => revealExportOrDownloads());
 
     handleTrusted("shell:open-export-folder", () => revealExportOrDownloads());
+
+    handleTrusted("shell:open-bluetooth-settings", async () => {
+      if (process.platform !== "win32") return false;
+      try {
+        await shell.openExternal("ms-settings:bluetooth");
+        return true;
+      } catch (error) {
+        console.warn("[shell] open-bluetooth-settings failed", error);
+        return false;
+      }
+    });
 
     // locates provider path where cache is collected
     const getCacheDirectory = () => {

@@ -35,6 +35,7 @@ export function PlaybackTab({ searchQuery }: { searchQuery?: string }) {
   const [outputDevices, setOutputDevices] = useState<
     Array<{ deviceId: string; label: string }>
   >([]);
+  const isWindows = window.linerElectron?.platform === "win32";
 
   useEffect(() => {
     setMounted(true);
@@ -180,19 +181,30 @@ export function PlaybackTab({ searchQuery }: { searchQuery?: string }) {
         searchQuery={searchQuery}
         control={
           mounted ? (
-            <MenuSelect
-              aria-label={t("settings.audio.output_device.title")}
-              value={
-                outputOptions.some((o) => o.value === audioOutputDeviceId)
-                  ? audioOutputDeviceId
-                  : "default"
-              }
-              onChange={(value) =>
-                void playerEngine.setAudioOutputDevice(value)
-              }
-              options={outputOptions}
-              className="max-w-[260px]"
-            />
+            <div className="flex flex-col items-end gap-[6px]">
+              <MenuSelect
+                aria-label={t("settings.audio.output_device.title")}
+                value={
+                  outputOptions.some((o) => o.value === audioOutputDeviceId)
+                    ? audioOutputDeviceId
+                    : "default"
+                }
+                onChange={(value) =>
+                  void playerEngine.setAudioOutputDevice(value)
+                }
+                options={outputOptions}
+                className="max-w-[260px]"
+              />
+              {isWindows ? (
+                <button
+                  type="button"
+                  onClick={() => void window.linerElectron?.openBluetoothSettings?.()}
+                  className="cursor-pointer border-0 bg-transparent p-0 text-[11.5px] font-[500] text-text-tertiary transition-colors hover:text-text-primary"
+                >
+                  {t("settings.audio.output_device.pair_bluetooth")}
+                </button>
+              ) : null}
+            </div>
           ) : (
             <span />
           )

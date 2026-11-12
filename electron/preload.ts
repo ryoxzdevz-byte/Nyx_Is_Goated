@@ -133,6 +133,7 @@ export interface LinerElectronApi {
   probeNetwork: () => Promise<NetProbeResult>;
   openDownloads: (customPath?: string) => Promise<boolean>;
   openExportFolder: (customPath?: string) => Promise<boolean>;
+  openBluetoothSettings: () => Promise<boolean>;
   setAppIcon: (
     dataUrl: string,
     options?: { isDefault?: boolean },
@@ -334,6 +335,8 @@ const api: LinerElectronApi = {
   probeNetwork: () => ipcRenderer.invoke("net:probe"),
   openDownloads: () => ipcRenderer.invoke("shell:open-downloads"),
   openExportFolder: () => ipcRenderer.invoke("shell:open-export-folder"),
+  openBluetoothSettings: () =>
+    ipcRenderer.invoke("shell:open-bluetooth-settings"),
   setAppIcon: (dataUrl, options) =>
     ipcRenderer.invoke("app:set-icon", dataUrl, options),
   getAppVersion: () => ipcRenderer.invoke("app:get-version"),

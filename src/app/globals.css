@@ -250,6 +250,18 @@
   -webkit-backdrop-filter: none !important;
 }
 
+/* Windows recomputes acrylic for every resize frame. Drop the most expensive
+   blur pass while the user is dragging an edge, then restore it when the
+   resize stream settles. */
+html[data-window-resizing] [class*="backdrop-blur"],
+html[data-window-resizing] .apple-glass-pill,
+html[data-window-resizing] .apple-glass-action,
+html[data-window-resizing] .apple-glass-static,
+html[data-window-resizing] .apple-glass-pill-dark {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
 :root[data-bg-tint]:not([data-bg-tint="system"]) .app-frame-root {
   background: var(--nyx-bg-tint) !important;
 }
