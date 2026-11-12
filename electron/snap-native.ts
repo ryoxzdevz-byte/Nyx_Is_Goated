@@ -41,6 +41,10 @@ interface SnapPreviewAddon {
   minimizeKeepingPreview?(hwnd: Buffer): void;
   armRestoreTrap?(hwnd: Buffer, armed: boolean): void;
   takeRestoredCloaked?(): boolean;
+  foregroundState?(
+    ownA?: Buffer | null,
+    ownB?: Buffer | null,
+  ): { external: boolean; fullscreen: boolean; maximized: boolean } | undefined;
   transform(
     from: Edges,
     to: Edges,
@@ -565,6 +569,11 @@ export class NativeSnapPreview {
    */
   takeRestoredCloaked(): boolean {
     return this.addon.takeRestoredCloaked?.() ?? false;
+  }
+
+  /** which window the user is looking at, and whether it covers its whole monitor */
+  foregroundState(a?: Buffer | null, b?: Buffer | null) {
+    return this.addon.foregroundState?.(a ?? null, b ?? null);
   }
 
   disarmRestoreTrap() {

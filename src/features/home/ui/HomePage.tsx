@@ -62,31 +62,40 @@ function HomeFeed({ onRetry }: { onRetry: () => void }) {
     mixesLoading;
 
   const isReady = !isDataLoading;
+  const hasAnyData =
+    latestForYou.length > 0 ||
+    hasMixes ||
+    popularAlbums.length > 0 ||
+    listeningNow.length > 0 ||
+    Boolean(recentlyPlayed?.length) ||
+    Boolean(popularTracksAllTime?.length) ||
+    mostSaved.length > 0;
+  const [waitedLongEnough, setWaitedLongEnough] = useState(false);
+
+  useEffect(() => {
+    if (!isDataLoading || waitedLongEnough) return;
+    const timer = setTimeout(() => setWaitedLongEnough(true), 6000);
+    return () => clearTimeout(timer);
+  }, [isDataLoading, waitedLongEnough]);
+
+  const showData = isReady || (waitedLongEnough && hasAnyData);
   const nothingLoaded =
-    isReady &&
-    !latestLoading &&
-    !hasMixes &&
-    latestForYou.length === 0 &&
-    popularAlbums.length === 0 &&
-    listeningNow.length === 0 &&
-    !recentlyPlayed?.length &&
-    !popularTracksAllTime?.length &&
-    mostSaved.length === 0;
+    showData && !isDataLoading && !latestLoading && !hasAnyData;
   const [skeletonExited, setSkeletonExited] = useState(() => !isDataLoading);
 
   useEffect(() => {
-    if (isReady && !skeletonExited) {
+    if (showData && !skeletonExited) {
       const timer = setTimeout(() => {
         setSkeletonExited(true);
       }, 400);
       return () => clearTimeout(timer);
     }
-  }, [isReady, skeletonExited]);
+  }, [showData, skeletonExited]);
 
   return (
     <div className="relative h-full w-full overflow-y-auto overflow-x-hidden bg-transparent pt-(--page-inset-top) pb-(--page-inset-bottom)">
       <div className="relative z-1 grid grid-cols-1 items-start w-full">
-        {isReady && nothingLoaded && (
+        {showData && nothingLoaded && (
           <div className="col-start-1 row-start-1 flex min-h-[60vh] w-full flex-col items-center justify-center gap-[6px] px-[24px] text-center">
             <span className="text-title font-[600] text-text-primary">
               {t("home.load_failed")}
@@ -104,7 +113,7 @@ function HomeFeed({ onRetry }: { onRetry: () => void }) {
           </div>
         )}
 
-        {isReady && !nothingLoaded && (
+        {showData && !nothingLoaded && (
           <div className="col-start-1 row-start-1 w-full pb-[16px]">
             {mixesLoading ? (
               <MixesSectionSkeleton />

@@ -205,7 +205,16 @@ export class KawarpEngine {
   private animationId: number | null = null;
   private readonly stopWatchingVisibility = onWindowVisibilityChange(
     (visible) => {
-      if (!visible || !this.isPlaying || this.animationId !== null) return;
+      if (!visible) {
+        // paused while minimized/hidden: keep the "playing" intent so it can
+        // resume at full speed instead of burning GPU in the background
+        if (this.animationId !== null) {
+          cancelAnimationFrame(this.animationId);
+          this.animationId = null;
+        }
+        return;
+      }
+      if (!this.isPlaying || this.animationId !== null) return;
       this.lastFrameTime = performance.now();
       this.animationId = requestAnimationFrame(this.renderLoop);
     },

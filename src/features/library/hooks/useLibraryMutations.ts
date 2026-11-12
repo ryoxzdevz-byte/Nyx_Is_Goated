@@ -80,6 +80,26 @@ export function useDeletePlaylist() {
   });
 }
 
+export function useDuplicatePlaylist() {
+  return useMutation(
+    async ({ playlistId, title }: { playlistId: string; title?: string }) => {
+      const source = await api.getUserPlaylist(playlistId);
+      const created = await api.createPlaylist({
+        title: title ?? `${source.playlist.title} (Copy)`,
+        description: source.playlist.description,
+        isPublic: false,
+      });
+      if (source.items.length > 0) {
+        await api.addPlaylistTrackSnapshots(
+          created.id,
+          source.items.map((item) => item.track),
+        );
+      }
+      return created;
+    },
+  );
+}
+
 export function useSaveExternalItem() {
   return useMutation(
     ({

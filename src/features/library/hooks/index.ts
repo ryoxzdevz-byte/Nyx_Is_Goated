@@ -24,6 +24,7 @@ export {
   useReorderPlaylistTracks,
   useCreatePlaylist,
   useDeletePlaylist,
+  useDuplicatePlaylist,
   useSaveExternalItem,
   useRemoveExternalItem,
   useLikeTrack,

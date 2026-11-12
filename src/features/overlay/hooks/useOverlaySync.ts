@@ -59,6 +59,8 @@ export function useOverlaySync() {
       shortcut: s.shortcut,
       autoShowOnMinimize: s.autoShowOnMinimize,
       alwaysOnTop: s.alwaysOnTop,
+      hideOverFullscreen: s.hideOverFullscreen,
+      hideOverWindowed: s.hideOverWindowed,
     });
   }, []);
 

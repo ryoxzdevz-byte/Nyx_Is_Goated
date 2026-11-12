@@ -51,8 +51,9 @@ import {
   DownloadLine,
 } from "@mingcute/react";
 import { AnimatePresence, motion } from "framer-motion";
-import { LuPencil, LuTrash2, LuText, LuShuffle } from "react-icons/lu";
+import { LuPencil, LuTrash2, LuText, LuShuffle, LuCopy } from "react-icons/lu";
 import { buildShareUrl } from "@/shared/utils/share";
+import { copyToClipboard } from "@/shared/utils/clipboard";
 import Button from "@/shared/ui/Button";
 import DropdownMenu from "@/shared/ui/DropdownMenu";
 import SongCardWithMenu from "@/features/player/ui/SongCardWithMenu";
@@ -63,6 +64,7 @@ import {
   usePlaylistsList,
   useLikedTracks,
   useReorderPlaylistTracks,
+  useDuplicatePlaylist,
   reloadLikedTracks,
   hydrateLikedTracks,
 } from "../hooks";
@@ -234,6 +236,7 @@ function LibraryPlaylistContent() {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const reorderTracks = useReorderPlaylistTracks();
+  const duplicatePlaylist = useDuplicatePlaylist();
   const titleRef = useRef<HTMLHeadingElement>(null);
   const descriptionRef = useRef<HTMLParagraphElement>(null);
 
@@ -506,15 +509,30 @@ function LibraryPlaylistContent() {
     return () => clearTimeout(timer);
   }, [sortedTracks, viewData, toast, t]);
 
-  const handleShare = useCallback(() => {
-    if (typeof navigator !== "undefined" && navigator.clipboard && decodedId) {
-      navigator.clipboard.writeText(buildShareUrl("playlist", decodedId));
-      void api.updatePlaylist(decodedId, { isPublic: true }).catch(() => {});
-      toast(t("common.link_copied"), "checkmark", {
-        description: viewData?.title || undefined,
-      });
+  const handleShare = useCallback(async () => {
+    if (!decodedId) return;
+    const ok = await copyToClipboard(buildShareUrl("playlist", decodedId));
+    if (!ok) {
+      toast(t("common.link_copy_failed"), "error");
+      return;
     }
+    void api.updatePlaylist(decodedId, { isPublic: true }).catch(() => {});
+    toast(t("common.link_copied"), "checkmark", {
+      description: viewData?.title || undefined,
+    });
   }, [decodedId, viewData?.title, toast, t]);
+
+  const handleDuplicate = useCallback(async () => {
+    if (!decodedId) return;
+    try {
+      const created = await duplicatePlaylist.mutateAsync({ playlistId: decodedId });
+      toast(t("common.playlist_duplicated"), "checkmark", {
+        description: created.title,
+      });
+    } catch {
+      toast(t("common.action_failed"), "error");
+    }
+  }, [decodedId, duplicatePlaylist, toast, t]);
 
   const handleDownload = useCallback(() => {
     if (!decodedId || !viewData || offline) return;
@@ -1070,6 +1088,12 @@ function LibraryPlaylistContent() {
                                       icon: <ShareForwardLine size={15} />,
                                       label: t("common.share"),
                                       onClick: handleShare,
+                                    },
+                                    {
+                                      id: "duplicate",
+                                      icon: <LuCopy size={15} />,
+                                      label: t("common.duplicate"),
+                                      onClick: () => void handleDuplicate(),
                                     },
                                     {
                                       id: "delete",

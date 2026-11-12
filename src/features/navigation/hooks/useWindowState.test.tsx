@@ -167,7 +167,8 @@ describe("useWindowState", () => {
 
     await act(async () => {
       window.dispatchEvent(new Event("resize"));
-      await Promise.resolve();
+      // the resize fallback is coalesced; wait for it to settle
+      await new Promise((resolve) => setTimeout(resolve, 180));
     });
 
     expect(latestState).toEqual({

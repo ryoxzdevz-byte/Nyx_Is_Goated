@@ -36,6 +36,7 @@ import { usePageBackdrop } from "@/shared/lib";
 import { useTranslation } from "@/languages";
 import { useModalStore } from "@/features/library";
 import { buildShareUrl } from "@/shared/utils/share";
+import { copyToClipboard } from "@/shared/utils/clipboard";
 import { useExternalItems } from "@/features/library/hooks";
 import ArtistAboutText from "./ArtistAboutText";
 import ArtistProfileModal from "./ArtistProfileModal";
@@ -187,12 +188,15 @@ function ArtistContent() {
     }
   };
 
-  const handleShare = () => {
-    if (typeof navigator !== "undefined" && navigator.clipboard && decodedId) {
-      navigator.clipboard.writeText(buildShareUrl("artist", decodedId));
+  const handleShare = async () => {
+    if (!decodedId) return;
+    const ok = await copyToClipboard(buildShareUrl("artist", decodedId));
+    if (ok) {
       toast(t("common.link_copied"), "checkmark", {
         description: data?.title || undefined,
       });
+    } else {
+      toast(t("common.link_copy_failed"), "error");
     }
   };
 
@@ -374,15 +378,16 @@ function ArtistContent() {
                         {showAllTracks ? t("artist.all_songs", { defaultValue: "All songs" }) : t("artist.popular_songs")}
                       </h2>
                       {data.tracks.length > 5 && (
-                        <button
-                          type="button"
+                        <Button
+                          variant="secondary"
+                          size="sm"
                           onClick={() => setShowAllTracks((prev) => !prev)}
-                          className="text-body font-[500] text-text-secondary hover:text-text-primary transition-colors cursor-pointer bg-transparent border-0 p-0"
+                          className="!h-[30px] !px-[14px] !text-[12.5px] font-[500]"
                         >
                           {showAllTracks
-                            ? t("artist.show_less")
-                            : t("artist.show_all_songs", { defaultValue: "Show all songs" })}
-                        </button>
+                            ? t("artist.popular", { defaultValue: "Popular" })
+                            : t("artist.all", { defaultValue: "All" })}
+                        </Button>
                       )}
                     </div>
                     <div className="flex flex-col -mt-[14px] -mx-[8px]">

@@ -6,7 +6,7 @@ import {
   ICON_PLAY,
   ICON_PAUSE,
 } from "@/features/player/ui/morphPlayerIcons";
-import { HeartFill, HeartLine } from "@mingcute/react";
+import { LikeBurst } from "@/features/player/ui/LikeBurst";
 import CoverImage from "@/features/covers/ui/CoverImage";
 import { ScrollableText } from "@/shared/ui/ScrollableText";
 import { useDisableButtonFocus } from "@/features/navigation/hooks/useDisableButtonFocus";
@@ -388,11 +388,7 @@ export function OverlayPlayer() {
                 }`}
                 aria-label={state.isLiked ? "Unlike" : "Like"}
               >
-                {state.isLiked ? (
-                  <HeartFill size={16} />
-                ) : (
-                  <HeartLine size={16} />
-                )}
+                <LikeBurst liked={state.isLiked} size={16} />
               </button>
             )}
 

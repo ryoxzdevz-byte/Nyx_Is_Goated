@@ -82,7 +82,7 @@ describe("useSongMenuItems", () => {
     return () => result;
   }
 
-  it("includes share item for a standard track and copies track link to clipboard", () => {
+  it("includes share item for a standard track and copies track link to clipboard", async () => {
     const getResult = renderHookHelper({
       id: "track-123",
       title: "Tarde o temprano",
@@ -95,8 +95,8 @@ describe("useSongMenuItems", () => {
     expect(shareItem).toBeDefined();
     expect(shareItem?.label).toBe("Share");
 
-    act(() => {
-      shareItem?.onClick?.();
+    await act(async () => {
+      await shareItem?.onClick?.();
     });
 
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
@@ -107,7 +107,7 @@ describe("useSongMenuItems", () => {
     });
   });
 
-  it("includes share item when inside a playlist with remove-from-playlist option", () => {
+  it("includes share item when inside a playlist with remove-from-playlist option", async () => {
     const getResult = renderHookHelper({
       id: "track-456",
       title: "SANGRE !",
@@ -123,8 +123,8 @@ describe("useSongMenuItems", () => {
     expect(ids).toContain("remove-from-playlist");
 
     const shareItem = items.find((item) => item.id === "share");
-    act(() => {
-      shareItem?.onClick?.();
+    await act(async () => {
+      await shareItem?.onClick?.();
     });
 
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
@@ -132,7 +132,7 @@ describe("useSongMenuItems", () => {
     );
   });
 
-  it("includes share item for non-track entities (e.g. album)", () => {
+  it("includes share item for non-track entities (e.g. album)", async () => {
     const getResult = renderHookHelper({
       id: "album-789",
       title: "ROY",
@@ -147,8 +147,8 @@ describe("useSongMenuItems", () => {
     expect(ids).toContain("share");
 
     const shareItem = items.find((item) => item.id === "share");
-    act(() => {
-      shareItem?.onClick?.();
+    await act(async () => {
+      await shareItem?.onClick?.();
     });
 
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(

@@ -14,7 +14,9 @@ import type {
 } from "../types";
 import { useTranslation } from "@/languages";
 import { useModalStore } from "../store/modalStore";
-import { LuTrash2 } from "react-icons/lu";
+import { useDuplicatePlaylist } from "../hooks";
+import { showToast } from "@/shared/ui";
+import { LuCopy, LuTrash2 } from "react-icons/lu";
 import { More2Fill, PlaylistFill, AddLine, Search3Fill } from "@mingcute/react";
 
 interface LibraryGridProps {
@@ -97,6 +99,7 @@ export function LibraryGridSkeleton({
 
 function useItemMenuItems(item: LibraryItemViewModel): DropdownMenuItem[] {
   const { t } = useTranslation();
+  const duplicatePlaylist = useDuplicatePlaylist();
   return useMemo(() => {
     if (item.source) return [];
     const entityType =
@@ -105,8 +108,30 @@ function useItemMenuItems(item: LibraryItemViewModel): DropdownMenuItem[] {
         : item.kind === "album"
           ? "album"
           : "playlist";
-    return [
-      {
+    const owned =
+      item.isOwned ??
+      (item.kind === "playlist"
+        ? item.href.startsWith("/library/playlist")
+        : false);
+    const items: DropdownMenuItem[] = [];
+    if (item.kind === "playlist" && owned) {
+      items.push({
+        id: "duplicate-playlist",
+        label: t("common.duplicate"),
+        icon: <LuCopy size={15} />,
+        onClick: () => {
+          void duplicatePlaylist
+            .mutateAsync({ playlistId: item.id })
+            .then((created) =>
+              showToast(t("common.playlist_duplicated"), "checkmark", {
+                description: created.title,
+              }),
+            )
+            .catch(() => showToast(t("common.action_failed"), "error"));
+        },
+      });
+    }
+    items.push({
         id: "remove-from-library",
         label: t("common.remove_from_library"),
         icon: <LuTrash2 size={15} />,
@@ -125,8 +150,8 @@ function useItemMenuItems(item: LibraryItemViewModel): DropdownMenuItem[] {
                 : false),
           });
         },
-      },
-    ];
+      });
+    return items;
   }, [
     item.id,
     item.title,
@@ -136,6 +161,7 @@ function useItemMenuItems(item: LibraryItemViewModel): DropdownMenuItem[] {
     item.isOwned,
     item.source,
     item.href,
+    duplicatePlaylist,
     t,
   ]);
 }

@@ -15,9 +15,8 @@ import {
   RepeatOne,
   Shuffle,
 } from "@solar-icons/react";
-import { HeartFill, HeartLine } from "@mingcute/react";
-
 import { PlayerMorphIcon, ICON_PLAY, ICON_PAUSE } from "./morphPlayerIcons";
+import { LikeBurst } from "./LikeBurst";
 
 import { playerEngine } from "../engine/playerEngine";
 import { isRadioContext, nextRepeatMode } from "../engine/radioMode";
@@ -798,9 +797,7 @@ function MiniPlayer({
                 onClick={handleLikeToggle}
                 style={{ cursor: "pointer" }}
               >
-                <span className={`inline-flex transition-transform duration-150 ease-out ${isLiked ? "scale-110" : "scale-100"} active:scale-90`}>
-                  {isLiked ? <HeartFill size={20} /> : <HeartLine size={20} />}
-                </span>
+                <LikeBurst liked={Boolean(isLiked)} size={20} />
               </button>
             )}
           </div>
@@ -830,7 +827,16 @@ function MiniPlayer({
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={() => playerEngine.setShuffle(!shuffle)}
               >
-                <Shuffle size={18} weight="Outline" className="transition-transform duration-200 ease-out group-active:rotate-[18deg] group-hover:scale-110" />
+                <motion.span
+                  key={shuffle ? "shuffle-on" : "shuffle-off"}
+                  initial={{ scale: 0.82, rotate: shuffle ? -14 : 14 }}
+                  animate={{ scale: shuffle ? 1.1 : 1, rotate: 0 }}
+                  transition={{ type: "spring", stiffness: 520, damping: 22 }}
+                  whileTap={{ scale: 0.85, rotate: 18 }}
+                  className="inline-flex"
+                >
+                  <Shuffle size={18} weight="Outline" />
+                </motion.span>
               </button>
               <button
                 type="button"
@@ -847,11 +853,20 @@ function MiniPlayer({
                   )
                 }
               >
-                {repeat === "one" ? (
-                  <RepeatOne size={18} weight="Outline" className="transition-transform duration-200 ease-out group-active:-rotate-12 group-hover:scale-110" />
-                ) : (
-                  <Repeat size={18} weight="Outline" className="transition-transform duration-200 ease-out group-active:-rotate-12 group-hover:scale-110" />
-                )}
+                <motion.span
+                  key={`repeat-${repeat}`}
+                  initial={{ scale: 0.82, rotate: repeat === "off" ? 12 : -14 }}
+                  animate={{ scale: repeat !== "off" ? 1.1 : 1, rotate: 0 }}
+                  transition={{ type: "spring", stiffness: 520, damping: 22 }}
+                  whileTap={{ scale: 0.85, rotate: -12 }}
+                  className="inline-flex"
+                >
+                  {repeat === "one" ? (
+                    <RepeatOne size={18} weight="Outline" />
+                  ) : (
+                    <Repeat size={18} weight="Outline" />
+                  )}
+                </motion.span>
               </button>
               <button
                 ref={eqToggleRef}
@@ -875,6 +890,7 @@ function MiniPlayer({
                 <motion.div
                   animate={{
                     scale: eqOpen ? 1.08 : 1,
+                    rotate: eqOpen ? [0, -10, 8, 0] : 0,
                   }}
                   transition={{ type: "spring", stiffness: 350, damping: 22 }}
                   className="flex items-center justify-center"
@@ -909,6 +925,7 @@ function MiniPlayer({
                 <motion.div
                   animate={{
                     scale: speedOpen ? 1.08 : 1,
+                    rotate: speedOpen ? [0, 10, -8, 0] : 0,
                   }}
                   transition={{ type: "spring", stiffness: 350, damping: 22 }}
                   className="flex items-center justify-center"

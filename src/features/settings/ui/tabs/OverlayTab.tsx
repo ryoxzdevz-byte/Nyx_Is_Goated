@@ -76,6 +76,17 @@ export function OverlayTab({ searchQuery }: { searchQuery?: string }) {
   const alwaysOnTop = useOverlaySettingsStore((s) => s.alwaysOnTop);
   const setAlwaysOnTop = useOverlaySettingsStore((s) => s.setAlwaysOnTop);
 
+  const hideOverFullscreen = useOverlaySettingsStore(
+    (s) => s.hideOverFullscreen,
+  );
+  const setHideOverFullscreen = useOverlaySettingsStore(
+    (s) => s.setHideOverFullscreen,
+  );
+  const hideOverWindowed = useOverlaySettingsStore((s) => s.hideOverWindowed);
+  const setHideOverWindowed = useOverlaySettingsStore(
+    (s) => s.setHideOverWindowed,
+  );
+
   const [isRecording, setIsRecording] = useState(false);
   const [heldModifiers, setHeldModifiers] = useState<string[]>([]);
   const recordButtonRef = useRef<HTMLButtonElement>(null);
@@ -370,6 +381,48 @@ export function OverlayTab({ searchQuery }: { searchQuery?: string }) {
             <ToggleSwitch
               checked={alwaysOnTop}
               onChange={setAlwaysOnTop}
+              disabled={!enabled}
+            />
+          }
+        />
+
+        <SettingRow
+          title={
+            t("settings.overlay.hide_over_fullscreen.title") ||
+            "Hide over fullscreen"
+          }
+          description={
+            t("settings.overlay.hide_over_fullscreen.description") ||
+            "Hide the overlay while another app is fullscreen (including borderless)."
+          }
+          titleKey="settings.overlay.hide_over_fullscreen.title"
+          descKey="settings.overlay.hide_over_fullscreen.description"
+          searchQuery={searchQuery}
+          control={
+            <ToggleSwitch
+              checked={hideOverFullscreen}
+              onChange={setHideOverFullscreen}
+              disabled={!enabled}
+            />
+          }
+        />
+
+        <SettingRow
+          title={
+            t("settings.overlay.hide_over_windowed.title") ||
+            "Hide over other windows"
+          }
+          description={
+            t("settings.overlay.hide_over_windowed.description") ||
+            "Hide the overlay while a regular (non-fullscreen) app is focused."
+          }
+          titleKey="settings.overlay.hide_over_windowed.title"
+          descKey="settings.overlay.hide_over_windowed.description"
+          searchQuery={searchQuery}
+          control={
+            <ToggleSwitch
+              checked={hideOverWindowed}
+              onChange={setHideOverWindowed}
               disabled={!enabled}
             />
           }

@@ -2,6 +2,7 @@ import {
   app,
   BaseWindow,
   BrowserWindow,
+  clipboard,
   globalShortcut,
   ipcMain,
   shell,
@@ -177,6 +178,18 @@ function syncResizable() {
   if (mainWindow.isResizable() === locked) mainWindow.setResizable(!locked);
 }
 
+// the live resize stream can emit dozens of events per second; coalesce the
+// three native calls behind it instead of running them on every one
+let resizeSyncTimer: NodeJS.Timeout | null = null;
+function scheduleResizeSync() {
+  if (resizeSyncTimer) return;
+  resizeSyncTimer = setTimeout(() => {
+    resizeSyncTimer = null;
+    syncResizable();
+  }, 90);
+  resizeSyncTimer.unref?.();
+}
+
 // maximize / restore: on windows 11 with the native add-on, a vsync-paced morph of a
 // live thumbnail (see NativeSnapPreview.morph); otherwise instant
 function maximizeWindow() {
@@ -337,7 +350,7 @@ function createWindow() {
   mainWindow.on("enter-full-screen", onMaximizeStateChanged);
   mainWindow.on("leave-full-screen", onMaximizeStateChanged);
   // transparent windows "maximize" by filling the work area, so catch it on resize too
-  mainWindow.on("resize", syncResizable);
+  mainWindow.on("resize", scheduleResizeSync);
 
   const fitMinimumToDisplay = () => {
     if (!mainWindow || mainWindow.isDestroyed()) return;
@@ -375,12 +388,19 @@ function createWindow() {
     }
   };
 
-  mainWindow.on("resized", keepInsideWorkArea);
+  mainWindow.on("resized", () => {
+    keepInsideWorkArea();
+    syncResizable();
+  });
   mainWindow.on("moved", fitMinimumToDisplay);
   screen.on("display-metrics-changed", fitMinimumToDisplay);
   screen.on("display-added", fitMinimumToDisplay);
   screen.on("display-removed", fitMinimumToDisplay);
   mainWindow.once("closed", () => {
+    if (resizeSyncTimer) {
+      clearTimeout(resizeSyncTimer);
+      resizeSyncTimer = null;
+    }
     screen.off("display-metrics-changed", fitMinimumToDisplay);
     screen.off("display-added", fitMinimumToDisplay);
     screen.off("display-removed", fitMinimumToDisplay);
@@ -618,27 +638,24 @@ if (!gotTheLock) {
       path.join(RENDERER_DIST, "index.html"),
     );
     overlayManager.setMainWindow(mainWindow);
-    // F in the overlay: the window grows back out of the pill (windows 11 + add-on)
-    overlayManager.setFocusMainHandler((restore) => {
-      const overlay = overlayManager;
-      if (nativeSnap && overlay) {
-        overlay.holdForTransition(); // it is closed (hidden) once the transform lands
-        void nativeSnap.fromOverlay(overlay.getWindow(), restore, () =>
-          overlay.closeOverlay(),
-        );
-      } else restore();
+    overlayManager.setForegroundStateProvider(() => {
+      if (!nativeSnap) return undefined;
+      const main =
+        mainWindow && !mainWindow.isDestroyed()
+          ? mainWindow.getNativeWindowHandle()
+          : null;
+      const overlay = overlayManager?.getWindow();
+      const pill =
+        overlay && !overlay.isDestroyed()
+          ? overlay.getNativeWindowHandle()
+          : null;
+      return nativeSnap.foregroundState(main, pill);
     });
-    overlayManager.setRestoreInterceptor(() => {
-      const overlay = overlayManager;
-      if (!nativeSnap || !overlay || !nativeSnap.takeRestoredCloaked())
-        return false;
-      void nativeSnap.fromOverlay(
-        overlay.getWindow(),
-        () => {},
-        () => overlay.closeOverlay(),
-        true,
-      );
-      return true;
+    // F in the overlay: restore plainly. The native off-screen morph could leave
+    // the window jumping in from above the screen, so keep this path predictable.
+    overlayManager.setFocusMainHandler((restore) => {
+      restore();
+      overlayManager?.closeOverlay();
     });
     overlayManager.registerShortcut();
     overlayManager.registerMediaShortcuts();
@@ -661,28 +678,10 @@ if (!gotTheLock) {
     handleTrusted("window:minimize", () => {
       // cannot minimize a native fullscreen window or under hyprland tiling wm
       if (!mainWindow || mainWindow.isFullScreen() || isHyprland) return;
-      // a second minimize while the window is already on its way into the
-      // overlay would animate from the off-screen minimized rect
+      // a second minimize while the window is already animated would jump
       if (mainWindow.isMinimized() || minimizeTransitionActive) return;
-      overlayManager?.suppressAutoShow(1800);
-      // windows 11 + add-on: the window flies into the overlay pill it is about to become
-      if (
-        nativeSnap &&
-        overlayManager?.willShowOnMinimize() &&
-        overlayManager.isReadyForTransition()
-      ) {
-        const overlay = overlayManager;
-        minimizeTransitionActive = true;
-        void nativeSnap
-          .toOverlay(
-            (beforeShow) => overlay.openForTransition(beforeShow),
-            () => mainWindow?.minimize(),
-          )
-          .finally(() => {
-            minimizeTransitionActive = false;
-          });
-        return;
-      }
+      // plain minimize: the overlay still auto-shows from the minimize event, and
+      // restoring never replays a half-finished off-screen transform
       mainWindow.minimize();
     });
 
@@ -709,6 +708,15 @@ if (!gotTheLock) {
 
     handleTrusted("window:close", () => {
       mainWindow?.close();
+    });
+
+    ipcMain.handle("clipboard:write-text", (_event, text: unknown) => {
+      try {
+        clipboard.writeText(String(text ?? ""));
+        return true;
+      } catch {
+        return false;
+      }
     });
 
     handleTrusted("app:relaunch", async () => {
@@ -2038,40 +2046,78 @@ if (!gotTheLock) {
               let transferred = 0;
               let lastEmit = 0;
               const started = Date.now();
-              const out = fs.createWriteStream(filePath, {
+              const samples: Array<{ at: number; bytes: number }> = [];
+              const partPath = `${filePath}.part`;
+              try {
+                fs.rmSync(partPath, { force: true });
+              } catch {}
+              const out = fs.createWriteStream(partPath, {
                 highWaterMark: 1024 * 1024,
               });
+              let settled = false;
+              const fail = (err: unknown) => {
+                if (settled) return;
+                settled = true;
+                try { out.destroy(); } catch {}
+                try { fs.rmSync(partPath, { force: true }); } catch {}
+                reject(err instanceof Error ? err : new Error(String(err)));
+              };
               const emit = (force = false) => {
                 const now = Date.now();
                 if (!force && now - lastEmit < 180) return;
                 lastEmit = now;
+                samples.push({ at: now, bytes: transferred });
+                while (samples.length > 2 && now - samples[0].at > 2000)
+                  samples.shift();
+                const oldest = samples[0];
+                const windowMs = Math.max(1, now - oldest.at);
+                const windowBytes = transferred - oldest.bytes;
                 const elapsed = Math.max(1, now - started) / 1000;
+                const bytesPerSecond =
+                  samples.length > 1 && windowMs >= 400
+                    ? Math.round((windowBytes / windowMs) * 1000)
+                    : Math.round(transferred / elapsed);
                 onProgress({
                   percent:
                     total > 0 ? Math.min(100, Math.round((transferred / total) * 100)) : 0,
                   transferred,
                   total,
-                  bytesPerSecond: Math.round(transferred / elapsed),
+                  bytesPerSecond,
                 });
               };
               res.on("data", (chunk: Buffer) => {
+                if (settled) return;
                 transferred += chunk.length;
-                out.write(chunk);
+                if (!out.write(chunk)) {
+                  try { (res as any).pause?.(); } catch {}
+                  out.once("drain", () => {
+                    try { (res as any).resume?.(); } catch {}
+                  });
+                }
                 emit();
               });
+              out.on("error", fail);
+              res.on("error", fail);
+              res.on("aborted", () => fail(new Error("Download aborted")));
               res.on("end", () => {
+                if (settled) return;
                 emit(true);
-                out.end(() => resolve());
-              });
-              res.on("error", (err: unknown) => {
-                try {
-                  out.destroy();
-                } catch {}
-                reject(err);
-              });
-              out.on("error", (err) => {
-                try { (res as any).destroy?.(); } catch {}
-                reject(err);
+                out.end(() => {
+                  if (settled) return;
+                  settled = true;
+                  try {
+                    if (transferred <= 0) throw new Error("Downloaded file is empty");
+                    if (total > 0 && transferred < total) {
+                      throw new Error(`Download incomplete (${transferred}/${total} bytes)`);
+                    }
+                    fs.rmSync(filePath, { force: true });
+                    fs.renameSync(partPath, filePath);
+                    resolve();
+                  } catch (err) {
+                    try { fs.rmSync(partPath, { force: true }); } catch {}
+                    reject(err instanceof Error ? err : new Error(String(err)));
+                  }
+                });
               });
             });
             request.on("error", reject);
@@ -2251,19 +2297,40 @@ if (!gotTheLock) {
         const installDir = path.dirname(process.execPath);
         const args =
           installDir && !installDir.includes("\n") ? [`/D=${installDir}`] : [];
-        const child = nodeSpawn(exe, args, {
-          windowsHide: false,
-          cwd: path.dirname(exe),
-          detached: true,
-          stdio: "ignore",
+        const launched = await new Promise<boolean>((resolveLaunch) => {
+          let settled = false;
+          try {
+            const child = nodeSpawn(exe, args, {
+              detached: true,
+              stdio: "ignore",
+              windowsHide: false,
+              cwd: path.dirname(exe),
+            });
+            child.once("error", (error) => {
+              if (settled) return;
+              settled = true;
+              console.error("[updater] failed to launch installer", error);
+              resolveLaunch(false);
+            });
+            child.once("spawn", () => {
+              if (settled) return;
+              settled = true;
+              try { child.unref(); } catch {}
+              resolveLaunch(true);
+            });
+          } catch (error) {
+            if (settled) return;
+            settled = true;
+            console.error("[updater] failed to spawn installer", error);
+            resolveLaunch(false);
+          }
         });
-        child.on("error", (error) => {
-          console.error("[updater] failed to launch installer", error);
-        });
-        if (child.pid == null) {
-          return { success: false, error: "Nyx could not start the installer. Try running the downloaded setup manually." };
+        if (!launched) {
+          const opened = await shell.openPath(exe).catch((error) => String(error || "Failed to open installer"));
+          if (opened) {
+            return { success: false, error: `Nyx could not start the installer automatically: ${opened}` };
+          }
         }
-        child.unref?.();
         nyxDownloadedInstaller = null;
         setTimeout(() => {
           try {
@@ -2274,7 +2341,7 @@ if (!gotTheLock) {
               app.exit(0);
             } catch {}
           }, 1500);
-        }, 250);
+        }, launched ? 350 : 800);
         return { success: true };
       } catch (error) {
         console.error("[updater] quit-and-install failed", error);

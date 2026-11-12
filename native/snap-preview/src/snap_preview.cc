@@ -757,6 +757,42 @@ napi_value JsWindowRect(napi_env env, napi_callback_info info) {
                            static_cast<double>(r.bottom)});
 }
 
+napi_value JsForegroundState(napi_env env, napi_callback_info info) {
+  napi_value argv[2];
+  size_t argc;
+  HWND own1 = nullptr, own2 = nullptr;
+  if (Args(env, info, argv, argc)) {
+    if (argc >= 1) own1 = HwndFrom(env, argv[0]);
+    if (argc >= 2) own2 = HwndFrom(env, argv[1]);
+  }
+  HWND fg = GetForegroundWindow();
+  bool external = fg && fg != own1 && fg != own2;
+  bool fullscreen = false;
+  bool maximized = false;
+  if (fg) {
+    RECT r{};
+    if (FAILED(DwmGetWindowAttribute(fg, DWMWA_EXTENDED_FRAME_BOUNDS, &r, sizeof(r)))) {
+      GetWindowRect(fg, &r);
+    }
+    MONITORINFO mi{};
+    mi.cbSize = sizeof(mi);
+    if (GetMonitorInfoW(MonitorFromWindow(fg, MONITOR_DEFAULTTONEAREST), &mi)) {
+      RECT const& mon = mi.rcMonitor;
+      // covers the whole monitor, so borderless fullscreen counts too
+      fullscreen = r.left <= mon.left && r.top <= mon.top && r.right >= mon.right && r.bottom >= mon.bottom;
+    }
+    WINDOWPLACEMENT wp{};
+    wp.length = sizeof(wp);
+    if (GetWindowPlacement(fg, &wp)) maximized = wp.showCmd == SW_SHOWMAXIMIZED;
+  }
+  napi_value obj;
+  napi_create_object(env, &obj);
+  napi_set_named_property(env, obj, "external", Bool(env, external));
+  napi_set_named_property(env, obj, "fullscreen", Bool(env, fullscreen));
+  napi_set_named_property(env, obj, "maximized", Bool(env, maximized));
+  return obj;
+}
+
 napi_value JsSetStyle(napi_env env, napi_callback_info info) {
   napi_value argv[2];
   size_t argc;
@@ -987,6 +1023,7 @@ napi_value ModuleInit(napi_env env, napi_value exports) {
       {"placeOnWindowMonitor", JsPlaceOnWindowMonitor},         {"beginMorph", JsBeginMorph},
       {"runMorph", JsRunMorph},                                 {"endMorph", JsEndMorph},
       {"setMorphTarget", JsSetMorphTarget},                     {"revealMorph", JsRevealMorph},
+      {"foregroundState", JsForegroundState},
       {"cloak", JsCloak},                                       {"transform", JsTransform},
       {"endTransform", JsEndTransform},                         {"lastError", JsLastError},
       {"show", JsShow},         {"hide", JsHide},               {"animate", JsAnimate}, {"setTarget", JsSetTarget},

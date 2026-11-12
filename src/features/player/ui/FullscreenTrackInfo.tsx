@@ -9,7 +9,7 @@ import { ScrollableText } from "@/shared/ui";
 import { usePlayerStore } from "../store/playerStore";
 import { useGlassBlur } from "../store/visualModeStore";
 import { cn } from "@/shared/lib";
-import { LikeMorphIcon } from "./LikeMorphIcon";
+import { LikeBurst } from "./LikeBurst";
 
 interface FullscreenTrackInfoProps {
   onClose?: () => void;
@@ -93,9 +93,7 @@ export function FullscreenTrackInfo({ onClose }: FullscreenTrackInfoProps) {
             glassBlur && "backdrop-blur-xl backdrop-brightness-[1.15]",
           )}
         >
-          <span className={cn("inline-flex transition-transform duration-150 ease-out", isLiked && "scale-110")}>
-            <LikeMorphIcon liked={Boolean(isLiked)} size={20} />
-          </span>
+          <LikeBurst liked={Boolean(isLiked)} size={20} />
         </button>
       )}
     </div>

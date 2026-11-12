@@ -104,6 +104,7 @@ if (typeof window !== "undefined") {
 }
 
 export function setAuthSession(next: AuthTokens | null): void {
+  const previous = session;
   session = next;
   const bridge = mainBridge();
   if (bridge) {
@@ -117,7 +118,10 @@ export function setAuthSession(next: AuthTokens | null): void {
     if (next) localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     else dropLocal();
   }
-  emit();
+  const identityChanged =
+    (previous?.user?.id ?? null) !== (next?.user?.id ?? null) ||
+    !previous !== !next;
+  if (identityChanged) emit();
 }
 
 export function getAccessToken(): string | null {

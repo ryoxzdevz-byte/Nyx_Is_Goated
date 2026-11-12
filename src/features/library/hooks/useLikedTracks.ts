@@ -394,20 +394,43 @@ export function likedTracksSnapshot(): {
   return { tracks: view.data.tracks, fromServer: fetchedFromServer };
 }
 
+let deferredLoadScheduled = false;
+
+function scheduleDeferredLoad() {
+  if (deferredLoadScheduled) return;
+  deferredLoadScheduled = true;
+  const run = () => {
+    deferredLoadScheduled = false;
+    void load();
+  };
+  if (typeof window === "undefined") return;
+  const idle = (
+    window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+    }
+  ).requestIdleCallback;
+  if (typeof idle === "function") idle(run, { timeout: 2500 });
+  else window.setTimeout(run, 1200);
+}
+
 export function useLikedTracks(params?: {
   limit?: number;
   offset?: number;
   enabled?: boolean;
+  defer?: boolean;
 }) {
   const enabled = params?.enabled ?? true;
+  const defer = params?.defer ?? false;
   const state = useSyncExternalStore(
     subscribe,
     snapshot,
     () => SERVER_SNAPSHOT,
   );
   useEffect(() => {
-    if (enabled) void load();
-  }, [enabled]);
+    if (!enabled) return;
+    if (defer) scheduleDeferredLoad();
+    else void load();
+  }, [enabled, defer]);
   return state;
 }
 

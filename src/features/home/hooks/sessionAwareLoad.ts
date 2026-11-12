@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { getAuthSession } from "@/shared/api";
 
-const RETRY_DELAYS_MS = [1_000, 3_000, 8_000, 20_000];
+const RETRY_DELAYS_MS = [800, 2_000, 5_000];
 
 function subscribe(onChange: () => void): () => void {
   window.addEventListener("auth:changed", onChange);

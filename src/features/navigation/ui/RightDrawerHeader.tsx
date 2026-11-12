@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { motion } from "framer-motion";
 import { LeftLine } from "@mingcute/react";
 import { Repeat, RepeatOne, Shuffle, TrashBin2 } from "@solar-icons/react";
 import { useTranslation } from "@/languages";
@@ -32,11 +33,15 @@ function QueueAction({
   onClick,
   children,
 }: QueueActionProps) {
+  const [pulse, setPulse] = useState(0);
   return (
     <Tooltip content={label} side="bottom" sideOffset={8} disabled={disabled}>
       <button
         type="button"
-        onClick={onClick}
+        onClick={() => {
+          setPulse((value) => value + 1);
+          onClick();
+        }}
         disabled={disabled}
         aria-label={label}
         aria-pressed={active}
@@ -47,7 +52,15 @@ function QueueAction({
             : "bg-transparent text-text-secondary hover:bg-white/[0.08] hover:text-text-primary disabled:hover:bg-transparent",
         )}
       >
-        {children}
+        <motion.span
+          key={`${active ? "on" : "off"}-${pulse}`}
+          initial={{ scale: 0.82, rotate: active ? -10 : 8, opacity: 0.65 }}
+          animate={{ scale: active ? 1.08 : 1, rotate: 0, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 520, damping: 22 }}
+          className="inline-flex"
+        >
+          {children}
+        </motion.span>
       </button>
     </Tooltip>
   );

@@ -58,10 +58,27 @@ async function loadArtistPage(artistId: string): Promise<ArtistPageData> {
         )
       ).flat()
     : [];
-  const seen = new Set<string>();
+  const normalize = (value: unknown) =>
+    String(value ?? "")
+      .toLowerCase()
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^\p{L}\p{N}]+/gu, " ")
+      .trim();
+  const seenIds = new Set<string>();
+  const seenSongs = new Set<string>();
   const tracks = [...baseTracks, ...releaseTracks].filter((track) => {
-    if (!track?.id || seen.has(track.id)) return false;
-    seen.add(track.id);
+    if (!track?.id || seenIds.has(track.id)) return false;
+    seenIds.add(track.id);
+    const title = normalize(track.title);
+    if (!title) return true;
+    const artists = normalize(track.artists || track.artistId);
+    const duration = track.durationMs
+      ? Math.round(track.durationMs / 2000)
+      : "";
+    const songKey = `${title}|${artists}|${duration}`;
+    if (seenSongs.has(songKey)) return false;
+    seenSongs.add(songKey);
     return true;
   });
   const formatted: ArtistPageData = {

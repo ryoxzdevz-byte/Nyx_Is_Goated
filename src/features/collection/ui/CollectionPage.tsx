@@ -46,6 +46,7 @@ import type { Track } from "@/shared/types";
 import { useTranslation } from "@/languages";
 import { useModalStore } from "@/features/library";
 import { buildShareUrl } from "@/shared/utils/share";
+import { copyToClipboard } from "@/shared/utils/clipboard";
 import { useExternalItems } from "@/features/library/hooks";
 import { useCollection } from "../hooks/useCollection";
 import { readCollectionPreview } from "../lib/collectionPreview";
@@ -243,12 +244,15 @@ function CollectionContent() {
     }
   };
 
-  const handleShare = () => {
-    if (typeof navigator !== "undefined" && navigator.clipboard && decodedId) {
-      navigator.clipboard.writeText(buildShareUrl(entityType, decodedId));
+  const handleShare = async () => {
+    if (!decodedId) return;
+    const ok = await copyToClipboard(buildShareUrl(entityType, decodedId));
+    if (ok) {
       toast(t("common.link_copied"), "checkmark", {
         description: data?.title || undefined,
       });
+    } else {
+      toast(t("common.link_copy_failed"), "error");
     }
   };
 

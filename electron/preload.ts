@@ -152,6 +152,7 @@ export interface LinerElectronApi {
   downloadUpdate: () => Promise<{ success: boolean; error?: string }>;
   quitAndInstall: () => Promise<boolean | { success: boolean; error?: string }>;
   relaunchApp: () => Promise<boolean>;
+  writeClipboardText: (text: string) => Promise<boolean>;
   getAudioOutputDevices: () => Promise<
     Array<{ deviceId: string; label: string }>
   >;
@@ -346,6 +347,8 @@ const api: LinerElectronApi = {
   downloadUpdate: () => ipcRenderer.invoke("updater:download-update"),
   quitAndInstall: () => ipcRenderer.invoke("updater:quit-and-install"),
   relaunchApp: () => ipcRenderer.invoke("app:relaunch"),
+  writeClipboardText: (text: string) =>
+    ipcRenderer.invoke("clipboard:write-text", text),
   getAudioOutputDevices: () => ipcRenderer.invoke("audio:get-output-devices"),
   onUpdateAvailable: (cb) => {
     const listener = (_event: unknown, info: UpdateInfo) => cb(info);

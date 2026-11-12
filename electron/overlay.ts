@@ -58,7 +58,17 @@ export interface OverlaySettings {
   volumeHoldRepeats?: boolean;
   autoShowOnMinimize: boolean;
   alwaysOnTop: boolean;
+  hideOverFullscreen?: boolean;
+  hideOverWindowed?: boolean;
 }
+
+interface ForegroundState {
+  external: boolean;
+  fullscreen: boolean;
+  maximized?: boolean;
+}
+
+const FOREGROUND_POLL_MS = 1000;
 
 const CYRILLIC_TO_QWERTY: Record<string, string> = {
   й: "Q",
@@ -182,6 +192,11 @@ export class OverlayManager {
   private readonly allowHeldKey = createRepeatGate();
   private autoShowOnMinimize = true;
   private alwaysOnTop = true;
+  private hideOverFullscreen = false;
+  private hideOverWindowed = false;
+  private foregroundProvider: (() => ForegroundState | undefined) | null = null;
+  private foregroundTimer: NodeJS.Timeout | null = null;
+  private suppressedByApp = false;
   private wasAutoOpened = false;
   private isAuthenticated = false;
   // set once the app is quitting: nothing may create a window or grab a shortcut again
@@ -377,6 +392,12 @@ export class OverlayManager {
         if (typeof data.alwaysOnTop === "boolean") {
           this.alwaysOnTop = data.alwaysOnTop;
         }
+        if (typeof data.hideOverFullscreen === "boolean") {
+          this.hideOverFullscreen = data.hideOverFullscreen;
+        }
+        if (typeof data.hideOverWindowed === "boolean") {
+          this.hideOverWindowed = data.hideOverWindowed;
+        }
       }
     } catch (e) {
       console.warn("[overlay] Could not read overlay-settings.json:", e);
@@ -396,10 +417,74 @@ export class OverlayManager {
         volumeHoldRepeats: this.volumeHoldRepeats,
         autoShowOnMinimize: this.autoShowOnMinimize,
         alwaysOnTop: this.alwaysOnTop,
+        hideOverFullscreen: this.hideOverFullscreen,
+        hideOverWindowed: this.hideOverWindowed,
       };
       fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf-8");
     } catch (e) {
       console.warn("[overlay] Could not write overlay-settings.json:", e);
+    }
+  }
+
+  public setForegroundStateProvider(
+    provider: (() => ForegroundState | undefined) | null,
+  ) {
+    this.foregroundProvider = provider;
+    this.syncForegroundPolling();
+  }
+
+  private syncForegroundPolling() {
+    const shouldPoll =
+      Boolean(this.foregroundProvider) &&
+      (this.hideOverFullscreen || this.hideOverWindowed) &&
+      !this.disposed;
+    if (shouldPoll) {
+      if (!this.foregroundTimer) {
+        this.foregroundTimer = setInterval(
+          () => this.pollForeground(),
+          FOREGROUND_POLL_MS,
+        );
+        this.foregroundTimer.unref?.();
+      }
+      this.pollForeground();
+      return;
+    }
+    if (this.foregroundTimer) {
+      clearInterval(this.foregroundTimer);
+      this.foregroundTimer = null;
+    }
+    this.suppressedByApp = false;
+  }
+
+  private shouldSuppressForForeground(): boolean {
+    if (!this.hideOverFullscreen && !this.hideOverWindowed) return false;
+    const state = this.foregroundProvider?.();
+    if (!state || !state.external) return false;
+    return state.fullscreen ? this.hideOverFullscreen : this.hideOverWindowed;
+  }
+
+  private pollForeground() {
+    if (this.disposed) return;
+    const win = this.overlayWindow;
+    if (!win || win.isDestroyed()) {
+      this.suppressedByApp = false;
+      return;
+    }
+    if (this.shouldSuppressForForeground()) {
+      if (!this.suppressedByApp && this.wantVisible) {
+        this.suppressedByApp = true;
+        win.hide();
+      }
+      return;
+    }
+    if (this.suppressedByApp) {
+      this.suppressedByApp = false;
+      if (this.wantVisible) {
+        win.webContents.send("overlay:visibility", true);
+        win.setOpacity(1);
+        win.showInactive();
+        this.applyAlwaysOnTop();
+      }
     }
   }
 
@@ -459,6 +544,11 @@ export class OverlayManager {
 
   public destroy() {
     this.stopMoveAnimation();
+    if (this.foregroundTimer) {
+      clearInterval(this.foregroundTimer);
+      this.foregroundTimer = null;
+    }
+    this.suppressedByApp = false;
     if (this.closeTimeout) {
       clearTimeout(this.closeTimeout);
       this.closeTimeout = null;
@@ -965,6 +1055,12 @@ export class OverlayManager {
     if (this.latestState) {
       win.webContents.send("overlay:state", this.latestState);
     }
+    if (this.shouldSuppressForForeground()) {
+      this.suppressedByApp = true;
+      win.hide();
+      return;
+    }
+    this.suppressedByApp = false;
     win.webContents.send("overlay:visibility", true);
     win.setOpacity(1);
     this.primed = true;
@@ -1148,6 +1244,7 @@ export class OverlayManager {
     this.wasAutoOpened = false;
     this.pendingShow = false;
     this.wantVisible = false;
+    this.suppressedByApp = false;
     if (this.revealFallbackTimer) {
       clearTimeout(this.revealFallbackTimer);
       this.revealFallbackTimer = null;
@@ -1463,6 +1560,14 @@ export class OverlayManager {
           this.alwaysOnTop = settings.alwaysOnTop;
           this.applyAlwaysOnTop();
         }
+
+        if (typeof settings.hideOverFullscreen === "boolean") {
+          this.hideOverFullscreen = settings.hideOverFullscreen;
+        }
+        if (typeof settings.hideOverWindowed === "boolean") {
+          this.hideOverWindowed = settings.hideOverWindowed;
+        }
+        this.syncForegroundPolling();
 
         if (this.compositor) {
           if (

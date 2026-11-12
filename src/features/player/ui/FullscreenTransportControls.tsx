@@ -5,6 +5,7 @@ import {
   RepeatOne,
   Shuffle,
 } from "@solar-icons/react";
+import { motion } from "framer-motion";
 import { PlayerMorphIcon, ICON_PLAY, ICON_PAUSE } from "./morphPlayerIcons";
 import { usePlayerState } from "../hooks/usePlayerState";
 import { playerEngine } from "../engine/playerEngine";
@@ -61,11 +62,16 @@ export function FullscreenTransportControls() {
           "group",
         )}
       >
-        <Shuffle
-          size={24}
-          weight="Outline"
-          className="transition-transform duration-200 ease-out group-active:rotate-[18deg]"
-        />
+        <motion.span
+          key={player.shuffle ? "shuffle-on" : "shuffle-off"}
+          initial={{ scale: 0.82, rotate: player.shuffle ? -14 : 14 }}
+          animate={{ scale: player.shuffle ? 1.1 : 1, rotate: 0 }}
+          transition={{ type: "spring", stiffness: 520, damping: 22 }}
+          whileTap={{ scale: 0.85, rotate: 18 }}
+          className="inline-flex"
+        >
+          <Shuffle size={24} weight="Outline" />
+        </motion.span>
       </button>
 
       <button
@@ -120,11 +126,20 @@ export function FullscreenTransportControls() {
           "group",
         )}
       >
-        {player.repeat === "one" ? (
-          <RepeatOne size={24} className="transition-transform duration-200 ease-out group-active:-rotate-12" />
-        ) : (
-          <Repeat size={24} className="transition-transform duration-200 ease-out group-active:-rotate-12" />
-        )}
+        <motion.span
+          key={`repeat-${player.repeat}`}
+          initial={{ scale: 0.82, rotate: player.repeat === "off" ? 12 : -14 }}
+          animate={{ scale: player.repeat !== "off" ? 1.1 : 1, rotate: 0 }}
+          transition={{ type: "spring", stiffness: 520, damping: 22 }}
+          whileTap={{ scale: 0.85, rotate: -12 }}
+          className="inline-flex"
+        >
+          {player.repeat === "one" ? (
+            <RepeatOne size={24} />
+          ) : (
+            <Repeat size={24} />
+          )}
+        </motion.span>
       </button>
     </div>
   );

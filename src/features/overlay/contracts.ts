@@ -6,6 +6,8 @@ export interface OverlaySettings {
   shortcut: string;
   autoShowOnMinimize: boolean;
   alwaysOnTop: boolean;
+  hideOverFullscreen: boolean;
+  hideOverWindowed: boolean;
 }
 
 export interface OverlayTrackInfo {

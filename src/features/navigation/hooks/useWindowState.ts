@@ -134,30 +134,38 @@ export function useWindowState(): WindowStateHookResult {
       },
     );
 
-    // Fallback sync on window resize for compositors (e.g. Wayland)
+    // Fallback sync on window resize for compositors (e.g. Wayland). The live
+    // resize stream would otherwise fire two IPC calls per frame, so only ask
+    // once it settles; the push channel already covers real state changes.
+    let resizeTimer: number | undefined;
     const handleResize = () => {
       if (!mounted) return;
       const isDomFullscreen = checkDomFullscreen();
       if (isDomFullscreen) {
         setIsFullScreen(true);
       }
-      const resizeSeq = pushSeq;
-      window.linerElectron
-        ?.isMaximized?.()
-        .then((max) => {
-          if (mounted && pushSeq === resizeSeq && typeof max === "boolean") {
-            setIsMaximized(max);
-          }
-        })
-        .catch(() => {});
-      window.linerElectron
-        ?.isFullScreen?.()
-        .then((fs) => {
-          if (mounted && pushSeq === resizeSeq && typeof fs === "boolean") {
-            setIsFullScreen(fs || isDomFullscreen);
-          }
-        })
-        .catch(() => {});
+      if (resizeTimer !== undefined) window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => {
+        resizeTimer = undefined;
+        if (!mounted) return;
+        const resizeSeq = pushSeq;
+        window.linerElectron
+          ?.isMaximized?.()
+          .then((max) => {
+            if (mounted && pushSeq === resizeSeq && typeof max === "boolean") {
+              setIsMaximized(max);
+            }
+          })
+          .catch(() => {});
+        window.linerElectron
+          ?.isFullScreen?.()
+          .then((fs) => {
+            if (mounted && pushSeq === resizeSeq && typeof fs === "boolean") {
+              setIsFullScreen(fs || isDomFullscreen);
+            }
+          })
+          .catch(() => {});
+      }, 140);
     };
 
     const handleFullscreenChange = () => {
@@ -188,6 +196,7 @@ export function useWindowState(): WindowStateHookResult {
         window.removeEventListener("keydown", handlePreventF11);
       }
       unsubscribe?.();
+      if (resizeTimer !== undefined) window.clearTimeout(resizeTimer);
       window.removeEventListener("resize", handleResize);
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
     };

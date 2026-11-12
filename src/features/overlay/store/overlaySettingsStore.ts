@@ -9,6 +9,8 @@ interface OverlaySettingsState extends OverlaySettings {
   setShortcut: (shortcut: string) => void;
   setAutoShowOnMinimize: (autoShowOnMinimize: boolean) => void;
   setAlwaysOnTop: (alwaysOnTop: boolean) => void;
+  setHideOverFullscreen: (hideOverFullscreen: boolean) => void;
+  setHideOverWindowed: (hideOverWindowed: boolean) => void;
 }
 
 const DEFAULT_SETTINGS: OverlaySettings = {
@@ -17,6 +19,8 @@ const DEFAULT_SETTINGS: OverlaySettings = {
   shortcut: "Alt+Shift+O",
   autoShowOnMinimize: true,
   alwaysOnTop: true,
+  hideOverFullscreen: false,
+  hideOverWindowed: false,
 };
 
 function notifyElectron(patch: Partial<OverlaySettings>) {
@@ -53,6 +57,14 @@ export const useOverlaySettingsStore = create<OverlaySettingsState>()(
       setAlwaysOnTop: (alwaysOnTop) => {
         set({ alwaysOnTop });
         notifyElectron({ alwaysOnTop });
+      },
+      setHideOverFullscreen: (hideOverFullscreen) => {
+        set({ hideOverFullscreen });
+        notifyElectron({ hideOverFullscreen });
+      },
+      setHideOverWindowed: (hideOverWindowed) => {
+        set({ hideOverWindowed });
+        notifyElectron({ hideOverWindowed });
       },
     }),
     {

@@ -222,15 +222,36 @@ function toTrack(item: ApiUserPlaylistItem): Track {
   };
 }
 
-export function usePlaylistsList() {
+let deferredLoadScheduled = false;
+
+function scheduleDeferredLoad() {
+  if (deferredLoadScheduled) return;
+  deferredLoadScheduled = true;
+  const run = () => {
+    deferredLoadScheduled = false;
+    void load();
+  };
+  if (typeof window === "undefined") return;
+  const idle = (
+    window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+    }
+  ).requestIdleCallback;
+  if (typeof idle === "function") idle(run, { timeout: 2500 });
+  else window.setTimeout(run, 1200);
+}
+
+export function usePlaylistsList(params?: { defer?: boolean }) {
+  const defer = params?.defer ?? false;
   const state = useSyncExternalStore(
     subscribe,
     snapshot,
     () => SERVER_SNAPSHOT,
   );
   useEffect(() => {
-    void load();
-  }, []);
+    if (defer) scheduleDeferredLoad();
+    else void load();
+  }, [defer]);
   return state;
 }
 

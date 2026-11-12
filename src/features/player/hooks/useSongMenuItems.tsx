@@ -20,6 +20,7 @@ import {
 import { useTranslation } from "@/languages";
 import { showToast } from "@/shared/ui";
 import { buildShareUrl } from "@/shared/utils/share";
+import { copyToClipboard } from "@/shared/utils/clipboard";
 import { isLocalTrackId } from "@/shared/media/local";
 
 const CLOUD_ONLY_ITEMS = new Set([
@@ -66,11 +67,11 @@ export function useSongMenuItems(ctx: SongMenuContext): DropdownMenuItem[] {
     onRemoveFromDevice,
   } = ctx;
 
-  const { data: playlistsData } = usePlaylistsList();
+  const { data: playlistsData } = usePlaylistsList({ defer: true });
 
   const toggleLike = useToggleTrackLike();
 
-  const liked = useIsTrackLiked(id);
+  const liked = useIsTrackLiked(id, { defer: true });
 
   const handleLike = useCallback(() => {
     if (!id) return;
@@ -84,15 +85,17 @@ export function useSongMenuItems(ctx: SongMenuContext): DropdownMenuItem[] {
     );
   }, [id, toggleLike, title, artists, t]);
 
-  const handleShare = useCallback(() => {
+  const handleShare = useCallback(async () => {
     if (!id) return;
-    if (typeof navigator !== "undefined" && navigator.clipboard) {
-      const type =
-        (searchType as "track" | "album" | "artist" | "playlist") || "track";
-      void navigator.clipboard.writeText(buildShareUrl(type, id));
+    const type =
+      (searchType as "track" | "album" | "artist" | "playlist") || "track";
+    const ok = await copyToClipboard(buildShareUrl(type, id));
+    if (ok) {
       showToast(t("common.link_copied"), "checkmark", {
         description: artists ? `${title} — ${artists}` : title,
       });
+    } else {
+      showToast(t("common.link_copy_failed"), "error");
     }
   }, [id, searchType, title, artists, t]);
 
