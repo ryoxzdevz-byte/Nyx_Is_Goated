@@ -155,6 +155,29 @@ describe("NativeSnapPreview.toOverlay", () => {
     expect(closeOverlay).toHaveBeenCalled();
   });
 
+  it("the overlay restore button cloaks the window and disables the OS animation", async () => {
+    const main = fakeWindow("main");
+    const overlay = fakeWindow("overlay", true);
+    const { snap, calls } = snapFor("transitions", main);
+    const restore = vi.fn(() => calls.push("restore"));
+    const closeOverlay = vi.fn();
+    await snap.fromOverlay(overlay as never, restore, closeOverlay);
+    expect(restore).toHaveBeenCalledTimes(1);
+    expect(calls.indexOf("transitionsDisabled:main:true")).toBeLessThan(
+      calls.indexOf("restore"),
+    );
+    expect(calls.indexOf("cloak:main:true")).toBeLessThan(
+      calls.indexOf("restore"),
+    );
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(calls.filter((c) => c === "restore")).toHaveLength(1);
+    expect(calls).toContain("transitionsDisabled:main:false");
+    expect(calls.lastIndexOf("cloak:main:false")).toBeGreaterThan(
+      calls.indexOf("cloak:main:true"),
+    );
+    expect(closeOverlay).toHaveBeenCalled();
+  });
+
   it("with an add-on that only knows setTransitionsDisabled, uncloaks right before minimizing", async () => {
     const { calls, minimize } = await minimizeIntoPill("transitions");
     expect(minimize).toHaveBeenCalledTimes(1);

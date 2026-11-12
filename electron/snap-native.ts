@@ -589,10 +589,26 @@ export class NativeSnapPreview {
     alreadyRestored = false,
   ) {
     const win = this.getMain();
-    const uncloakedRestore = () => {
-      if (!alreadyRestored) return restore();
-      if (win && !win.isDestroyed())
-        this.addon.cloak(win.getNativeWindowHandle(), false);
+    const hwnd = win && !win.isDestroyed() ? win.getNativeWindowHandle() : null;
+    const setTransitionsDisabled = this.addon.setTransitionsDisabled?.bind(
+      this.addon,
+    );
+    const restoreWithoutOsAnimation = () => {
+      if (!alreadyRestored) {
+        if (hwnd && setTransitionsDisabled) {
+          try {
+            setTransitionsDisabled(hwnd, true);
+          } catch {}
+        }
+        restore();
+        if (hwnd && setTransitionsDisabled) {
+          setTimeout(
+            () => setTransitionsDisabled(hwnd, false),
+            TRANSITIONS_RESTORE_MS,
+          );
+        }
+      }
+      if (hwnd && alreadyRestored) this.addon.cloak(hwnd, false);
       closeOverlay();
     };
     if (
@@ -600,23 +616,37 @@ export class NativeSnapPreview {
       win.isDestroyed() ||
       !overlay ||
       overlay.isDestroyed() ||
-      !overlay.isVisible()
+      !overlay.isVisible() ||
+      !hwnd
     ) {
-      uncloakedRestore();
+      restoreWithoutOsAnimation();
       return;
     }
-    const hwnd = win.getNativeWindowHandle();
     const ovHwnd = overlay.getNativeWindowHandle();
     const from = this.addon.windowRect(ovHwnd);
-    if (!from) return uncloakedRestore();
+    if (!from) return restoreWithoutOsAnimation();
     this.addon.armRestoreTrap?.(hwnd, false);
     this.clearHide();
     this.addon.cloak(hwnd, true);
-    if (!alreadyRestored) restore();
+    if (!alreadyRestored) {
+      if (setTransitionsDisabled) {
+        try {
+          setTransitionsDisabled(hwnd, true);
+        } catch {}
+      }
+      restore();
+      if (setTransitionsDisabled) {
+        setTimeout(
+          () => setTransitionsDisabled(hwnd, false),
+          TRANSITIONS_RESTORE_MS,
+        );
+      }
+    }
     await afterPaint(win);
     const to = this.addon.windowRect(hwnd);
     if (!to || !this.surfaceOnTop(hwnd)) {
       this.addon.cloak(hwnd, false);
+      closeOverlay();
       return;
     }
     this.containerStyle();

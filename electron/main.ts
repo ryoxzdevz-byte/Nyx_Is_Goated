@@ -694,11 +694,20 @@ if (!gotTheLock) {
           : null;
       return nativeSnap.foregroundState(main, pill);
     });
-    // F in the overlay: restore plainly. The native off-screen morph could leave
-    // the window jumping in from above the screen, so keep this path predictable.
+    // F in the overlay: the pill grows back into the app (windows 11 + add-on).
+    // the main window stays cloaked while it restores, so the OS never flashes it
+    // at full size before the transition starts. fall back to a plain restore.
     overlayManager.setFocusMainHandler((restore) => {
+      const overlay = overlayManager;
+      if (nativeSnap && overlay) {
+        overlay.holdForTransition();
+        void nativeSnap.fromOverlay(overlay.getWindow(), restore, () =>
+          overlay.closeOverlay(),
+        );
+        return;
+      }
       restore();
-      overlayManager?.closeOverlay();
+      overlay?.closeOverlay();
     });
     overlayManager.registerShortcut();
     overlayManager.registerMediaShortcuts();
