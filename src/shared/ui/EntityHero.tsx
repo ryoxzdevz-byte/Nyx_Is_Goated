@@ -58,8 +58,7 @@ export function EntityHero({
   return (
     <section
       className={cn(
-        "flex w-full min-w-0 items-start gap-[22px]",
-        actions || trailingActions ? "md:items-center" : undefined,
+        "flex w-full min-w-0 flex-col items-start gap-[16px] sm:flex-row sm:gap-[22px] sm:items-center",
       )}
       data-no-window-drag
     >
@@ -74,7 +73,7 @@ export function EntityHero({
 
       <div
         className={cn(
-          "flex min-w-0 flex-1 flex-col pt-[2px]",
+          "flex min-w-0 flex-1 flex-col pt-[2px] sm:min-h-[168px] sm:justify-center",
           contentClassName,
         )}
       >
