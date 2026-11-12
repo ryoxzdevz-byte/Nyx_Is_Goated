@@ -84,7 +84,7 @@ function throwIfAborted(signal?: AbortSignal): void {
 
 export async function resolveWebRemixAudioStream(
   videoId: string,
-  options: { signal?: AbortSignal; preferredCodec?: "opus" | "aac" } = {},
+  options: { signal?: AbortSignal; preferredCodec?: "opus" | "aac" | "save" } = {},
 ): Promise<ResolvedAudioStream> {
   installPlayerEvaluator();
   const [poToken, visitorData] = await Promise.all([

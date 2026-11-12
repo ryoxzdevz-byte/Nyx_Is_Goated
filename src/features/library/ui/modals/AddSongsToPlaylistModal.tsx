@@ -68,26 +68,33 @@ export default function AddSongsToPlaylistModal() {
     debounceMs: 180,
   });
 
-  const existingTracks = useMemo(
-    () => (target?.existingItems ?? []).map((item) => item.track),
-    [target?.existingItems],
-  );
+  const openSnapshotRef = useRef<{
+    existingTrackIds: Set<string>;
+    items: Map<string, string | null>;
+  } | null>(null);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !target) {
+      openSnapshotRef.current = null;
+      return;
+    }
+    const items = new Map<string, string | null>();
+    for (const item of target.existingItems ?? []) {
+      items.set(item.track.id, item.itemId);
+    }
+    for (const trackId of target.existingTrackIds ?? []) {
+      if (!items.has(trackId)) items.set(trackId, null);
+    }
+    openSnapshotRef.current = {
+      existingTrackIds: new Set(target.existingTrackIds ?? []),
+      items,
+    };
     setQuery("");
     setRecommended([]);
-    const next = new Map<string, string | null>();
-    for (const item of target?.existingItems ?? []) {
-      next.set(item.track.id, item.itemId);
-    }
-    for (const trackId of target?.existingTrackIds ?? []) {
-      if (!next.has(trackId)) next.set(trackId, null);
-    }
-    setSelectedItems(next);
+    setSelectedItems(new Map(items));
     const frame = requestAnimationFrame(() => inputRef.current?.focus());
     return () => cancelAnimationFrame(frame);
-  }, [open, target?.playlistId, target?.existingItems, target?.existingTrackIds]);
+  }, [open, target?.playlistId]);
 
   useEffect(() => {
     if (!open || !target) return;
@@ -95,6 +102,8 @@ export default function AddSongsToPlaylistModal() {
     setRecommendationsLoading(true);
 
     const load = async () => {
+      const snapshot = openSnapshotRef.current;
+      const excludeIds = snapshot?.existingTrackIds ?? new Set<string>();
       let next: Track[] = [];
       if (target.seedTrackId) {
         try {
@@ -118,7 +127,11 @@ export default function AddSongsToPlaylistModal() {
       }
 
       if (!active) return;
-      setRecommended(dedupeTracks([...existingTracks, ...next]).slice(0, 30));
+      setRecommended(
+        dedupeTracks(next)
+          .filter((track) => !excludeIds.has(track.id))
+          .slice(0, 30),
+      );
       setRecommendationsLoading(false);
     };
 
@@ -126,7 +139,7 @@ export default function AddSongsToPlaylistModal() {
     return () => {
       active = false;
     };
-  }, [open, target, existingTracks]);
+  }, [open, target?.playlistId]);
 
   const tracks = useMemo(() => {
     const source =

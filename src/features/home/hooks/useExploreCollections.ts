@@ -69,9 +69,21 @@ async function loadMostSaved(): Promise<PopularItem[]> {
 }
 
 async function loadPopularPlaylists(): Promise<PopularItem[]> {
-  const response = await api.getMostSaved("playlist", 20);
-  return response.items
-    .filter((entry) => entry.type === "playlist")
+  const responses = await Promise.allSettled([
+    api.getMostSaved("playlist", 20),
+    api.getMostSaved("all", 20),
+  ]);
+  const items = responses.flatMap((result) =>
+    result.status === "fulfilled" ? result.value.items : [],
+  );
+  const seen = new Set<string>();
+  return items
+    .filter((entry): entry is typeof entry & { type: "playlist" } => {
+      if (entry.type !== "playlist" || seen.has(entry.id)) return false;
+      seen.add(entry.id);
+      return true;
+    })
+    .slice(0, 20)
     .map(
       (entry): PopularItem => ({
         type: "playlist",

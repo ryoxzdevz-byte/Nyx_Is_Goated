@@ -48,6 +48,7 @@ async function fromNetwork(
 ): Promise<FetchedAudio> {
   const stream = await resolvePlaybackStream(track, signal, {
     progressive: false,
+    preferredCodec: "save",
   });
   try {
     let audio: Uint8Array | null;

@@ -18,7 +18,7 @@ import {
 
 export interface ProfileAudioOptions {
   signal?: AbortSignal;
-  preferredCodec?: "opus" | "aac";
+  preferredCodec?: "opus" | "aac" | "save";
 }
 
 function playerBody(

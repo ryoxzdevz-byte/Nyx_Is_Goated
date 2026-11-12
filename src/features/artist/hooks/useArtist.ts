@@ -40,48 +40,38 @@ export interface ArtistPageData {
   singles: ArtistReleaseViewModel[];
 }
 
-async function loadArtistPage(artistId: string): Promise<ArtistPageData> {
-  const artist = await api.getArtist(artistId);
-  const baseTracks = artist.tracks.map(toClientTrack);
-  const releaseIds = Array.from(
-    new Set([...artist.albums, ...artist.singles].map((r) => r.id).filter(Boolean)),
-  ).slice(0, 24);
-  const releaseTracks = releaseIds.length
-    ? (
-        await Promise.all(
-          releaseIds.map((id) =>
-            api
-              .getAlbum(id)
-              .then((album) => (album.tracks || []).map(toClientTrack))
-              .catch(() => [] as Track[]),
-          ),
-        )
-      ).flat()
-    : [];
-  const normalize = (value: unknown) =>
-    String(value ?? "")
-      .toLowerCase()
-      .normalize("NFKD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^\p{L}\p{N}]+/gu, " ")
-      .trim();
+function normalizeSong(value: unknown): string {
+  return String(value ?? "")
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+}
+
+function mergeArtistTracks(...groups: Track[][]): Track[] {
   const seenIds = new Set<string>();
   const seenSongs = new Set<string>();
-  const tracks = [...baseTracks, ...releaseTracks].filter((track) => {
+  return groups.flat().filter((track) => {
     if (!track?.id || seenIds.has(track.id)) return false;
     seenIds.add(track.id);
-    const title = normalize(track.title);
+    const title = normalizeSong(track.title);
     if (!title) return true;
-    const artists = normalize(track.artists || track.artistId);
-    const duration = track.durationMs
-      ? Math.round(track.durationMs / 2000)
-      : "";
+    const artists = normalizeSong(track.artists || track.artistId);
+    const duration = track.durationMs ? Math.round(track.durationMs / 2000) : "";
     const songKey = `${title}|${artists}|${duration}`;
     if (seenSongs.has(songKey)) return false;
     seenSongs.add(songKey);
     return true;
   });
-  const formatted: ArtistPageData = {
+}
+
+function formatArtistPage(
+  artist: Awaited<ReturnType<typeof api.getArtist>>,
+  tracks: Track[],
+): ArtistPageData {
+  const baseTracks = artist.tracks.map(toClientTrack);
+  return {
     title: artist.name,
     monthlyListeners: artist.monthlyListeners,
     followers: artist.followers,
@@ -117,7 +107,41 @@ async function loadArtistPage(artistId: string): Promise<ArtistPageData> {
       explicit: single.explicit,
     })),
   };
-  return formatted;
+}
+
+async function loadArtistPage(artistId: string): Promise<ArtistPageData> {
+  const artist = await api.getArtist(artistId);
+  const baseTracks = artist.tracks.map(toClientTrack);
+  const initial = formatArtistPage(artist, baseTracks);
+
+  const releaseIds = Array.from(
+    new Set(
+      [...artist.albums, ...artist.singles].map((r) => r.id).filter(Boolean),
+    ),
+  ).slice(0, 12);
+  if (releaseIds.length > 0) {
+    void (async () => {
+      const releaseTracks = (
+        await Promise.all(
+          releaseIds.map((id) =>
+            api
+              .getAlbum(id)
+              .then((album) => (album.tracks || []).map(toClientTrack))
+              .catch(() => [] as Track[]),
+          ),
+        )
+      ).flat();
+      const merged = mergeArtistTracks(baseTracks, releaseTracks);
+      if (merged.length <= baseTracks.length) return;
+      queryCache.set(
+        artistCacheKey(artistId),
+        formatArtistPage(artist, merged),
+        ARTIST_STALE_MS,
+      );
+    })().catch(() => undefined);
+  }
+
+  return initial;
 }
 
 const ARTIST_STALE_MS = 10 * 60 * 1000;

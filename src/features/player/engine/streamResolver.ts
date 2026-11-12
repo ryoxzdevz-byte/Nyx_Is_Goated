@@ -35,6 +35,7 @@ import { appAllowsAccountPlayback } from "./accountPlayback";
 
 export interface ResolveStreamOptions {
   progressive?: boolean;
+  preferredCodec?: "opus" | "aac" | "save";
 }
 
 export type {
@@ -60,6 +61,7 @@ async function resolveYoutubeAudio(
   videoId: string,
   progressive: boolean,
   signal?: AbortSignal,
+  preferredCodec?: "opus" | "aac" | "save",
 ): Promise<PlaybackStream> {
   let accountFailure: string | null = null;
   if (
@@ -79,7 +81,7 @@ async function resolveYoutubeAudio(
   }
   try {
     return fromInnertubeStream(
-      await resolveDirectAudioStream(videoId, { signal }),
+      await resolveDirectAudioStream(videoId, { signal, preferredCodec }),
     );
   } catch (error) {
     if (accountFailure && error instanceof Error)
@@ -92,6 +94,7 @@ async function resolveYoutubeStandIn(
   track: PlayableTrack,
   progressive: boolean,
   signal?: AbortSignal,
+  preferredCodec?: "opus" | "aac" | "save",
 ): Promise<PlaybackStream> {
   const videoId = await findYoutubeStandIn(track, signal);
   if (!videoId) throw new Error("No matching YouTube track found");
@@ -100,7 +103,12 @@ async function resolveYoutubeStandIn(
     "playback",
     `resolved youtube stand-in ${videoId} for "${track.title}"`,
   );
-  const stream = await resolveYoutubeAudio(videoId, progressive, signal);
+  const stream = await resolveYoutubeAudio(
+    videoId,
+    progressive,
+    signal,
+    preferredCodec,
+  );
   stream.standIn = true;
   return stream;
 }
@@ -109,6 +117,7 @@ async function resolveSoundCloud(
   track: PlayableTrack,
   progressive: boolean,
   signal?: AbortSignal,
+  preferredCodec?: "opus" | "aac" | "save",
 ): Promise<PlaybackStream> {
   try {
     return fromSoundCloudStream(
@@ -122,7 +131,12 @@ async function resolveSoundCloud(
       `soundcloud resolution failed, searching youtube: ${String(soundCloudError)}`,
     );
     try {
-      return await resolveYoutubeStandIn(track, progressive, signal);
+      return await resolveYoutubeStandIn(
+        track,
+        progressive,
+        signal,
+        preferredCodec,
+      );
     } catch (standInError) {
       if (isAbortError(standInError, signal)) throw standInError;
       throw soundCloudError;
@@ -135,6 +149,7 @@ async function resolveYoutubeTrack(
   rowVideoId: string,
   progressive: boolean,
   signal?: AbortSignal,
+  preferredCodec?: "opus" | "aac" | "save",
 ): Promise<PlaybackStream> {
   const songId = track.audioVariant
     ? await findExactSongVersion(track, rowVideoId, signal)
@@ -151,7 +166,7 @@ async function resolveYoutubeTrack(
     log("cyan", "playback", `resolved liner audio (r2) for "${track.title}"`);
     return fromLinerStream(liner, track);
   }
-  return resolveYoutubeAudio(videoId, progressive, signal);
+  return resolveYoutubeAudio(videoId, progressive, signal, preferredCodec);
 }
 
 export async function resolvePlaybackStream(
@@ -191,11 +206,27 @@ async function resolveStream(
   if (isOfflineMode()) throw new Error(OFFLINE_UNAVAILABLE_MESSAGE);
   const resolve = (bounded: AbortSignal | undefined) => {
     if (toSoundCloudTrackId(track.id))
-      return resolveSoundCloud(track, progressive, bounded);
+      return resolveSoundCloud(
+        track,
+        progressive,
+        bounded,
+        options.preferredCodec,
+      );
     const videoId = toVideoId(track.id);
     if (videoId)
-      return resolveYoutubeTrack(track, videoId, progressive, bounded);
-    return resolveYoutubeStandIn(track, progressive, bounded);
+      return resolveYoutubeTrack(
+        track,
+        videoId,
+        progressive,
+        bounded,
+        options.preferredCodec,
+      );
+    return resolveYoutubeStandIn(
+      track,
+      progressive,
+      bounded,
+      options.preferredCodec,
+    );
   };
   return progressive ? withResolveTimeout(signal, resolve) : resolve(signal);
 }

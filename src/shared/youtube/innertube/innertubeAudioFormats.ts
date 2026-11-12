@@ -20,6 +20,7 @@ export interface ResolvedAudioStream {
 }
 
 const PREFERRED_ITAGS = [251, 140, 250, 249, 139];
+const SAVE_ITAGS = [250, 249, 251, 139, 140];
 
 function toAudioFormat(raw: unknown): AudioFormat | null {
   const format = asRecord(raw);
@@ -63,11 +64,15 @@ export function extractAudioFormats(playerResponse: unknown): AudioFormat[] {
 
 export function selectBestAudioFormat(
   formats: AudioFormat[],
-  preferredCodec?: "opus" | "aac",
+  preferredCodec?: "opus" | "aac" | "save",
 ): AudioFormat | null {
   if (formats.length === 0) return null;
   const order =
-    preferredCodec === "aac" ? [140, 139, 251, 250, 249] : PREFERRED_ITAGS;
+    preferredCodec === "save"
+      ? SAVE_ITAGS
+      : preferredCodec === "aac"
+        ? [140, 139, 251, 250, 249]
+        : PREFERRED_ITAGS;
   for (const itag of order) {
     const match = formats.find((format) => format.itag === itag);
     if (match) return match;
