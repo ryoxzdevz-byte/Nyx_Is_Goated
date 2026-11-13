@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Refresh1Line } from "@mingcute/react";
+import { Delete2Line, Refresh1Line } from "@mingcute/react";
 import { useTranslation, getTranslationsForAllLocales } from "@/languages";
 import logo from "@/assets/logo.svg";
 import { AboutTabLinks } from "./AboutTabLinks";
@@ -24,6 +24,7 @@ export function AboutTab({ searchQuery }: { searchQuery?: string }) {
       "settings.about.tagline",
       "settings.about.updates_title",
       "settings.about.build_info",
+      "settings.about.delete_nyx",
     ];
     return searchableKeys.some((k) =>
       getTranslationsForAllLocales(k).some((txt) =>
@@ -31,6 +32,11 @@ export function AboutTab({ searchQuery }: { searchQuery?: string }) {
       ),
     );
   }, [searchQuery]);
+
+  const handleDeleteNyx = async () => {
+    if (!window.confirm(t("settings.about.delete_nyx_confirm"))) return;
+    await window.linerElectron?.openUninstall?.();
+  };
 
   if (!isMatch) return null;
 
@@ -81,6 +87,16 @@ export function AboutTab({ searchQuery }: { searchQuery?: string }) {
         <div className="mt-[18px]">
           <AboutTabLinks />
         </div>
+        {window.linerElectron?.openUninstall ? (
+          <button
+            type="button"
+            onClick={handleDeleteNyx}
+            className="mt-[10px] flex h-[38px] items-center gap-[8px] rounded-item border-0 bg-transparent px-[14px] text-label font-[500] text-red-400 transition-colors hover:bg-red-500/10 hover:text-red-300"
+          >
+            <Delete2Line size={17} />
+            {t("settings.about.delete_nyx")}
+          </button>
+        ) : null}
       </div>
     </div>
   );

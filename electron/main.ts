@@ -1076,6 +1076,41 @@ if (!gotTheLock) {
       }
     });
 
+    handleTrusted("app:open-uninstall", async () => {
+      try {
+        if (process.platform === "win32") {
+          const uninstaller = path.join(
+            path.dirname(process.execPath),
+            "Uninstall Nyx.exe",
+          );
+          if (fs.existsSync(uninstaller)) {
+            return (await shell.openPath(uninstaller)) === "";
+          }
+          await shell.openExternal("ms-settings:installed-apps").catch(() =>
+            shell.openExternal("ms-settings:appsfeatures"),
+          );
+          return true;
+        }
+        if (process.platform === "darwin") {
+          const appBundle = process.execPath.replace(
+            /\.app\/Contents\/MacOS\/.*$/,
+            ".app",
+          );
+          if (appBundle !== process.execPath && fs.existsSync(appBundle)) {
+            shell.showItemInFolder(appBundle);
+          } else {
+            await shell.openExternal("x-apple.systempreferences:");
+          }
+          return true;
+        }
+        await shell.openPath(path.dirname(process.execPath)).catch(() => {});
+        return true;
+      } catch (error) {
+        console.warn("[app] open-uninstall failed", error);
+        return false;
+      }
+    });
+
     // locates provider path where cache is collected
     const getCacheDirectory = () => {
       const userData = app.getPath("userData");

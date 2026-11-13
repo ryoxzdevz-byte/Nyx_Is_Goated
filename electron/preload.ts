@@ -134,6 +134,7 @@ export interface LinerElectronApi {
   openDownloads: (customPath?: string) => Promise<boolean>;
   openExportFolder: (customPath?: string) => Promise<boolean>;
   openBluetoothSettings: () => Promise<boolean>;
+  openUninstall: () => Promise<boolean>;
   setAppIcon: (
     dataUrl: string,
     options?: { isDefault?: boolean },
@@ -337,6 +338,7 @@ const api: LinerElectronApi = {
   openExportFolder: () => ipcRenderer.invoke("shell:open-export-folder"),
   openBluetoothSettings: () =>
     ipcRenderer.invoke("shell:open-bluetooth-settings"),
+  openUninstall: () => ipcRenderer.invoke("app:open-uninstall"),
   setAppIcon: (dataUrl, options) =>
     ipcRenderer.invoke("app:set-icon", dataUrl, options),
   getAppVersion: () => ipcRenderer.invoke("app:get-version"),

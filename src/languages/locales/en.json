@@ -1127,7 +1127,9 @@
       "special_thanks": "Special Thanks",
       "special_thanks_desc": "@braccato/core, @kawarp/react, Solar Icons and MingCute Icons.",
       "license_notice": "Distributed under Liner Source-Available & Non-Commercial License.",
-      "docs": "Docs"
+      "docs": "Docs",
+      "delete_nyx": "Delete Nyx",
+      "delete_nyx_confirm": "Do you want to uninstall Nyx from this device?"
     },
     "connection": {
       "open_folder": "Open saved location"
