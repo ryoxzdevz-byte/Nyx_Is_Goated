@@ -22,7 +22,10 @@
   "include": [
     "src",
     "electron",
+    "server",
+    "capacitor.config.ts",
     "vite.config.ts",
+    "vite.web.config.ts",
     "vite.csp.ts",
     "vitest.config.ts"
   ],

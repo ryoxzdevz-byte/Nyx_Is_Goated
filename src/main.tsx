@@ -1,3 +1,4 @@
+import "./web/install";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { initGlobalErrorHandlers } from "@/shared/utils/globalErrorHandlers";

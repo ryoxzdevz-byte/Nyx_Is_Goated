@@ -7,6 +7,7 @@ import {
   LuPlus,
   LuTrash2,
   LuFolderPlus,
+  LuDownload,
 } from "react-icons/lu";
 import { ShareForwardLine } from "@mingcute/react";
 import type { DropdownMenuItem } from "@/shared/ui/DropdownMenu";
@@ -22,6 +23,13 @@ import { showToast } from "@/shared/ui";
 import { buildShareUrl } from "@/shared/utils/share";
 import { copyToClipboard } from "@/shared/utils/clipboard";
 import { isLocalTrackId } from "@/shared/media/local";
+import { isSavedTrack } from "@/shared/media/saved";
+import type { Track } from "@/shared/types";
+import { saveTrackToDevice } from "@/features/library/saved/engine/savedTrackFetcher";
+import {
+  resumeSavedTracks,
+  useSavedTracksStore,
+} from "@/features/library/saved/store/savedTracksStore";
 
 const CLOUD_ONLY_ITEMS = new Set([
   "start-radio",
@@ -72,6 +80,10 @@ export function useSongMenuItems(ctx: SongMenuContext): DropdownMenuItem[] {
   const toggleLike = useToggleTrackLike();
 
   const liked = useIsTrackLiked(id, { defer: true });
+  const savedRecords = useSavedTracksStore((state) => state.records);
+  const saved = id
+    ? isSavedTrack(id) || savedRecords.some((r) => r.trackId === id)
+    : false;
 
   const handleLike = useCallback(() => {
     if (!id) return;
@@ -84,6 +96,45 @@ export function useSongMenuItems(ctx: SongMenuContext): DropdownMenuItem[] {
       },
     );
   }, [id, toggleLike, title, artists, t]);
+
+  const handleDownload = useCallback(async () => {
+    if (!id) return;
+    const track: Track = {
+      id,
+      title,
+      artists,
+      coverUrl,
+      durationMs: durationMs ?? 0,
+      playCount: 0,
+    };
+    try {
+      const result = await saveTrackToDevice(
+        track,
+        AbortSignal.timeout(5 * 60_000),
+      );
+      if (result) {
+        await useSavedTracksStore.getState().reload();
+        resumeSavedTracks();
+      }
+      showToast(t("common.download"), result ? "checkmark" : "error", {
+        description: `${title} — ${artists}`,
+      });
+    } catch {
+      showToast(t("common.download"), "error", {
+        description: `${title} — ${artists}`,
+      });
+    }
+  }, [id, title, artists, coverUrl, durationMs, t]);
+
+  const handleRemoveDownload = useCallback(async () => {
+    if (!id || !window.linerElectron?.savedTracksRemove) return;
+    await window.linerElectron.savedTracksRemove([id]);
+    await useSavedTracksStore.getState().reload();
+    resumeSavedTracks();
+    showToast(t("common.remove"), "checkmark", {
+      description: `${title} — ${artists}`,
+    });
+  }, [id, title, artists, t]);
 
   const handleShare = useCallback(async () => {
     if (!id) return;
@@ -261,6 +312,25 @@ export function useSongMenuItems(ctx: SongMenuContext): DropdownMenuItem[] {
           ),
           onClick: handleLike,
         },
+        ...(typeof window !== "undefined" &&
+        window.linerElectron?.savedTracksList
+          ? [
+              saved
+                ? {
+                    id: "remove-download",
+                    label: t("common.remove"),
+                    icon: <LuTrash2 size={15} />,
+                    danger: true,
+                    onClick: handleRemoveDownload,
+                  }
+                : {
+                    id: "download-track",
+                    label: t("common.download"),
+                    icon: <LuDownload size={15} />,
+                    onClick: handleDownload,
+                  },
+            ]
+          : []),
         {
           id: "add-to-playlist",
           label: t("common.add_to_playlist"),
@@ -335,7 +405,10 @@ export function useSongMenuItems(ctx: SongMenuContext): DropdownMenuItem[] {
     playlistTitle,
     onRemoveFromQueue,
     liked,
+    saved,
     handleLike,
+    handleDownload,
+    handleRemoveDownload,
     handleShare,
     playlistsData,
     t,

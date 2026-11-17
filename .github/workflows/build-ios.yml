@@ -1,0 +1,62 @@
+name: Build Nyx iOS IPA
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "nyx-ios-*"
+
+jobs:
+  build-ipa:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build web app
+        env:
+          VITE_API_URL: ${{ secrets.NYX_API_URL }}
+          VITE_API_TOKEN: ${{ secrets.NYX_API_TOKEN }}
+        run: pnpm web:build
+
+      - name: Sync native project
+        env:
+          NYX_SERVER_URL: ${{ secrets.NYX_SERVER_URL }}
+        run: pnpm ios:sync
+
+      - name: Archive (unsigned, sideload-ready)
+        run: |
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/Nyx.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            archive
+
+      - name: Package IPA
+        run: |
+          mkdir -p "$RUNNER_TEMP/ipa/Payload"
+          cp -R "$RUNNER_TEMP/Nyx.xcarchive/Products/Applications/App.app" "$RUNNER_TEMP/ipa/Payload/"
+          cd "$RUNNER_TEMP/ipa"
+          zip -qry "$GITHUB_WORKSPACE/Nyx.ipa" Payload
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nyx-IPA
+          path: Nyx.ipa
+          if-no-files-found: error

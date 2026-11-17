@@ -20,12 +20,25 @@ export interface SavedTrackRecord extends SavedTrackMeta {
   byteSize: number;
   savedAt: number;
   lyrics?: SavedLyricsState;
+  localAudioUrl?: string;
+  localCoverUrl?: string;
 }
 
 export interface SavedTrackInput {
   meta: SavedTrackMeta;
   audio: Uint8Array;
   mimeType: string;
+  cover?: { data: Uint8Array; mimeType: string };
+  lyricsState?: SavedLyricsState;
+  lyrics?: unknown;
+}
+
+export interface SavedTrackDownloadInput {
+  meta: SavedTrackMeta;
+  url: string;
+  mimeType: string;
+  headers?: Record<string, string>;
+  contentLength?: number;
   cover?: { data: Uint8Array; mimeType: string };
   lyricsState?: SavedLyricsState;
   lyrics?: unknown;

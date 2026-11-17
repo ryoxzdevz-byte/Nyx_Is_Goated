@@ -133,7 +133,7 @@ export function FullscreenPlayer({
 
       <FullscreenFrameGlass />
 
-      <div className="absolute inset-1.5 z-10 flex">
+      <div className="nyx-fullscreen-body absolute inset-1.5 z-10 flex">
         <div className="flex-1 flex flex-col items-center justify-center gap-5">
           <PlayerUiElements
             onClose={onClose}
@@ -143,7 +143,7 @@ export function FullscreenPlayer({
 
         <div
           className={cn(
-            "h-full min-h-0 flex flex-col relative overflow-hidden",
+            "nyx-fullscreen-lyrics h-full min-h-0 flex flex-col relative overflow-hidden",
             isCompactLayout ? "grow-0 basis-0 px-0" : "grow basis-0 pl-2 pr-6",
           )}
         >

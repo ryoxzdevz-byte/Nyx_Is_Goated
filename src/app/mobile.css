@@ -1,0 +1,148 @@
+html.nyx-web,
+html.nyx-web body,
+html.nyx-web #root {
+  height: 100%;
+  background: var(--bg-canvas);
+}
+
+html.nyx-native body {
+  overscroll-behavior: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.nyx-mobile-tabbar {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  html.nyx-web body {
+    padding: 0 !important;
+  }
+
+  .app-frame-root {
+    padding: calc(env(safe-area-inset-top, 0px) + 4px) 4px
+      calc(env(safe-area-inset-bottom, 0px) + 4px) !important;
+    gap: 4px !important;
+    border-radius: 0 !important;
+    clip-path: none !important;
+  }
+
+  .nyx-header-container,
+  .nyx-sidebar,
+  [data-window-controls] {
+    display: none !important;
+  }
+
+  .app-frame-root main {
+    --page-inset-top: 0px !important;
+    --page-inset-bottom: 138px !important;
+    --floating-inset-bottom: 138px !important;
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .nyx-mobile-tabbar {
+    position: absolute;
+    z-index: 65;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: stretch;
+    justify-content: space-around;
+    height: calc(58px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--bg-overlay);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border-top: 1px solid var(--border-primary);
+    border-radius: 0 !important;
+  }
+
+  .nyx-mobile-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: 48px;
+    border: 0;
+    background: transparent;
+    color: var(--text-tertiary);
+    font-size: 10px;
+    font-weight: 500;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .nyx-mobile-tab--active {
+    color: var(--accent-primary);
+  }
+
+  .nyx-mini-player-container {
+    position: absolute;
+    z-index: 60;
+    left: 4px;
+    right: 4px;
+    bottom: calc(62px + env(safe-area-inset-bottom, 0px));
+    margin-top: 0 !important;
+  }
+
+  .nyx-mini-player-grid {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+  }
+
+  .nyx-mini-player-grid > :nth-child(n + 3) {
+    display: none !important;
+  }
+
+  .nyx-mini-player-grid > :first-child {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .nyx-right-drawer {
+    width: min(100vw, 440px) !important;
+    max-width: 100vw !important;
+  }
+
+  .nyx-search-popup {
+    left: 4px !important;
+    right: 4px !important;
+    top: env(safe-area-inset-top, 0px) !important;
+    padding-top: 4px !important;
+  }
+
+  .nyx-search-popup > div {
+    width: calc(100vw - 8px) !important;
+  }
+
+  .nyx-search-popup input {
+    font-size: 16px !important;
+  }
+
+  .nyx-fullscreen-body {
+    flex-direction: column !important;
+  }
+
+  .nyx-fullscreen-body > :first-child {
+    flex: 1 1 58% !important;
+    min-height: 0 !important;
+  }
+
+  .nyx-fullscreen-lyrics {
+    flex: 0 0 40% !important;
+    height: 40% !important;
+    padding: 0 8px !important;
+  }
+
+  .lyric-line {
+    cursor: default;
+  }
+
+  button,
+  [role="button"] {
+    touch-action: manipulation;
+  }
+}

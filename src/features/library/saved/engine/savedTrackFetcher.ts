@@ -18,9 +18,11 @@ const COVER_TIMEOUT_MS = 15_000;
 const LYRICS_TIMEOUT_MS = 30_000;
 
 interface FetchedAudio {
-  audio: Uint8Array;
+  audio?: Uint8Array;
+  download?: { url: string; headers?: Record<string, string> };
   mimeType: string;
   source: SavedAudioSource;
+  contentLength?: number;
 }
 
 export class LyricsRateLimited extends Error {}
@@ -42,15 +44,47 @@ async function fromAudioCache(trackId: string): Promise<FetchedAudio | null> {
   };
 }
 
+function downloadHeaders(stream: {
+  source?: string;
+}): Record<string, string> | undefined {
+  if (stream.source === "youtube" || stream.source === "youtube-tv")
+    return {
+      Origin: "https://www.youtube.com",
+      Referer: "https://www.youtube.com/",
+    };
+  if (stream.source === "soundcloud")
+    return { Referer: "https://soundcloud.com/" };
+  return undefined;
+}
+
 async function fromNetwork(
   track: Track,
   signal: AbortSignal,
+  nativeDownload: boolean,
 ): Promise<FetchedAudio> {
   const stream = await resolvePlaybackStream(track, signal, {
     progressive: false,
     preferredCodec: "save",
   });
   try {
+    const mimeType = stream.mimeType || stream.blob?.type || "audio/webm";
+    const source = stream.fromLiner ? "liner" : "network";
+    if (
+      nativeDownload &&
+      !stream.blob &&
+      !stream.completed &&
+      /^https?:\/\//.test(stream.url)
+    ) {
+      return {
+        download: {
+          url: stream.url,
+          headers: downloadHeaders(stream),
+        },
+        mimeType,
+        source,
+        contentLength: stream.contentLength,
+      };
+    }
     let audio: Uint8Array | null;
     if (stream.blob) audio = new Uint8Array(await stream.blob.arrayBuffer());
     else if (stream.completed)
@@ -62,11 +96,7 @@ async function fromNetwork(
       });
     if (!audio) throw new Error("download came back empty");
     assertAudio(audio);
-    return {
-      audio,
-      mimeType: stream.mimeType || stream.blob?.type || "audio/webm",
-      source: stream.fromLiner ? "liner" : "network",
-    };
+    return { audio, mimeType, source, contentLength: stream.contentLength };
   } finally {
     stream.release?.();
   }
@@ -137,15 +167,16 @@ export async function saveTrackToDevice(
 ): Promise<{ record: SavedTrackRecord; source: SavedAudioSource } | null> {
   const bridge = window.linerElectron;
   if (!bridge) return null;
+  const nativeDownload = typeof bridge.savedTracksDownload === "function";
   const fetched =
-    (await fromAudioCache(track.id)) ?? (await fromNetwork(track, signal));
+    (await fromAudioCache(track.id)) ??
+    (await fromNetwork(track, signal, nativeDownload));
   const [cover, lyrics] = await Promise.all([
     fetchCover(track.coverUrl),
     findLyrics(track).catch(() => null),
   ]);
-  const record = await bridge.savedTracksSave({
+  const common = {
     meta: trackToSavedMeta(track),
-    audio: fetched.audio,
     mimeType: fetched.mimeType,
     ...(cover ? { cover } : {}),
     ...(lyrics?.state === "found" && lyrics.candidate
@@ -153,7 +184,24 @@ export async function saveTrackToDevice(
       : lyrics?.state === "missing"
         ? { lyricsState: "missing" as const }
         : {}),
-  });
+  };
+  let record: SavedTrackRecord | null;
+  if (fetched.download && bridge.savedTracksDownload) {
+    record = await bridge.savedTracksDownload({
+      ...common,
+      url: fetched.download.url,
+      ...(fetched.download.headers
+        ? { headers: fetched.download.headers }
+        : {}),
+      ...(fetched.contentLength
+        ? { contentLength: fetched.contentLength }
+        : {}),
+    });
+  } else if (fetched.audio) {
+    record = await bridge.savedTracksSave({ ...common, audio: fetched.audio });
+  } else {
+    return null;
+  }
   if (!record) return null;
   if (fetched.source === "cache") await audioCache.deleteAudio(track.id);
   return { record, source: fetched.source };

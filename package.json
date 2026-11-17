@@ -1,6 +1,6 @@
 {
   "name": "nyx-client",
-  "version": "0.2.39",
+  "version": "0.2.40",
   "author": {
     "name": "Nyx local build"
   },
@@ -13,6 +13,13 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "web:dev": "vite --config vite.web.config.ts",
+    "web:build": "tsc -b && vite build --config vite.web.config.ts",
+    "api": "tsx server/index.ts",
+    "api:dev": "tsx watch server/index.ts",
+    "ios:add": "cap add ios",
+    "ios:sync": "cap sync ios",
+    "ios:open": "cap open ios",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "format": "prettier --write .",
@@ -106,6 +113,15 @@
   "dependencies": {
     "@braccato/core": "^1.16.13",
     "@braccato/parsers": "^0.4.0",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/clipboard": "^8.0.1",
+    "@capacitor/core": "^8.6.2",
+    "@capacitor/file-transfer": "^2.0.6",
+    "@capacitor/filesystem": "^8.1.5",
+    "@capacitor/network": "^8.0.1",
+    "@capacitor/preferences": "^8.0.1",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.4",
     "@fontsource-variable/geist-mono": "^5.3.0",
     "@fontsource-variable/inter": "^5.3.0",
     "@fontsource-variable/montserrat": "^5.3.0",
@@ -138,6 +154,8 @@
     "zustand": "^5.0.16"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.6.2",
+    "@capacitor/ios": "^8.6.2",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -151,6 +169,7 @@
     "prettier": "^3.9.10",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
+    "tsx": "^4.23.15",
     "typescript": "^5",
     "vite": "^8.3.5",
     "vite-plugin-electron": "^1.1.2",

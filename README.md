@@ -50,6 +50,34 @@ pnpm electron:build:linux  # Linux AppImage/deb
 
 Built artifacts are placed in `release/` (not committed).
 
+## Web + iOS (iPhone)
+
+The desktop app is Electron-only. A separate web/iOS target reuses the same React UI, with a small Node server replacing the Electron bridge (request signing, auth refresh, cover signing) and a Capacitor shell producing a sideloadable IPA.
+
+### Deploy the server
+
+```bash
+pnpm web:build
+pnpm api
+```
+
+The server listens on `PORT` (default `8787`), serves `dist/`, exposes `/api/liner/*` (signed Liner proxy), `/api/bridge/*` (signing/auth) and `/api/health`. Put it behind an HTTPS reverse proxy and point your domain at it (`docker build -t nyx-api . && docker run -p 8787:8787 -e NYX_API_TOKEN=... nyx-api` is also supported). Set `NYX_API_TOKEN` to require the `x-nyx-token` header, and `LINER_API_ORIGIN` to override the upstream API.
+
+For local testing: `pnpm web:dev` in one terminal and `pnpm api:dev` in another, then open `http://localhost:8787` (or `http://<PC-IP>:8787` on the iPhone).
+
+### Build the IPA
+
+1. Set GitHub repository secrets: `NYX_SERVER_URL` (public HTTPS URL of the deployed web app), `NYX_API_URL` (e.g. `https://your-domain/api/liner`) and `NYX_API_TOKEN` (if you enabled it).
+2. Run **Actions > Build Nyx iOS IPA > Run workflow**, or push a tag like `nyx-ios-1.0`.
+3. Download the `Nyx-IPA` artifact.
+4. Sideload `Nyx.ipa` with AltStore, Sideloadly or a similar tool using your Apple ID. With a free Apple ID you must re-sign/reinstall about every 7 days. On the iPhone go to Settings > General > VPN & Device Management and trust your certificate before opening the app.
+
+To build locally, macOS/Xcode is required: `NYX_SERVER_URL=... pnpm web:build && NYX_SERVER_URL=... pnpm ios:sync && pnpm ios:open`.
+
+### Feature notes
+
+Core browsing, search, streaming, lyrics, queue and settings work in the web/iOS target. Offline downloads are available in the native iOS build: downloaded audio, covers and lyrics are stored in the app's private Library and remain playable offline. Downloads use best-effort direct streams (Liner/R2, SoundCloud and direct YouTube); bot-checked or fragmented YouTube streams may still fail. Local file import, the floating overlay, Touch Bar, Discord Rich Presence, window controls and YouTube TV/PoToken account playback remain desktop-only. Plain browser web builds do not support offline downloads.
+
 ## Notes
 
 - This is a private, personal, local build. Follow the repository `LICENSE`.

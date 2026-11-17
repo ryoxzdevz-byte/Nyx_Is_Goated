@@ -56,3 +56,7 @@ scratch/
 # native add-on build output
 /native/*/build/
 /native-build.log
+
+# capacitor generated web assets
+/ios/App/App/public
+/ios/App/App/capacitor.config.json

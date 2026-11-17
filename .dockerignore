@@ -1,0 +1,13 @@
+node_modules
+dist
+dist-electron
+release
+build
+ios
+native
+.git
+.github
+*.log
+.env
+.env.*
+!.env.example

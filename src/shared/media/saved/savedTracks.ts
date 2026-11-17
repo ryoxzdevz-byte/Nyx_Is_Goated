@@ -7,9 +7,11 @@ import type { Track } from "@/shared/types";
 export type {
   SavedLibraryUsage,
   SavedLyricsState,
+  SavedTrackDownloadInput,
   SavedTrackInput,
   SavedTrackMeta,
   SavedTrackRecord,
+  SavedTracksPartUsage,
 } from "../../../../electron/saved-tracks/types";
 
 let byTrackId = new Map<string, SavedTrackRecord>();
@@ -29,11 +31,11 @@ export function isSavedTrack(trackId: string | null | undefined): boolean {
 }
 
 export function savedAudioUrl(record: SavedTrackRecord): string {
-  return `liner-local://saved-audio/${record.key}`;
+  return record.localAudioUrl ?? `liner-local://saved-audio/${record.key}`;
 }
 
 export function savedCoverUrl(record: SavedTrackRecord): string {
-  return `liner-local://saved-cover/${record.key}`;
+  return record.localCoverUrl ?? `liner-local://saved-cover/${record.key}`;
 }
 
 export function trackToSavedMeta(track: Track): SavedTrackMeta {

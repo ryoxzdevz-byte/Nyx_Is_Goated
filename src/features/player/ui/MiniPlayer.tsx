@@ -671,7 +671,7 @@ function MiniPlayer({
           />
         </div>
         <div
-          className={`relative grid h-full pointer-events-none ${
+          className={`nyx-mini-player-grid relative grid h-full pointer-events-none ${
             embedded
               ? "grid-cols-[280px_minmax(0,1fr)_260px] pb-[6px]"
               : "grid-cols-[286px_minmax(0,1fr)]"

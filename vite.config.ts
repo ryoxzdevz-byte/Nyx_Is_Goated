@@ -22,6 +22,7 @@ export default defineConfig(({ command, mode }) => {
   return {
     define: {
       __APP_VERSION__: JSON.stringify(pkg.version),
+      __NYX_WEB__: false,
     },
     plugins: [
       react(),

@@ -9,7 +9,9 @@ export {
   trackToSavedMeta,
   type SavedLibraryUsage,
   type SavedLyricsState,
+  type SavedTrackDownloadInput,
   type SavedTrackInput,
   type SavedTrackMeta,
   type SavedTrackRecord,
+  type SavedTracksPartUsage,
 } from "./savedTracks";

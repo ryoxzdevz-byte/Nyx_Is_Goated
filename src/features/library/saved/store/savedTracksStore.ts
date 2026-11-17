@@ -62,6 +62,7 @@ interface SavedTracksState {
   limitBytes: number;
   status: SyncStatus;
   load: () => Promise<void>;
+  reload: () => Promise<void>;
   setEnabled: (enabled: boolean) => void;
   setSignOutChoice: (choice: SignOutChoice) => void;
   answerSignOut: (keep: boolean, remember: boolean) => void;
@@ -223,9 +224,17 @@ export const useSavedTracksStore = create<SavedTracksState>((set, get) => ({
     }
     if (get().loadState === "loading" || get().loadState === "ready") return;
     set({ loadState: "loading" });
+    await get().reload();
+  },
+
+  reload: async () => {
+    const bridge = window.linerElectron;
+    if (!bridge?.savedTracksList) {
+      set({ loadState: "unavailable" });
+      return;
+    }
     try {
-      const records = await bridge.savedTracksList();
-      sync.setRecords(records);
+      sync.setRecords(await bridge.savedTracksList());
       set({ loadState: "ready" });
     } catch {
       set({ loadState: "ready" });

@@ -24,6 +24,7 @@ import {
   HeroSubtitle,
   HERO_TITLE_CLASS,
   ListPanel,
+  ToggleSwitch,
 } from "@/shared/ui";
 import Button from "@/shared/ui/Button";
 import {
@@ -35,6 +36,7 @@ import { TrackSortMenu, useTrackSort } from "../../ui/TrackSort";
 import { useLikesCover } from "../../hooks/useLikesCover";
 import { formatTrackDuration } from "../../local/lib/formatLocalDurations";
 import { useSavedTracks } from "../hooks/useSavedTracks";
+import { useSavedTracksStore } from "../store/savedTracksStore";
 
 const PAGE_KEY = "saved-likes";
 const ROW_HEIGHT = 64;
@@ -288,16 +290,35 @@ export default function SavedLikesPage() {
   const { t } = useTranslation();
   const likesCover = useLikesCover();
   const { tracks, isLoading } = useSavedTracks();
+  const autoSave = useSavedTracksStore((state) => state.enabled);
+  const setAutoSave = useSavedTracksStore((state) => state.setEnabled);
   return (
-    <SavedTracksView
-      pageKey={PAGE_KEY}
-      title={t("library.liked_songs")}
-      subtitle={t("library.saved.subtitle")}
-      cover={likesCover}
-      tracks={tracks}
-      isLoading={isLoading}
-      emptyTitle={t("library.saved.empty_title")}
-      emptySubtitle={t("library.saved.empty_subtitle")}
-    />
+    <>
+      <div className="mx-4 mt-4 flex items-center justify-between rounded-control bg-fill px-4 py-3">
+        <div>
+          <div className="text-sm font-medium text-text">
+            {t("settings.storage.liked_toggle")}
+          </div>
+          <div className="text-xs text-text-secondary">
+            {t("settings.storage.liked_desc", { songs: tracks.length })}
+          </div>
+        </div>
+        <ToggleSwitch
+          checked={autoSave}
+          onChange={setAutoSave}
+          ariaLabel={t("settings.storage.liked_toggle")}
+        />
+      </div>
+      <SavedTracksView
+        pageKey={PAGE_KEY}
+        title={t("library.liked_songs")}
+        subtitle={t("library.saved.subtitle")}
+        cover={likesCover}
+        tracks={tracks}
+        isLoading={isLoading}
+        emptyTitle={t("library.saved.empty_title")}
+        emptySubtitle={t("library.saved.empty_subtitle")}
+      />
+    </>
   );
 }

@@ -19,8 +19,13 @@ export function resolveApiBaseUrl(envUrl: string | undefined): string {
   return clean && isSecureBaseUrl(clean) ? clean : DEFAULT_PRIMARY_API;
 }
 
+const injectedBaseUrl =
+  typeof window !== "undefined"
+    ? (window as Window & { __NYX_API_BASE__?: string }).__NYX_API_BASE__
+    : undefined;
+
 const baseUrl = resolveApiBaseUrl(
-  import.meta.env.VITE_API_URL as string | undefined,
+  injectedBaseUrl || (import.meta.env.VITE_API_URL as string | undefined),
 );
 
 export function getApiBaseUrl(): string {

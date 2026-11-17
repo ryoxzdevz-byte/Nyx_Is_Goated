@@ -27,6 +27,7 @@ import Header from "./Header";
 import Sidebar from "./Sidebar";
 import { cn } from "@/shared/lib";
 import WindowControlsNotch from "./WindowControlsNotch";
+import MobileTabBar from "./MobileTabBar";
 import RightDrawer from "./RightDrawer";
 import { FullscreenRouteContext } from "../fullscreenRouteContext";
 import DynamicBlurBackground from "./DynamicBlurBackground";
@@ -768,7 +769,7 @@ export default function AppFrame({ children }: AppFrameProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.22, ease: "easeOut" }}
-            className="absolute inset-x-1.5 top-1.5 z-[45]"
+            className="nyx-header-container absolute inset-x-1.5 top-1.5 z-[45]"
           >
             <Header
               searchOpen={searchOpen}
@@ -786,7 +787,7 @@ export default function AppFrame({ children }: AppFrameProps) {
       >
         <aside
           ref={sidebarRef}
-          className="w-[58px] mt-[56px] shrink-0 z-[45] relative flex flex-col"
+          className="nyx-sidebar w-[58px] mt-[56px] shrink-0 z-[45] relative flex flex-col"
         >
           <Sidebar
             searchOpen={searchOpen}
@@ -839,7 +840,7 @@ export default function AppFrame({ children }: AppFrameProps) {
                       damping: 40,
                       mass: 0.8,
                     }}
-                    className="pointer-events-auto absolute top-(--page-inset-top) bottom-(--floating-inset-bottom) right-0 z-[50]"
+                    className="nyx-right-drawer pointer-events-auto absolute top-(--page-inset-top) bottom-(--floating-inset-bottom) right-0 z-[50]"
                     style={{ width: RIGHT_DRAWER_WIDTH }}
                   >
                     <RightDrawer onClose={closeRightPanel} />
@@ -854,7 +855,7 @@ export default function AppFrame({ children }: AppFrameProps) {
               ref={miniPlayerContainerRef}
               // Above the right drawer (z-50) so the player's volume/speed/queue
               // popups, which live in this stacking context, aren't hidden by it.
-              className={`relative z-[55] w-full shrink-0 ${hasPageBackdrop ? "-mt-[70px]" : ""}`}
+              className={`nyx-mini-player-container relative z-[55] w-full shrink-0 ${hasPageBackdrop ? "-mt-[70px]" : ""}`}
             >
               <MiniPlayer
                 embedded
@@ -924,7 +925,7 @@ export default function AppFrame({ children }: AppFrameProps) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -12, scale: 0.99 }}
             transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-            className={`absolute right-0 z-[60] flex flex-col items-center pointer-events-none pt-[54px]`}
+            className={`nyx-search-popup absolute right-0 z-[60] flex flex-col items-center pointer-events-none pt-[54px]`}
             style={{
               left: SIDEBAR_WIDTH + SHELL_EDGE_GAP,
               right: SHELL_EDGE_GAP,
@@ -1131,6 +1132,7 @@ export default function AppFrame({ children }: AppFrameProps) {
         )}
       </AnimatePresence>
 
+      <MobileTabBar />
       <AppOverlays />
       {isFullscreenPlayer && (
         <div

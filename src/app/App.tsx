@@ -22,6 +22,7 @@ import EnvironmentWarning from "./EnvironmentWarning";
 import { ConnectionIssueModal } from "@/features/connectivity";
 import { useThemeCustomizationSync } from "@/features/settings";
 import "./globals.css";
+import "./mobile.css";
 
 function AppIconSync() {
   useAppIconSync();

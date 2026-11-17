@@ -16,6 +16,7 @@ import type {
 import type {
   SavedLibraryUsage,
   SavedLyricsState,
+  SavedTrackDownloadInput,
   SavedTrackInput,
   SavedTrackRecord,
   SavedTracksPartUsage,
@@ -232,6 +233,9 @@ export interface LinerElectronApi {
   localTracksUsage: () => Promise<LocalLibraryUsage>;
   savedTracksList: () => Promise<SavedTrackRecord[]>;
   savedTracksSave: (input: SavedTrackInput) => Promise<SavedTrackRecord | null>;
+  savedTracksDownload?: (
+    input: SavedTrackDownloadInput,
+  ) => Promise<SavedTrackRecord | null>;
   savedTracksRemove: (trackIds: string[]) => Promise<number>;
   savedTracksRemoveAll: () => Promise<number>;
   savedTracksUsage: () => Promise<SavedLibraryUsage>;
