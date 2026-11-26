@@ -65,6 +65,7 @@ export interface OverlaySettings {
 
 interface ForegroundState {
   external: boolean;
+  desktop?: boolean;
   fullscreen: boolean;
   maximized?: boolean;
 }
@@ -459,7 +460,7 @@ export class OverlayManager {
   private shouldSuppressForForeground(): boolean {
     if (!this.hideOverFullscreen && !this.hideOverWindowed) return false;
     const state = this.foregroundProvider?.();
-    if (!state || !state.external) return false;
+    if (!state || !state.external || state.desktop) return false;
     return state.fullscreen ? this.hideOverFullscreen : this.hideOverWindowed;
   }
 

@@ -436,6 +436,43 @@ describe("OverlayManager", () => {
     expect(manager.willShowOnMinimize()).toBe(true);
   });
 
+  it("keeps the overlay visible when the desktop is the foreground window", async () => {
+    const { manager, overlays, ready } = setup();
+    await vi.advanceTimersByTimeAsync(600);
+    const [overlay] = overlays();
+    ready(overlay);
+    await vi.advanceTimersByTimeAsync(200);
+
+    electron.ipcOn.get("overlay:update-settings")?.(
+      {},
+      {
+        hideOverWindowed: true,
+      },
+    );
+    manager.setForegroundStateProvider(() => ({
+      external: false,
+      desktop: true,
+      fullscreen: false,
+      maximized: false,
+    }));
+    electron.ipcOn.get("overlay:update-state")!(
+      {},
+      { status: "playing", track: { id: "t1", title: "Song" } },
+    );
+    manager.showOverlay();
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(overlay.isVisible()).toBe(true);
+
+    manager.setForegroundStateProvider(() => ({
+      external: true,
+      desktop: false,
+      fullscreen: false,
+      maximized: false,
+    }));
+    await vi.advanceTimersByTimeAsync(1_100);
+    expect(overlay.isVisible()).toBe(false);
+  });
+
   it("opens again once a track is loaded", async () => {
     const { manager, overlays, ready } = setup();
     await vi.advanceTimersByTimeAsync(600);

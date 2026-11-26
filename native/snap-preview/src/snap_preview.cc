@@ -757,6 +757,16 @@ napi_value JsWindowRect(napi_env env, napi_callback_info info) {
                            static_cast<double>(r.bottom)});
 }
 
+static bool IsDesktopWindow(HWND hwnd) {
+  if (!hwnd) return false;
+  HWND shell = GetShellWindow();
+  if (shell && hwnd == shell) return true;
+  wchar_t cls[64] = {};
+  if (!GetClassNameW(hwnd, cls, ARRAYSIZE(cls))) return false;
+  return wcscmp(cls, L"Progman") == 0 || wcscmp(cls, L"WorkerW") == 0 ||
+         wcscmp(cls, L"Shell_TrayWnd") == 0;
+}
+
 napi_value JsForegroundState(napi_env env, napi_callback_info info) {
   napi_value argv[2];
   size_t argc;
@@ -766,7 +776,8 @@ napi_value JsForegroundState(napi_env env, napi_callback_info info) {
     if (argc >= 2) own2 = HwndFrom(env, argv[1]);
   }
   HWND fg = GetForegroundWindow();
-  bool external = fg && fg != own1 && fg != own2;
+  bool desktop = IsDesktopWindow(fg);
+  bool external = fg && !desktop && fg != own1 && fg != own2;
   bool fullscreen = false;
   bool maximized = false;
   if (fg) {
@@ -787,6 +798,7 @@ napi_value JsForegroundState(napi_env env, napi_callback_info info) {
   }
   napi_value obj;
   napi_create_object(env, &obj);
+  napi_set_named_property(env, obj, "desktop", Bool(env, desktop));
   napi_set_named_property(env, obj, "external", Bool(env, external));
   napi_set_named_property(env, obj, "fullscreen", Bool(env, fullscreen));
   napi_set_named_property(env, obj, "maximized", Bool(env, maximized));

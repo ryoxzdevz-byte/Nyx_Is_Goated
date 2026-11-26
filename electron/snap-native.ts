@@ -44,7 +44,14 @@ interface SnapPreviewAddon {
   foregroundState?(
     ownA?: Buffer | null,
     ownB?: Buffer | null,
-  ): { external: boolean; fullscreen: boolean; maximized: boolean } | undefined;
+  ):
+    | {
+        external: boolean;
+        desktop: boolean;
+        fullscreen: boolean;
+        maximized: boolean;
+      }
+    | undefined;
   transform(
     from: Edges,
     to: Edges,
