@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api, mediaUrl, toClientTrack } from "@/shared/api";
 import { queryCache } from "@/shared/cache/queryCache";
 import type { Track } from "@/shared/types";
+import type { Track as ApiTrack } from "@/shared/contracts";
 import { YOUTUBE_THUMBNAIL_HOST } from "@/shared/youtube";
 import { getDailyMixArtists } from "@/features/home/hooks/useDailyMixes";
 
@@ -14,6 +15,7 @@ export interface CollectionPageData {
   year?: number;
   coverUrl: string;
   tracks: Track[];
+  sourceTracks?: ApiTrack[];
   isDailyMix?: boolean;
 }
 
@@ -121,6 +123,9 @@ async function loadCollection(
     year: collection.year,
     coverUrl: collectionCoverUrl,
     tracks,
+    ...(collection.type === "album"
+      ? { sourceTracks: (collection.tracks ?? []) as ApiTrack[] }
+      : {}),
   };
   return formatted;
 }

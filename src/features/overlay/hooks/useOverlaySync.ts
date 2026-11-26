@@ -40,6 +40,7 @@ export function useOverlaySync() {
   const toggleLike = useToggleTrackLike();
   const sentPositionRef = useRef<SentPosition | null>(null);
   const lastUnmutedLevelRef = useRef(DEFAULT_UNMUTE_LEVEL);
+  const mainWindowVisibleRef = useRef(true);
   const [seekTick, setSeekTick] = useState(0);
 
   // Sync auth status to Electron overlay manager
@@ -49,6 +50,27 @@ export function useOverlaySync() {
       window.linerElectron?.closeOverlay?.();
     }
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    const hasElectronState = Boolean(window.linerElectron?.onWindowStateChange);
+    const syncVisibility = (visible?: boolean) => {
+      mainWindowVisibleRef.current =
+        visible ?? document.visibilityState !== "hidden";
+    };
+    syncVisibility();
+    const unsubscribe = window.linerElectron?.onWindowStateChange?.((state) => {
+      syncVisibility(state.isVisible);
+    });
+    const onVisibilityChange = () => {
+      if (!hasElectronState)
+        syncVisibility(document.visibilityState !== "hidden");
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      unsubscribe?.();
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, []);
 
   // Sync settings on mount
   useEffect(() => {
@@ -133,27 +155,27 @@ export function useOverlaySync() {
             }
             break;
           }
-            case "like":
-              if (currentTrack) {
-                const fromGlobal = Boolean(
-                  (action.payload as any)?.fromGlobalShortcut ||
-                  (action as any).fromGlobalShortcut,
+          case "like":
+            if (currentTrack) {
+              const fromGlobal = Boolean(
+                (action.payload as any)?.fromGlobalShortcut ||
+                (action as any).fromGlobalShortcut,
+              );
+              const liked = toggleLike(currentTrack.id);
+              if (fromGlobal) {
+                showToast(
+                  currentTrack.title || "Song",
+                  liked ? "checkmark" : "info",
+                  {
+                    id: `like-toast-${currentTrack.id}`,
+                    description: liked
+                      ? "Added to favorites"
+                      : "Removed from favorites",
+                  },
                 );
-                const liked = toggleLike(currentTrack.id);
-                if (fromGlobal) {
-                  showToast(
-                    currentTrack.title || "Song",
-                    liked ? "checkmark" : "info",
-                    {
-                      id: `like-toast-${currentTrack.id}`,
-                      description: liked
-                        ? "Added to favorites"
-                        : "Removed from favorites",
-                    },
-                  );
-                }
               }
-              break;
+            }
+            break;
           case "volumeUp":
           case "volumeDown": {
             const current = usePlayerStore.getState().volume;
@@ -254,6 +276,9 @@ export function useOverlaySync() {
       playing: status === "playing",
     };
     window.linerElectron.overlayUpdateState(payload);
+    if (status === "paused" && currentTrack && !mainWindowVisibleRef.current) {
+      window.linerElectron?.showOverlay?.();
+    }
   }, [
     isAuthenticated,
     status,

@@ -11,6 +11,7 @@ const MAX_ARTISTS = 4;
 const MAX_RELEASES = 6;
 const MAX_RELEASES_PER_ARTIST = 2;
 const MAX_TRACKS_PER_RELEASE = 8;
+const RECENT_RELEASE_WINDOW_MS = 2 * 365 * 24 * 60 * 60 * 1000;
 
 const EMPTY_ITEMS: PopularItem[] = [];
 const LATEST_POLICY = {
@@ -71,7 +72,12 @@ export function rankArtists(
       ? track.artistList
       : [{ id: track.artistId, name: track.artists }];
     artists.forEach((artist, index) => {
-      addArtist(scores, artist.id, artist.name, weight * (index === 0 ? 1 : 0.6));
+      addArtist(
+        scores,
+        artist.id,
+        artist.name,
+        weight * (index === 0 ? 1 : 0.6),
+      );
     });
   }
 
@@ -91,13 +97,18 @@ function releaseYear(value?: number): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
 
+function yearToDate(year: number): number {
+  return year > 0 && Number.isFinite(year) ? Date.UTC(year, 0, 1) : 0;
+}
+
 function trackReleaseDate(track: ApiTrack): number {
-  const raw = track as ApiTrack & {
-    releaseDate?: string;
-    addedAt?: string;
-  };
-  const value = raw.releaseDate ?? raw.addedAt;
+  const raw = track as ApiTrack & { releaseDate?: string; year?: number };
+  const yearDate = yearToDate(raw.year ?? 0);
+  if (yearDate) return yearDate;
+  const value = raw.releaseDate?.trim();
   if (!value) return 0;
+  const yearOnly = /^(\d{4})$/.exec(value);
+  if (yearOnly) return yearToDate(Number(yearOnly[1]));
   const parsed = Date.parse(value);
   return Number.isFinite(parsed) ? parsed : 0;
 }
@@ -115,7 +126,8 @@ async function loadHistory(): Promise<{
     api.listLikedTracks(LIKED_LIMIT),
   ]);
 
-  const historyItems = history.status === "fulfilled" ? history.value.items ?? [] : [];
+  const historyItems =
+    history.status === "fulfilled" ? (history.value.items ?? []) : [];
   const seed = historyItems
     .map((entry) => toClientTrack(entry.track))
     .find((track) => track.id);
@@ -162,16 +174,12 @@ export async function loadLatestForYou(limit = 20): Promise<PopularItem[]> {
   const topIds = new Set(topArtists.map((artist) => artist.id));
   const [topDetails, similarArtists] = await Promise.all([
     Promise.all(
-      topArtists.map((artist) =>
-        api.getArtist(artist.id).catch(() => null),
-      ),
+      topArtists.map((artist) => api.getArtist(artist.id).catch(() => null)),
     ),
     findSimilarArtists(seedTrackId, topIds),
   ]);
   const similarDetails = await Promise.all(
-    similarArtists.map((artist) =>
-      api.getArtist(artist.id).catch(() => null),
-    ),
+    similarArtists.map((artist) => api.getArtist(artist.id).catch(() => null)),
   );
   const details = [...topDetails, ...similarDetails];
 
@@ -183,7 +191,6 @@ export async function loadLatestForYou(limit = 20): Promise<PopularItem[]> {
   };
 
   const candidates: Candidate[] = [];
-  const fallback: Candidate[] = [];
   const releasesToLoad: {
     id: string;
     artistRank: number;
@@ -200,20 +207,13 @@ export async function loadLatestForYou(limit = 20): Promise<PopularItem[]> {
       .filter((entry) => entry.date > 0)
       .sort((a, b) => b.date - a.date);
 
-    if (datedTracks.length >= 3) {
-      for (const entry of datedTracks.slice(0, MAX_RELEASES_PER_ARTIST * 3)) {
-        candidates.push({
-          track: entry.track,
-          artistRank,
-          date: entry.date,
-          releaseYear: new Date(entry.date).getFullYear(),
-        });
-      }
-      return;
-    }
-
-    for (const track of rawTracks.slice(0, 2)) {
-      fallback.push({ track, artistRank, date: 0, releaseYear: 0 });
+    for (const entry of datedTracks.slice(0, MAX_RELEASES_PER_ARTIST * 3)) {
+      candidates.push({
+        track: entry.track,
+        artistRank,
+        date: entry.date,
+        releaseYear: new Date(entry.date).getUTCFullYear(),
+      });
     }
 
     const releases = [...(detail.singles ?? []), ...(detail.albums ?? [])]
@@ -245,24 +245,23 @@ export async function loadLatestForYou(limit = 20): Promise<PopularItem[]> {
 
   for (const result of releaseResults) {
     if (!result) continue;
-    const albumDate = result.album.tracks
-      .map(trackReleaseDate)
-      .find((date) => date > 0);
+    const releaseDate = yearToDate(result.release.year);
     for (const track of result.album.tracks.slice(0, MAX_TRACKS_PER_RELEASE)) {
+      const trackDate = trackReleaseDate(track);
+      const date = Math.max(trackDate, releaseDate);
+      if (date <= 0) continue;
       candidates.push({
         track,
         artistRank: result.release.artistRank,
-        date: albumDate ?? 0,
-        releaseYear: result.release.year,
+        date,
+        releaseYear: date > 0 ? new Date(date).getUTCFullYear() : 0,
       });
     }
   }
 
-  if (candidates.length < limit) {
-    candidates.push(...fallback);
-  }
-
-  candidates.sort((a, b) => {
+  const cutoff = Date.now() - RECENT_RELEASE_WINDOW_MS;
+  const recent = candidates.filter((candidate) => candidate.date >= cutoff);
+  recent.sort((a, b) => {
     if (b.date !== a.date) return b.date - a.date;
     if (b.releaseYear !== a.releaseYear) {
       return b.releaseYear - a.releaseYear;
@@ -272,7 +271,7 @@ export async function loadLatestForYou(limit = 20): Promise<PopularItem[]> {
 
   const seenTracks = new Set<string>();
   const items: PopularItem[] = [];
-  for (const candidate of candidates) {
+  for (const candidate of recent) {
     if (!candidate.track?.id || seenTracks.has(candidate.track.id)) continue;
     seenTracks.add(candidate.track.id);
     items.push({
@@ -289,7 +288,7 @@ export async function loadLatestForYou(limit = 20): Promise<PopularItem[]> {
 export function useLatestForYou(limit = 20) {
   const owner = useSessionOwner();
   const { data, isLoading } = useCachedResource(
-    `home:latest-for-you:${owner}:${limit}`,
+    `home:latest-for-you:v2:${owner}:${limit}`,
     () => loadLatestForYou(limit),
     LATEST_POLICY,
   );

@@ -420,6 +420,22 @@ describe("OverlayManager", () => {
     expect(manager.willShowOnMinimize()).toBe(true);
   });
 
+  it("shows a paused track on an explicit renderer request", async () => {
+    const { manager, overlays, ready } = setup();
+    await vi.advanceTimersByTimeAsync(600);
+    const [overlay] = overlays();
+    ready(overlay);
+    await vi.advanceTimersByTimeAsync(200);
+    const update = electron.ipcOn.get("overlay:update-state")!;
+    update({}, { status: "paused", track: { id: "t1", title: "Song" } });
+
+    electron.ipcOn.get("overlay:show")!({}, undefined);
+    await vi.advanceTimersByTimeAsync(1_000);
+
+    expect(overlay.isVisible()).toBe(true);
+    expect(manager.willShowOnMinimize()).toBe(true);
+  });
+
   it("opens again once a track is loaded", async () => {
     const { manager, overlays, ready } = setup();
     await vi.advanceTimersByTimeAsync(600);

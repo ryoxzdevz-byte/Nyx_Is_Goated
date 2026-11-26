@@ -56,6 +56,7 @@ import { useTranslation } from "@/languages";
 import { useTheme } from "next-themes";
 import {
   AddToPlaylistModal,
+  AddAllToPlaylistModal,
   AddSongsToPlaylistModal,
   AddToLibraryModal,
   RemoveFromPlaylistModal,
@@ -94,6 +95,7 @@ const AppOverlays = memo(function AppOverlays() {
   return (
     <>
       <AddToPlaylistModal />
+      <AddAllToPlaylistModal />
       <AddSongsToPlaylistModal />
       <AddToLibraryModal />
       <RemoveFromPlaylistModal />

@@ -1,10 +1,11 @@
 import { getAuthSession, getValidAccessToken } from "../api/auth-session";
 import { getApiBaseUrl } from "../api/baseUrl";
+import { signApiRequest } from "../api/requestSigner";
 import { APP_VERSION } from "../config/version";
 
 const DEFAULT_INTERVAL_MS = 60_000;
 const MIN_INTERVAL_MS = 15_000;
-const MAX_INTERVAL_MS = 300_000;
+const MAX_INTERVAL_MS = 120_000;
 const MIN_GAP_MS = 10_000;
 const REQUEST_TIMEOUT_MS = 10_000;
 
@@ -83,36 +84,57 @@ export class PresenceClient {
       const accessToken = await getValidAccessToken();
       if (!accessToken || !this.isRunning) return;
 
-      const res = await fetch(`${getApiBaseUrl()}/v1/presence/heartbeat`, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          // no email: the bearer token already says who this is, the address has no reason to travel every minute
-          username: session.user?.username,
-          displayName: session.user?.displayName,
-          clientVersion: APP_VERSION,
-          platform: getPlatform(),
-        }),
-        keepalive: true,
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      const body = JSON.stringify({
+        username: session.user?.username,
+        displayName: session.user?.displayName,
+        clientVersion: APP_VERSION,
+        platform: getPlatform(),
       });
+      const signedHeaders = await signApiRequest(
+        "POST",
+        "/v1/presence/heartbeat",
+        body,
+      );
 
-      const suggested =
-        Number(res.headers.get("x-liner-heartbeat-interval")) * 1000;
-      if (
-        Number.isFinite(suggested) &&
-        suggested >= MIN_INTERVAL_MS &&
-        suggested <= MAX_INTERVAL_MS &&
-        suggested !== this.intervalMs
-      ) {
-        this.intervalMs = suggested;
-        if (this.isRunning) this.schedule();
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const res = await fetch(`${getApiBaseUrl()}/v1/presence/heartbeat`, {
+            method: "POST",
+            headers: {
+              "content-type": "application/json",
+              authorization: `Bearer ${accessToken}`,
+              ...signedHeaders,
+            },
+            body,
+            keepalive: true,
+            signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+          });
+
+          if (!res.ok && attempt === 0 && res.status >= 500) {
+            await new Promise((resolve) => setTimeout(resolve, 700));
+            continue;
+          }
+
+          const suggested =
+            Number(res.headers.get("x-liner-heartbeat-interval")) * 1000;
+          if (
+            Number.isFinite(suggested) &&
+            suggested >= MIN_INTERVAL_MS &&
+            suggested <= MAX_INTERVAL_MS &&
+            suggested !== this.intervalMs
+          ) {
+            this.intervalMs = suggested;
+            if (this.isRunning) this.schedule();
+          }
+          return;
+        } catch {
+          if (attempt === 0) {
+            await new Promise((resolve) => setTimeout(resolve, 700));
+          }
+        }
       }
     } catch {
-      // offline or server unreachable
+      this.lastBeatAt = 0;
     } finally {
       this.inFlight = false;
     }

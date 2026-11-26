@@ -1164,6 +1164,10 @@ class PlayerEngine {
     return [...usePlayerStore.getState().queue];
   }
 
+  public originalQueue(): Track[] {
+    return [...this.masterPlaylist];
+  }
+
   private stopPlayback(): void {
     if (playerRuntime) {
       playerRuntime.pause();

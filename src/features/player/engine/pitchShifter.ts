@@ -594,6 +594,21 @@ export class PitchShifterController {
     return this.isConnected;
   }
 
+  public setOutputDevice(deviceId: string): void {
+    const ctx = this.context as
+      | (AudioContext & {
+          setSinkId?: (id: string) => Promise<void>;
+          sinkId?: string;
+        })
+      | null;
+    if (!ctx || typeof ctx.setSinkId !== "function") return;
+    const target = deviceId || "default";
+    if ((ctx.sinkId || "default") === target) return;
+    try {
+      void ctx.setSinkId(target).catch(() => {});
+    } catch {}
+  }
+
   public resumeContext(): void {
     this.clearSuspendTimer();
     if (this.context && this.context.state === "suspended") {

@@ -19,17 +19,25 @@ describe("connectivityStore trip logic", () => {
     vi.useFakeTimers();
   });
 
-  it("trips the wall on 3 failures inside a minute", () => {
+  it("trips the wall on 3 distinct failures inside a minute", () => {
     const { recordFailure } = useConnectivityStore.getState();
-    recordFailure({ method: "GET", path: "/v1/me", latencyMs: 5 });
-    expect(useConnectivityStore.getState().tripped).toBe(false);
-    recordFailure({ method: "GET", path: "/v1/me", latencyMs: 5 });
-    expect(useConnectivityStore.getState().tripped).toBe(false);
-    recordFailure({ method: "GET", path: "/v1/me", latencyMs: 5 });
+    const paths = ["/v1/me", "/v1/library/tracks", "/v1/search"];
+    paths.forEach((path, index) => {
+      recordFailure({ method: "GET", path, latencyMs: 5 });
+      expect(useConnectivityStore.getState().tripped).toBe(index === 2);
+    });
     const state = useConnectivityStore.getState();
-    expect(state.tripped).toBe(true);
     expect(state.visible).toBe(true);
     expect(state.failures).toHaveLength(3);
+  });
+
+  it("does not count repeated failures for the same endpoint", () => {
+    const { recordFailure } = useConnectivityStore.getState();
+    for (let i = 0; i < 5; i++) {
+      recordFailure({ method: "GET", path: "/v1/me", latencyMs: 5 });
+    }
+    expect(useConnectivityStore.getState().failures).toHaveLength(1);
+    expect(useConnectivityStore.getState().tripped).toBe(false);
   });
 
   it("ignores track playback and lyrics failures without tripping", () => {
@@ -110,10 +118,10 @@ describe("connectivityStore hooks", () => {
   it("keeps the wall hidden when the trip handler takes over", async () => {
     const onTrip = vi.fn().mockResolvedValue("handled");
     setConnectivityHooks({ suppress: () => false, onTrip });
-    for (let i = 0; i < 3; i++)
+    for (const path of ["/v1/me", "/v1/library/tracks", "/v1/search"])
       useConnectivityStore
         .getState()
-        .recordFailure({ method: "GET", path: "/v1/me", latencyMs: 1 });
+        .recordFailure({ method: "GET", path, latencyMs: 1 });
     await vi.waitFor(() => expect(onTrip).toHaveBeenCalledTimes(1));
     await Promise.resolve();
     const state = useConnectivityStore.getState();
@@ -127,10 +135,10 @@ describe("connectivityStore hooks", () => {
       suppress: () => false,
       onTrip: vi.fn().mockResolvedValue("show"),
     });
-    for (let i = 0; i < 3; i++)
+    for (const path of ["/v1/me", "/v1/library/tracks", "/v1/search"])
       useConnectivityStore
         .getState()
-        .recordFailure({ method: "GET", path: "/v1/me", latencyMs: 1 });
+        .recordFailure({ method: "GET", path, latencyMs: 1 });
     await vi.waitFor(() =>
       expect(useConnectivityStore.getState().visible).toBe(true),
     );

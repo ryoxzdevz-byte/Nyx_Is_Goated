@@ -5,6 +5,7 @@ import { isPlaybackPath } from "../lib/failureKind";
 export const TRIP_COUNT = 3;
 export const TRIP_WINDOW_MS = 60_000;
 export const MAX_FAILURES = 20;
+export const FAILURE_DEDUPE_MS = 10_000;
 
 export type TripOutcome = "show" | "handled";
 
@@ -53,6 +54,14 @@ export const useConnectivityStore = create<ConnectivityState>((set, get) => ({
     if (isPlaybackPath(entry.path)) return;
     if (hooks?.suppress()) return;
     const at = Date.now();
+    const duplicate = get().failures.some(
+      (previous) =>
+        previous.path === entry.path &&
+        previous.method === entry.method &&
+        previous.status === entry.status &&
+        at - previous.at < FAILURE_DEDUPE_MS,
+    );
+    if (duplicate) return;
     const failures = [...get().failures, { ...entry, at }].slice(-MAX_FAILURES);
     const recent = failures.filter((f) => at - f.at <= TRIP_WINDOW_MS).length;
     if (recent >= TRIP_COUNT && hooks && !get().tripped) {

@@ -11,6 +11,7 @@ export {
 
 // Modals
 export { default as AddToPlaylistModal } from "./ui/modals/AddToPlaylistModal";
+export { default as AddAllToPlaylistModal } from "./ui/modals/AddAllToPlaylistModal";
 export { default as AddSongsToPlaylistModal } from "./ui/modals/AddSongsToPlaylistModal";
 export { default as AddToLibraryModal } from "./ui/modals/AddToLibraryModal";
 export { default as CreatePlaylistModal } from "./ui/modals/CreatePlaylistModal";

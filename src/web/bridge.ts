@@ -250,6 +250,7 @@ export function installWebBridge(): void {
     overlayReady: noop,
     sendOverlayAction: noop,
     toggleOverlay: async () => false,
+    showOverlay: noop,
     isOverlayOpen: async () => false,
     closeOverlay: noop,
     getOverlayInitialState: async () => null,

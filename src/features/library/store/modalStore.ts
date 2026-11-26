@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { ImportReview } from "@/shared/api";
+import type { Track as ApiTrack } from "@/shared/contracts";
 import type { Track } from "@/shared/types";
 
 export interface LibraryItemDetail {
@@ -27,6 +28,13 @@ export interface TrackDetail {
   duration?: string;
   durationMs?: number;
   playlists?: PlaylistOption[];
+}
+
+export interface AddAllSource {
+  title: string;
+  coverUrl: string;
+  artists?: string;
+  tracks: ApiTrack[];
 }
 
 export interface AddSongsTarget {
@@ -68,6 +76,12 @@ interface ModalState {
   addToPlaylistTrack: TrackDetail | null;
   openAddToPlaylist: (track: TrackDetail) => void;
   closeAddToPlaylist: () => void;
+
+  // Add a whole album to playlists
+  addAllOpen: boolean;
+  addAllSource: AddAllSource | null;
+  openAddAll: (source: AddAllSource) => void;
+  closeAddAll: () => void;
 
   // Add songs to playlist
   addSongsOpen: boolean;
@@ -143,10 +157,14 @@ export const useModalStore = create<ModalState>((set) => ({
   closeAddToPlaylist: () =>
     set({ addToPlaylistOpen: false, addToPlaylistTrack: null }),
 
+  addAllOpen: false,
+  addAllSource: null,
+  openAddAll: (source) => set({ addAllOpen: true, addAllSource: source }),
+  closeAddAll: () => set({ addAllOpen: false, addAllSource: null }),
+
   addSongsOpen: false,
   addSongsTarget: null,
-  openAddSongs: (target) =>
-    set({ addSongsOpen: true, addSongsTarget: target }),
+  openAddSongs: (target) => set({ addSongsOpen: true, addSongsTarget: target }),
   closeAddSongs: () => set({ addSongsOpen: false, addSongsTarget: null }),
 
   createPlaylistOpen: false,

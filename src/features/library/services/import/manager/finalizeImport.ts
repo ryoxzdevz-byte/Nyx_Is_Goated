@@ -44,7 +44,10 @@ async function addOneByOne(
   return saved;
 }
 
-async function addTracks(playlistId: string, tracks: Track[]): Promise<number> {
+export async function addTracksToPlaylist(
+  playlistId: string,
+  tracks: Track[],
+): Promise<number> {
   try {
     const result = await api.addPlaylistTrackSnapshots(playlistId, tracks);
     return result.added;
@@ -71,6 +74,7 @@ export async function finalizeImportedPlaylist(
       : {}),
   });
   const unique = uniqueTracks(tracks);
-  const saved = unique.length > 0 ? await addTracks(playlist.id, unique) : 0;
+  const saved =
+    unique.length > 0 ? await addTracksToPlaylist(playlist.id, unique) : 0;
   return { playlistId: playlist.id, saved };
 }

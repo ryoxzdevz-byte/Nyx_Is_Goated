@@ -58,6 +58,8 @@ export class PlayerRuntime {
   // loaded / cached track fires waiting -> playing within milliseconds, and flipping
   // the status for that re-animated the play / pause button on every seek
   private waitingTimer: ReturnType<typeof setTimeout> | null = null;
+  private deviceChangeTimer: ReturnType<typeof setTimeout> | null = null;
+  private outputSwitchToken = 0;
   public onEnded?: () => void;
   public onError?: (info: { trackId: string; message: string }) => void;
 
@@ -129,17 +131,20 @@ export class PlayerRuntime {
         initial = false;
         return;
       }
-      if (usePlayerStore.getState().pauseOnDeviceChange) {
+      if (this.deviceChangeTimer) clearTimeout(this.deviceChangeTimer);
+      this.deviceChangeTimer = setTimeout(() => {
+        this.deviceChangeTimer = null;
+        const state = usePlayerStore.getState();
         if (
+          state.pauseOnDeviceChange &&
+          state.audioOutputDeviceId === "default" &&
           !this.audio.paused &&
-          usePlayerStore.getState().status === "playing"
+          state.status === "playing"
         ) {
           this.pause();
         }
-      }
-      void this.ensureOutputDevice(
-        usePlayerStore.getState().audioOutputDeviceId,
-      );
+        void this.ensureOutputDevice(state.audioOutputDeviceId);
+      }, 350);
     };
 
     try {
@@ -152,25 +157,60 @@ export class PlayerRuntime {
     }
   }
 
+  private async isOutputDeviceAvailable(deviceId: string): Promise<boolean> {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      return devices.some(
+        (device) =>
+          device.kind === "audiooutput" && device.deviceId === deviceId,
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private async switchOutputDevice(target: string): Promise<boolean> {
+    const token = ++this.outputSwitchToken;
+    const audio = this.audio as HTMLAudioElement & {
+      setSinkId?: (id: string) => Promise<void>;
+      sinkId?: string;
+    };
+    const attempts = target === "default" ? 1 : 3;
+
+    for (let attempt = 0; attempt < attempts; attempt++) {
+      if (token !== this.outputSwitchToken) return false;
+      if (
+        target !== "default" &&
+        !(await this.isOutputDeviceAvailable(target))
+      ) {
+        if (attempt < attempts - 1) await this.delay(300 + attempt * 300);
+        continue;
+      }
+      try {
+        if ((audio.sinkId || "default") !== target) {
+          await audio.setSinkId(target);
+        }
+        pitchShifter.setOutputDevice(target);
+        return true;
+      } catch {
+        if (attempt < attempts - 1) await this.delay(300 + attempt * 300);
+      }
+    }
+    return false;
+  }
+
   private async ensureOutputDevice(deviceId?: string) {
     const target =
       deviceId ?? usePlayerStore.getState().audioOutputDeviceId ?? "default";
     const audio = this.audio as HTMLAudioElement & {
       setSinkId?: (id: string) => Promise<void>;
-      sinkId?: string;
     };
     if (typeof audio.setSinkId !== "function") return;
-    try {
-      if ((audio.sinkId || "default") === target) return;
-      await audio.setSinkId(target);
-    } catch {
-      try {
-        if (target !== "default") await audio.setSinkId("default");
-      } catch {}
-      if (target !== "default") {
-        usePlayerStore.getState().setAudioOutputDeviceId("default");
-      }
-    }
+    await this.switchOutputDevice(target);
   }
 
   public async setAudioOutputDevice(deviceId: string): Promise<boolean> {
@@ -180,16 +220,7 @@ export class PlayerRuntime {
       setSinkId?: (id: string) => Promise<void>;
     };
     if (typeof audio.setSinkId !== "function") return false;
-    try {
-      await audio.setSinkId(target);
-      return true;
-    } catch {
-      try {
-        await audio.setSinkId("default");
-      } catch {}
-      usePlayerStore.getState().setAudioOutputDeviceId("default");
-      return false;
-    }
+    return this.switchOutputDevice(target);
   }
 
   private setupMediaSession() {

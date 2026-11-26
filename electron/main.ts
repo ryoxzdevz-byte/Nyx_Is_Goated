@@ -2364,12 +2364,6 @@ if (!gotTheLock) {
 
     handleTrusted("audio:get-output-devices", async (event) => {
       try {
-        await event.sender
-          .executeJavaScript(
-            `(async()=>{try{const m=navigator.mediaDevices;if(!m?.getUserMedia)return;const s=await m.getUserMedia({audio:true});try{s.getTracks().forEach(t=>t.stop())}catch{}}catch{}})()`,
-            true,
-          )
-          .catch(() => undefined);
         const devices = await event.sender.executeJavaScript(
           `(async()=>{try{const list=await navigator.mediaDevices.enumerateDevices();return list.filter(d=>d.kind==='audiooutput').map(d=>({deviceId:d.deviceId,label:(d.label||'').trim()}));}catch{return[]}})()`,
           true,

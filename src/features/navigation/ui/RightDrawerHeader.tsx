@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import { LeftLine } from "@mingcute/react";
 import { Repeat, RepeatOne, Shuffle, TrashBin2 } from "@solar-icons/react";
+import { LuColumns3, LuList } from "react-icons/lu";
 import { useTranslation } from "@/languages";
 import { Tooltip } from "@/shared/ui";
 import { cn } from "@/shared/lib";
@@ -12,6 +13,8 @@ export interface RightDrawerHeaderProps {
   shuffle: boolean;
   repeat: RepeatMode;
   canClear: boolean;
+  grouped: boolean;
+  onGroupedToggle: () => void;
   onShuffleToggle: () => void;
   onRepeatCycle: () => void;
   onClear: () => void;
@@ -71,6 +74,8 @@ export function RightDrawerHeader({
   shuffle,
   repeat,
   canClear,
+  grouped,
+  onGroupedToggle,
   onShuffleToggle,
   onRepeatCycle,
   onClear,
@@ -106,6 +111,15 @@ export function RightDrawerHeader({
       </div>
 
       <div className="flex h-[40px] shrink-0 items-center gap-[2px] rounded-[10px] bg-white/[0.1] p-[4px]">
+        <QueueAction
+          label={
+            grouped ? t("player.queue_single_view") : t("player.queues_view")
+          }
+          active={grouped}
+          onClick={onGroupedToggle}
+        >
+          {grouped ? <LuColumns3 size={18} /> : <LuList size={18} />}
+        </QueueAction>
         <QueueAction
           label={shuffle ? t("player.shuffle_on") : t("player.shuffle_off")}
           active={shuffle}

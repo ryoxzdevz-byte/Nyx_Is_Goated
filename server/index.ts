@@ -57,6 +57,7 @@ function applyCors(res: Outgoing): void {
     "content-type, authorization, x-nyx-token, x-request-id, x-client-version, x-platform, x-user-id, x-user-name, x-session-id, x-liner-signature, x-liner-timestamp, x-liner-nonce",
   );
   res.setHeader("Access-Control-Max-Age", "86400");
+  res.setHeader("Access-Control-Expose-Headers", "*");
 }
 
 function sendJson(res: Outgoing, status: number, body: unknown): void {
@@ -151,6 +152,7 @@ async function proxyLiner(
         ? undefined
         : raw || undefined,
       redirect: "manual",
+      signal: AbortSignal.timeout(30_000),
     });
   } catch (error) {
     sendJson(res, 502, {

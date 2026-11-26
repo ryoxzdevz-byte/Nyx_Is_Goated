@@ -335,6 +335,64 @@ const QueueList = memo(function QueueList({
   );
 });
 
+const QueueSectionList = memo(function QueueSectionList({
+  title,
+  items,
+  playbackContext,
+  playbackContextCover,
+}: {
+  title: string;
+  items: any[];
+  playbackContext: any;
+  playbackContextCover: any;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <section className="mb-[16px]">
+      <h3 className="m-0 mb-[4px] px-[8px] text-caption font-[600] uppercase tracking-wide text-text-tertiary">
+        {title}
+        <span className="ml-[6px] tabular-nums">{items.length}</span>
+      </h3>
+      {items.length > 0 ? (
+        <div className="flex flex-col">
+          {items.map((item) => (
+            <SongCardWithMenu
+              key={item.id}
+              id={item.id}
+              title={item.title}
+              artists={item.artists}
+              artistId={item.artistId}
+              artistList={item.artistList}
+              explicit={item.explicit}
+              durationMs={item.durationMs}
+              coverUrl={
+                item.coverUrl ??
+                (item as { cover_url?: string }).cover_url ??
+                ""
+              }
+              className="p-[8px] rounded-item"
+              imageShape="square"
+              onPlay={() =>
+                playerEngine.playTrack(
+                  item,
+                  items,
+                  playbackContext,
+                  playbackContextCover,
+                )
+              }
+            />
+          ))}
+        </div>
+      ) : (
+        <p className="m-0 px-[8px] text-caption text-text-tertiary">
+          {t("player.queue_section_empty")}
+        </p>
+      )}
+    </section>
+  );
+});
+
 export interface RightDrawerProps {
   onClose?: () => void;
 }
@@ -345,6 +403,7 @@ function RightDrawer({ onClose }: RightDrawerProps) {
   const queueScrollRef = useRef<HTMLDivElement>(null);
   const [queueLimit, setQueueLimit] = useState(50);
   const [queueFadePx, setQueueFadePx] = useState(0);
+  const [groupedQueues, setGroupedQueues] = useState(false);
   const reduceMotion = useReducedMotion();
   const queueControls = useAnimation();
 
@@ -394,6 +453,12 @@ function RightDrawer({ onClose }: RightDrawerProps) {
     scrollQueueToCurrent,
   ]);
 
+  const currentIndex = Math.max(0, player.currentIndex);
+  const nowPlaying = player.queue.slice(currentIndex, currentIndex + 1);
+  const upNext = player.queue.slice(currentIndex + 1);
+  const played = player.queue.slice(0, currentIndex);
+  const original = groupedQueues ? playerEngine.originalQueue() : [];
+
   return (
     <div className="relative flex flex-col h-full w-full overflow-hidden rounded-[14px] select-none bg-bg-glass backdrop-blur-[48px]">
       <RightDrawerHeader
@@ -407,6 +472,8 @@ function RightDrawer({ onClose }: RightDrawerProps) {
           player.currentIndex >= 0 &&
           player.currentIndex < player.queue.length - 1
         }
+        grouped={groupedQueues}
+        onGroupedToggle={() => setGroupedQueues((value) => !value)}
         onShuffleToggle={() => playerEngine.setShuffle(!player.shuffle)}
         onRepeatCycle={() =>
           playerEngine.setRepeat(
@@ -445,20 +512,53 @@ function RightDrawer({ onClose }: RightDrawerProps) {
           }}
         >
           {player.queue.length > 0 ? (
-            <motion.div
-              initial={false}
-              animate={queueControls}
-              style={{ transformOrigin: "top center" }}
-            >
-              <QueueList
-                queue={player.queue}
-                queueLimit={queueLimit}
-                currentIndex={player.currentIndex}
-                playbackContext={player.playbackContext}
-                playbackContextCover={player.playbackContextCover}
-                scrollContainerRef={queueScrollRef}
-              />
-            </motion.div>
+            groupedQueues ? (
+              <motion.div
+                initial={false}
+                animate={queueControls}
+                style={{ transformOrigin: "top center" }}
+              >
+                <QueueSectionList
+                  title={t("player.queue_now")}
+                  items={nowPlaying}
+                  playbackContext={player.playbackContext}
+                  playbackContextCover={player.playbackContextCover}
+                />
+                <QueueSectionList
+                  title={t("player.queue_up_next")}
+                  items={upNext}
+                  playbackContext={player.playbackContext}
+                  playbackContextCover={player.playbackContextCover}
+                />
+                <QueueSectionList
+                  title={t("player.queue_played")}
+                  items={played}
+                  playbackContext={player.playbackContext}
+                  playbackContextCover={player.playbackContextCover}
+                />
+                <QueueSectionList
+                  title={t("player.queue_original_order")}
+                  items={original}
+                  playbackContext={player.playbackContext}
+                  playbackContextCover={player.playbackContextCover}
+                />
+              </motion.div>
+            ) : (
+              <motion.div
+                initial={false}
+                animate={queueControls}
+                style={{ transformOrigin: "top center" }}
+              >
+                <QueueList
+                  queue={player.queue}
+                  queueLimit={queueLimit}
+                  currentIndex={player.currentIndex}
+                  playbackContext={player.playbackContext}
+                  playbackContextCover={player.playbackContextCover}
+                  scrollContainerRef={queueScrollRef}
+                />
+              </motion.div>
+            )
           ) : (
             <div className="h-full flex items-center justify-center text-text-tertiary text-label">
               {t("player.queue_empty")}

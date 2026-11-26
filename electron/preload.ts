@@ -203,6 +203,7 @@ export interface LinerElectronApi {
   onOverlayAction: (cb: (action: any) => void) => () => void;
   sendOverlayAction: (action: any) => void;
   toggleOverlay: () => Promise<boolean>;
+  showOverlay?: () => void;
   isOverlayOpen: () => Promise<boolean>;
   closeOverlay: () => void;
   onOverlayState: (cb: (state: any) => void) => () => void;
@@ -469,6 +470,9 @@ const api: LinerElectronApi = {
     ipcRenderer.send("overlay:send-action", action);
   },
   toggleOverlay: () => ipcRenderer.invoke("overlay:toggle"),
+  showOverlay: () => {
+    ipcRenderer.send("overlay:show");
+  },
   isOverlayOpen: () => ipcRenderer.invoke("overlay:is-open"),
   closeOverlay: () => {
     ipcRenderer.send("overlay:close");

@@ -222,6 +222,17 @@ function CollectionContent() {
     return () => clearTimeout(timer);
   }, [data, sortedTracks, toast, t]);
 
+  const handleAddAllToPlaylist = useCallback(() => {
+    if (!data || data.tracks.length === 0) return;
+    useModalStore.getState().openAddAll({
+      title: data.title,
+      coverUrl: data.coverUrl,
+      artists:
+        data.artists?.map((artist) => artist.name).join(", ") || data.author,
+      tracks: data.sourceTracks ?? [],
+    });
+  }, [data]);
+
   const handleSaveToLibrary = () => {
     if (!data || !id) return;
     const decoded = decodeURIComponent(id);
@@ -361,7 +372,10 @@ function CollectionContent() {
                       </p>
                     ) : data.author ? (
                       <p className={HERO_SUBTITLE_CLASS}>
-                        <ArtistLink name={data.author} className="text-text-secondary" />
+                        <ArtistLink
+                          name={data.author}
+                          className="text-text-secondary"
+                        />
                       </p>
                     ) : data.description ? (
                       <HeroSubtitle text={data.description} />
@@ -496,6 +510,16 @@ function CollectionContent() {
                             </Button>
                           }
                           items={[
+                            ...(isAlbum && data.tracks.length > 0
+                              ? [
+                                  {
+                                    id: "add-all-to-playlist",
+                                    icon: <PlaylistFill size={16} />,
+                                    label: t("collection.add_all_to_playlist"),
+                                    onClick: handleAddAllToPlaylist,
+                                  },
+                                ]
+                              : []),
                             {
                               id: "library",
                               icon: inLibrary ? (

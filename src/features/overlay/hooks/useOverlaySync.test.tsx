@@ -66,8 +66,12 @@ describe("useOverlaySync ipc volume", () => {
   let container: HTMLDivElement;
   let root: Root;
   let sent: Array<Record<string, unknown>>;
+  let showOverlay: ReturnType<typeof vi.fn>;
+  let windowStateListener: ((state: any) => void) | null;
 
   function mount() {
+    showOverlay = vi.fn();
+    windowStateListener = null;
     window.linerElectron = {
       platform: "win32",
       overlayUpdateState: (state: Record<string, unknown>) => {
@@ -77,6 +81,11 @@ describe("useOverlaySync ipc volume", () => {
       setOverlayAuthenticated: () => {},
       updateOverlaySettings: () => {},
       closeOverlay: () => {},
+      showOverlay,
+      onWindowStateChange: (cb: (state: any) => void) => {
+        windowStateListener = cb;
+        return () => {};
+      },
     } as never;
     act(() => {
       root.render(<Probe />);
@@ -157,6 +166,28 @@ describe("useOverlaySync ipc volume", () => {
 
     act(() => usePlayerStore.getState().setCurrentTrack(track("b"), 1));
     expect(sent.at(-1)).toMatchObject({ positionMs: 0, track: { id: "b" } });
+  });
+
+  it("shows the overlay when a track is paused while minimized", () => {
+    mount();
+    act(() =>
+      windowStateListener?.({
+        isMaximized: false,
+        isFullScreen: false,
+        isVisible: false,
+      }),
+    );
+    expect(showOverlay).not.toHaveBeenCalled();
+
+    act(() => usePlayerStore.getState().setStatus("paused"));
+    expect(sent.at(-1)).toMatchObject({ status: "paused" });
+    expect(showOverlay).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not open the overlay when pausing while the main window is visible", () => {
+    mount();
+    act(() => usePlayerStore.getState().setStatus("paused"));
+    expect(showOverlay).not.toHaveBeenCalled();
   });
 
   it("treats a speed change as a resync point", () => {

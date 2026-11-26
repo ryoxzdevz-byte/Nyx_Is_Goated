@@ -1,11 +1,8 @@
 import type { MainNetResult } from "../../../../electron/netdiag";
+import { getApiBaseUrl } from "@/shared/api/baseUrl";
 import { SHARE_BASE_URL } from "@/shared/utils/share";
 
-// endpoint bases duplicated here on purpose: importing @/shared/api would
-// close an import cycle (api hooks record failures into this feature).
-const API_BASE =
-  (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/+$/, "") ||
-  "https://api.tryliner.fun";
+const API_BASE = getApiBaseUrl();
 const COVERS_BASE =
   (import.meta.env.VITE_COVERS_PROXY_URL as string | undefined)?.replace(
     /\/+$/,

@@ -79,8 +79,8 @@ function failApiCalls(
     latencyMs: number;
   }) => void,
 ) {
-  for (let i = 0; i < 3; i += 1)
-    recordFailure({ method: "GET", path: "/v1/me", status: 0, latencyMs: 5 });
+  for (const path of ["/v1/me", "/v1/library/tracks", "/v1/search"])
+    recordFailure({ method: "GET", path, status: 0, latencyMs: 5 });
 }
 
 beforeEach(() => {

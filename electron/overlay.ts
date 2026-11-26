@@ -1457,6 +1457,10 @@ export class OverlayManager {
       return this.toggleOverlay();
     });
 
+    onTrusted("overlay:show", () => {
+      this.showOverlay();
+    });
+
     handleTrusted("overlay:is-open", () => {
       return Boolean(
         this.overlayWindow &&

@@ -77,11 +77,14 @@ const CLIENT_VERSION =
 
 const DEFAULT_TIMEOUT_MS = 15000;
 const LYRICS_CONNECT_TIMEOUT_MS = 12000;
+const TRANSIENT_RETRY_DELAYS_MS = [250, 1000];
+const TRANSIENT_STATUS_CODES = new Set([502, 503, 504]);
 
 async function fetchWithTimeout(
   url: string,
   init?: RequestInit,
   timeoutMs = DEFAULT_TIMEOUT_MS,
+  muteToasts = false,
 ): Promise<Response> {
   const controller = new AbortController();
   const userSignal = init?.signal;
@@ -114,7 +117,7 @@ async function fetchWithTimeout(
     return res;
   } catch (err: any) {
     if (didTimeout) {
-      if (!connectionToastsMuted())
+      if (!muteToasts && !connectionToastsMuted())
         showToast(translate("common.error_timeout_title"), "error", {
           id: "network-timeout-toast",
           description: translate("common.error_network"),
@@ -129,7 +132,7 @@ async function fetchWithTimeout(
     if (userSignal?.aborted) {
       throw err;
     }
-    if (!connectionToastsMuted())
+    if (!muteToasts && !connectionToastsMuted())
       showToast(translate("common.error_network_title"), "error", {
         id: "network-error-toast",
         description: translate("common.error_network"),
@@ -144,6 +147,48 @@ async function fetchWithTimeout(
     clearTimeout(timer);
     if (userSignal && onUserAbort) {
       userSignal.removeEventListener("abort", onUserAbort);
+    }
+  }
+}
+
+async function fetchWithTransientRetry(
+  url: string,
+  init?: RequestInit,
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+): Promise<Response> {
+  const method = (init?.method ?? "GET").toUpperCase();
+  const retryable =
+    method === "GET" || method === "HEAD" || method === "OPTIONS";
+
+  for (let attempt = 0; ; attempt++) {
+    const silent = attempt < TRANSIENT_RETRY_DELAYS_MS.length;
+    try {
+      const res = await fetchWithTimeout(url, init, timeoutMs, silent);
+      if (
+        retryable &&
+        TRANSIENT_STATUS_CODES.has(res.status) &&
+        attempt < TRANSIENT_RETRY_DELAYS_MS.length &&
+        !init?.signal?.aborted
+      ) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, TRANSIENT_RETRY_DELAYS_MS[attempt]),
+        );
+        continue;
+      }
+      return res;
+    } catch (err) {
+      if (
+        retryable &&
+        attempt < TRANSIENT_RETRY_DELAYS_MS.length &&
+        !init?.signal?.aborted &&
+        isConnectivityFailure(err)
+      ) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, TRANSIENT_RETRY_DELAYS_MS[attempt]),
+        );
+        continue;
+      }
+      throw err;
     }
   }
 }
@@ -284,7 +329,7 @@ async function executeRequest<T>(
 
   let res: Response;
   try {
-    res = await fetchWithTimeout(
+    res = await fetchWithTransientRetry(
       getApiBaseUrl() + path,
       {
         ...init,
@@ -362,7 +407,7 @@ async function executeRequest<T>(
     // Retry request with newly signed headers (synced server clock + fresh token if available)
     const refreshedSignedHeaders = await signApiRequest(method, path, rawBody);
     try {
-      res = await fetchWithTimeout(
+      res = await fetchWithTransientRetry(
         getApiBaseUrl() + path,
         {
           ...init,
